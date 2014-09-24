@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<resources>
+	<set path = "../data_debug/images/" />
+	<atlas>
+		<image file="bg-start.jpg" />
+		
+		<image file="light-mask.png" />
+		<image file="light-fill.png" />
+		
+		<image file="player-01.png" />
+		<image file="monster-01.png" />
+		<image file="monster-02.png" />
+		<image file="monster-03.png" />
+		
+		<image file="tile-01.png" />
+		<image file="tile-02.png" />
+		<image file="tile-03.png" />
+		<image file="tile-04.png" />
+	</atlas>
+
+	<set path = "../data_debug/fonts/" />
+	<font file="normal.fnt"/>
+	<font id="big" file="huge.fnt"/>
+</resources>
