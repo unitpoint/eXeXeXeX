@@ -37,7 +37,7 @@ void example_init()
 	//initialize SoundPlayer
 	SoundPlayer::initialize();
 
-	// DebugActor::showFPS = false;
+	DebugActor::showFPS = false;
 	ObjectScript::Oxygine::run();
 }
 

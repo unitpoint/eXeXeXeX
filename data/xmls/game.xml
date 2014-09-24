@@ -3,6 +3,9 @@
 	<set path = "../data_debug/images/" />
 	<atlas>
 		<image file="bg-start.jpg" />
+		<image file="screen-blood-scratch.png" />
+		<image file="screen-blood-breaks-01.png" />
+		<image file="screen-blood-breaks-02.png" />
 		
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />

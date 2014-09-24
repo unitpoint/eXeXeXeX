@@ -427,8 +427,8 @@ function Actor.__get@_internalActions(){
 			action.step(dt)
 			// print "after step: ${action.elapsed}, ${action.duration}, ${action.isDone}"
 			if(action.isDone){
-				self.removeAction(action)
 				action.detachTarget && action.target.detach()
+				self.removeAction(action)
 				action.doneCallback()
 			}
 		}
