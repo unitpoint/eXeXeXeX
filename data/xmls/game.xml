@@ -15,10 +15,12 @@
 		<image file="monster-02.png" />
 		<image file="monster-03.png" />
 		
+		<image file="tile-00.png" />
 		<image file="tile-01.png" />
 		<image file="tile-02.png" />
 		<image file="tile-03.png" />
 		<image file="tile-04.png" />
+		<image file="tile-05.png" />
 	</atlas>
 
 	<set path = "../data_debug/fonts/" />

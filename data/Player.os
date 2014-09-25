@@ -1,6 +1,6 @@
 Player = extends Entity {
-	__construct = function(name){
-		super(name)
-		// @priority = 100
+	__construct = function(game, name){
+		super(game, name)
+		@isPlayer = true
 	},
 }

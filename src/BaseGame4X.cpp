@@ -22,6 +22,7 @@ static void registerGlobals(OS * os)
 		DEF_CONST(TILE_EMPTY),
 		DEF_CONST(TILE_GRASS),
 		DEF_CONST(TILE_CHERNOZEM),
+		DEF_CONST(TILE_STAIRS),
 		DEF_CONST(TILE_BLOCK),
 		// layres
 		DEF_CONST(LAYER_TILES),
@@ -141,6 +142,7 @@ ETile BaseGame4X::getTileType(int x, int y)
 		case 255:	return TILE_EMPTY;
 		case 0:		return TILE_GRASS; 
 		case 8:		return TILE_CHERNOZEM;
+		case 16:	return TILE_STAIRS;
 		default:
 			OX_ASSERT(false);
 		}

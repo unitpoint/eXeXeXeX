@@ -46,7 +46,7 @@ LightMask = extends Actor {
 			@replaceTweenAction {
 				name = "animateLight",
 				duration = 0.04, // math.random(0.05, 0.07),
-				scale = scale * math.random(0.97, 1.03),
+				scale = scale * math.random(0.95, 1.05),
 				ease = Ease.CUBIC_IN_OUT,
 				doneCallback = function(){
 					anim(scale)

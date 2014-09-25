@@ -2,10 +2,14 @@ Game4X = extends BaseGame4X {
 	__object = {
 		time = 0,
 		tiles = {},
+		tileEnt = {},
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
 		lightMask = null,
+		following = null,
+		followTileX = -1,
+		followTileY = -1,
 	},
 	
 	__construct = function(){
@@ -39,36 +43,62 @@ Game4X = extends BaseGame4X {
 		@lightMask = LightMask().attrs {
 			pos = @centerViewPos,
 			scale = 6.0,
-			priority = 100,
+			priority = 10,
 			parent = this,
 		}
 		@lightMask.updateDark()
 		
 		if(false)
-		@lightMask.animateLight(2.5, 2, function(){
-			@lightMask.animateLight(0.5, 20, function(){
-				print "ligth off"			
+			@lightMask.animateLight(2.5, 2, function(){
+				@lightMask.animateLight(0.5, 20, function(){
+					print "ligth off"			
+				}.bind(this))
 			}.bind(this))
-		}.bind(this))
+		else
+			@lightMask.animateLight(2.5)
 		
 		@initMap("testmap")
 		
 		@addUpdate(@update.bind(this))
+		
+		/* var style = TextStyle()
+		style.resFont = res.get("big")
+		style.vAlign = TextStyle.VALIGN_BOTTOM
+		style.hAlign = TextStyle.HALIGN_CENTER */
+		
+		/* var text = TextField().attrs {
+			resFont = res.get("normal"),
+			vAlign = TextStyle.VALIGN_BOTTOM,
+			hAlign = TextStyle.HALIGN_CENTER,
+			// style = style,
+			text = "Test text",
+			// pivot = vec2(0.5, 0.5),
+			pos = vec2(@width/2, @height),
+			priority = 20,
+			parent = this,
+		} */
 
+		
 		@addEventListener(TouchEvent.CLICK, function(ev){
 			if(ev.target is Tile){
-				print "tile clicked: ${ev.target.tileX}, ${ev.target.tileY}"
+				// print "tile clicked: ${ev.target.tileX}, ${ev.target.tileY}"
+				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
 				return
 			}
 			if(ev.target is Monster){
-				print "monster clicked: ${ev.target.name}"
+				// print "monster clicked: ${ev.target.name}"
+				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
 				return
 			}
 			if(ev.target is Player){
-				print "player clicked: ${ev.target.name}"
+				// print "player clicked: ${ev.target.name}"
+				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
 				return
 			}
-			print "unknown clicked: ${ev.localPosition}"
+			print "unknown clicked: ${ev.localPos}"
+			
+			// var pos = @toLocalPos(@player)
+			// var touch = ev.localPos
 		}.bind(this))
 		
 		if(false){
@@ -213,6 +243,70 @@ Game4X = extends BaseGame4X {
 		
 		} // if(false)
 	},
+
+	movePlayerToTile = function(tx, ty){
+		var px, py = @player.tileX, @player.tileY
+		var dx = tx > px ? 1 : tx < px ? -1 : 0
+		var dy = ty > py ? 1 : ty < py ? -1 : 0
+		if(dx == 0 && dy == 0 && (@player.moving || @player.jumping || @following)){
+			var dx = px - @player.prevTileX
+			var dy = py - @player.prevTileY
+			print "player auto continue move: ${dx}, ${dy}"
+			// @movePlayerToTile(@player.tileX + dx, @player.tileY + dy)
+		}
+		@player.moveToSide(dx, dy)
+	},
+	
+	toLocalPos = function(child, pos){
+		pos || pos = vec2(0, 0)
+		for(var cur = child; cur && cur !== this;){
+			pos = cur.local2global(pos)
+			cur = cur.parent
+		}
+		cur || throw "${child} is not child of ${this}"
+		return pos
+	},
+	
+	initEntTilePos = function(ent, tx, ty){
+		DEBUG && assert(!@tileEnt["${tx}-${ty}"])
+		ent.tileX, ent.tileY = tx, ty
+		ent.pos = @tileToCenterPos(tx, ty)
+		@tileEnt["${tx}-${ty}"] = ent
+	},
+	
+	setEntTile = function(ent, tx, ty){
+		var key = "${ent.tileX}-${ent.tileY}"
+		DEBUG && assert(@tileEnt[key] === ent, "tile busy at ${ent.tileX}x${ent.tileY} by ${@tileEnt[key].tileX}x${@tileEnt[key].tileY}")
+		delete @tileEnt[key]
+		ent.prevTileX, ent.prevTileY = ent.tileX, ent.tileY
+		ent.tileX, ent.tileY = tx, ty
+		@tileEnt["${tx}-${ty}"] = ent
+	},
+	
+	unsetEntTile = function(ent){
+		var key = "${ent.tileX}-${ent.tileY}"
+		DEBUG && assert(@tileEnt[key] === ent)
+		delete @tileEnt[key]
+		ent.tileX, ent.tileY = -1, -1
+	},
+	
+	getTileEnt = function(tx, ty){
+		return @tileEnt["${tx}-${ty}"]
+	},
+	
+	/* getEntitiesInArea = function(ax, ay, bx, by, ignoreEnt){
+		var entList, entLayerIndices = {}, [LAYER_MONSTERS, LAYER_PLAYER]
+		for(var _, i in entLayerIndices){
+			for(var _, ent in @layers[i]){
+				if(ent.tileX >= ax && ent.tileX <= bx
+					&& ent.tileY >= ay && ent.tileY <= by)
+				{
+					ent !== ignoreEnt && entList[ent] = true
+				}
+			}
+		}
+		return entList
+	}, */
 	
 	getTileRandom = function(x, y, a, b){
 		var r = super(x, y)
@@ -237,8 +331,8 @@ Game4X = extends BaseGame4X {
 					var type = @getTileType(x, y)
 					switch(type){
 					default:
-					// case TILE_EMPTY:
-						continue;
+						var tileName = "tile-00";
+						break;
 						
 					case TILE_GRASS:
 						var tileName = "tile-01";
@@ -247,9 +341,10 @@ Game4X = extends BaseGame4X {
 					case TILE_CHERNOZEM:
 						var tileName = sprintf("tile-%02d", math.round(@getTileRandom(x, y, 2, 4)));
 						break;
-					
-					case TILE_BLOCK:
-						continue;
+						
+					case TILE_STAIRS:
+						var tileName = "tile-05";
+						break;
 					}
 					// print "create tile ${x}x${y}, type: ${type}, name: ${tileName}"
 					var pos = @tileToPos(x, y)
@@ -283,20 +378,22 @@ Game4X = extends BaseGame4X {
 	addTilemapEntity = function(x, y, type){
 		if(type in @tiledmapMonsterMap){
 			var name = sprintf("monster-%02d", @tiledmapMonsterMap[type])
-			var monster = Monster(name).attrs {
-				pos = @tileToCenterPos(x, y),
+			var monster = Monster(this, name).attrs {
+				// pos = @tileToCenterPos(x, y),
 				parent = @layers[LAYER_MONSTERS],
 			}
+			@initEntTilePos(monster, x, y)
 			return
 		}
 		if(type in @tiledmapPlayerMap){
 			@player && throw "player is already exist"
 			
 			var name = sprintf("player-%02d", @tiledmapPlayerMap[type])
-			@player = Player(name).attrs {
-				pos = @tileToCenterPos(x, y),
+			@player = Player(this, name).attrs {
+				// pos = @tileToCenterPos(x, y),
 				parent = @layers[LAYER_PLAYER],
 			}
+			@initEntTilePos(@player, x, y)
 			@centerViewToTile(x, y)
 			return
 		}
@@ -315,10 +412,35 @@ Game4X = extends BaseGame4X {
 		
 	},
 	
-	centerViewToTile = function(x, y){
-		var pos = @tileToCenterPos(x, y) - @centerViewPos / @view.scale
+	centerViewToTile = function(tx, ty){
+		var pos = @tileToCenterPos(tx, ty) - @centerViewPos / @view.scale
 		@view.pos = -pos * @view.scale
 		@updateView()
+	},
+	
+	followPlayer = function(){
+		// if(!@following){
+			var tx, ty = @player.tileX, @player.tileY
+			if(@followTileX != tx || @followTileY != ty){
+				@followTileX, @followTileY = tx, ty
+				var pos = -(@tileToCenterPos(tx, ty) - @centerViewPos / @view.scale) * @view.scale
+				@following = @view.replaceTweenAction {
+					name = "following",
+					duration = 0.7,
+					pos = pos,
+					ease = Ease.LINEAR,
+					doneCallback = function(){
+						@following = false
+					}.bind(this),
+				}
+			}
+		// }else{
+		if(@following){
+			@updateView()
+		}
+		var pos = @toLocalPos(@player, @player.size/2)
+		@lightMask.pos = pos
+		@lightMask.updateDark()
 	},
 	
 	tileToCenterPos = function(x, y){
@@ -361,6 +483,11 @@ Game4X = extends BaseGame4X {
 	
 	update = function(ev){
 		@time = ev.time
-		@updateView()
+		@followPlayer()
+		for(var i, layer in @layers){
+			for(var _, obj in layer){
+				"update" in obj && obj.update()
+			}
+		}
 	},
 }
