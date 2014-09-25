@@ -37,11 +37,11 @@ LightMask = extends Actor {
 		@touchChildrenEnabled = false
 		
 		@calculatedPos = null
-		@animateLightScale = 1.0
+		@animateLightScale = null
 		@animateLightAdjustHandle = null
 	},
 	
-	animateLight = function(scale){
+	animateLight = function(scale, time, callback){
 		var anim = function(scale){
 			@replaceTweenAction {
 				name = "animateLight",
@@ -54,22 +54,27 @@ LightMask = extends Actor {
 			}
 		}.bind(this)
 		@removeUpdate(@animateLightAdjustHandle)
-		if(@animateLightScale != scale){
-			var time, steps = 2.0, 20
-			var start, delta, i = @scale, (scale - @scale) / steps, 0
-			anim(start)
-			// @scale = @animateLightScale
-			@animateLightAdjustHandle = @addUpdate(time / steps, function(){
-				if(++i == steps){
-					anim(scale)
-					@removeUpdate(@animateLightAdjustHandle)
-					@animateLightAdjustHandle = null
-				}else{
-					anim(start + delta * i)
-				}
-			}.bind(this))
-			@animateLightScale = scale
+		// this also support null
+		if(@animateLightScale == scale){
+			callback()
+			return
 		}
+		time || time = 2
+		var steps = 10 * time
+		var start, delta, i = @scale, (scale - @scale) / steps, 0
+		anim(start)
+		// @scale = @animateLightScale
+		@animateLightAdjustHandle = @addUpdate(time / steps, function(){
+			if(++i == steps){
+				anim(scale)
+				@removeUpdate(@animateLightAdjustHandle)
+				@animateLightAdjustHandle = null
+				callback()
+			}else{
+				anim(start + delta * i)
+			}
+		}.bind(this))
+		@animateLightScale = scale
 	},
 	
 	updateDark = function(){

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="tiles" tilewidth="32" tileheight="32">
+  <image source="tilemap-tiles.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="65" name="entities" tilewidth="32" tileheight="32">
+  <image source="tilemap-entities.png" width="256" height="256"/>
+ </tileset>
+ <layer name="map" width="100" height="100">
+  <data encoding="base64" compression="zlib">
+   eJzt0TsKACAMREEtvf+FvUEQP7DIDGyXKq81AAAAAACAv3SLWrJRbOeOM9WfV8c9emTRI4seWfQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABemH+uA+A=
+  </data>
+ </layer>
+ <layer name="entities" width="100" height="100">
+  <data encoding="base64" compression="zlib">
+   eJztzrENADAIA0FWS4nYfx+aFGxApNw1L7lyBAAAAAAA8Ju6PWPLjSMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCgBomWANY=
+  </data>
+ </layer>
+</map>

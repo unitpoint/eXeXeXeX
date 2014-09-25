@@ -4,11 +4,12 @@ Entity = extends Actor {
 		attackSpeed = 1.0,
 		
 		centerActionHandle = null,
-		onAttackTarget = null,
+		attackCallback = null,
 	},
 	
 	__construct = function(name){
 		super()
+		@name = name
 		@sprite = Sprite().attrs {
 			resAnim = res.get(name),
 			pivot = vec2(0.5, 0.5),
@@ -18,7 +19,7 @@ Entity = extends Actor {
 		@pivot = vec2(0.5, 0.5)
 		@size = @sprite.size 
 		@sprite.pos = @idealPos = @size/2
-		
+		@touchChildrenEnabled = false
 		@breathing()
 	},
 	
@@ -82,7 +83,7 @@ Entity = extends Actor {
 				angle = math.random(-10, 10),
 				ease = Ease.QUINT_IN,
 				doneCallback = function(){
-					// print "attack mid, onAttackTarget: ${@onAttackTarget}"
+					// print "attack mid, attackCallback: ${@attackCallback}"
 					@sprite.replaceTweenAction {
 						name = "attack",
 						duration = 0.8 * math.random(0.9, 1.1) / @breathingSpeed,
@@ -91,7 +92,7 @@ Entity = extends Actor {
 						ease = Ease.CIRC_IN_OUT,
 						doneCallback = callback // anim
 					}
-					@onAttackTarget()
+					@attackCallback()
 				}.bind(this)
 			}
 		}.bind(this)

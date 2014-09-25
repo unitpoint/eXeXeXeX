@@ -2,6 +2,8 @@
 *.suo
 *.opensdf
 *.pyc
+
+cache-osc
 pack_dir.cmd
 
 tools/cache-osc

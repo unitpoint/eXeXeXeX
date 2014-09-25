@@ -1,0 +1,3 @@
+Tile = extends Sprite {
+
+}
