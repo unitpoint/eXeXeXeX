@@ -77,7 +77,7 @@ for(var i, v in m[1]){
 	}
 	var i, offs = 0, 0
 	var data = Buffer()
-	if(layer.name == "map"){
+	if(layer.name in ["map"]){
 		for(var y = 0; y < height; y++){
 			for(var x = 0; x < width; x++){
 				gid = convertToMapGid(memdata.sub(offs, 4).unpack("V"))
