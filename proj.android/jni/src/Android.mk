@@ -14,6 +14,7 @@ LOCAL_SRC_FILES += ../../../../../objectscript/src/ox-binder.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ox-sound-binder.cpp
 
 LOCAL_SRC_FILES += ../../../src/example.cpp ../../../src/entry_point.cpp 
+LOCAL_SRC_FILES += ../../../src/RandomValue.cpp
 LOCAL_SRC_FILES += ../../../src/BaseGame4X.cpp
 
 LOCAL_STATIC_LIBRARIES := oxygine-framework_static oxygine-sound_static

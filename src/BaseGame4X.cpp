@@ -22,13 +22,14 @@ static void registerGlobals(OS * os)
 		DEF_CONST(TILE_EMPTY),
 		DEF_CONST(TILE_GRASS),
 		DEF_CONST(TILE_CHERNOZEM),
-		DEF_CONST(TILE_STAIRS),
+		DEF_CONST(TILE_STONE),
+		DEF_CONST(TILE_LADDERS),
 		DEF_CONST(TILE_BLOCK),
 		// layres
 		DEF_CONST(LAYER_TILES),
 		DEF_CONST(LAYER_MONSTERS),
 		DEF_CONST(LAYER_PLAYER),
-		// DEF_CONST(LAYER_LIGHT_DARK),
+		DEF_CONST(LAYER_DECALS),
 		DEF_CONST(LAYER_COUNT),
 		{}
 	};
@@ -71,6 +72,7 @@ static void registerBaseGame4X(OS * os)
 		def("initMap", &BaseGame4X::initMap),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getTileType", &BaseGame4X::getTileType),
+		def("setTileType", &BaseGame4X::setTileType),
 		// def("tileToCenterPos", &BaseGame4X::tileToCenterPos),
 		// def("tileToPos", &BaseGame4X::tileToPos),
 		// {"posToTile", &Lib::posToTile},
@@ -107,10 +109,12 @@ Actor * getOSChild(Actor * actor, const char * name)
 BaseGame4X::BaseGame4X()
 {
 	tiledmap = NULL;
+	map = NULL;
 }
 
 BaseGame4X::~BaseGame4X()
 {
+	delete [] map;
 }
 
 Actor * BaseGame4X::getOSChild(const char * name)
@@ -137,17 +141,18 @@ ETile BaseGame4X::getTileType(int x, int y)
 	if(x >= 0 && x < tiledmap->size.width
 		&& y >= 0 && y < tiledmap->size.height)
 	{
-		int tile = tiledmap->map[y * tiledmap->size.width + x];
-		switch(tile){
-		case 255:	return TILE_EMPTY;
-		case 0:		return TILE_GRASS; 
-		case 8:		return TILE_CHERNOZEM;
-		case 16:	return TILE_STAIRS;
-		default:
-			OX_ASSERT(false);
-		}
+		return map[y * tiledmap->size.width + x];
 	}
 	return TILE_BLOCK;
+}
+
+void BaseGame4X::setTileType(int x, int y, ETile type)
+{
+	if(x >= 0 && x < tiledmap->size.width
+		&& y >= 0 && y < tiledmap->size.height)
+	{
+		map[y * tiledmap->size.width + x] = type;
+	}
 }
 
 /*
@@ -175,6 +180,21 @@ void BaseGame4X::initMap(const char * _name)
 		view = getOSChild("view"); OX_ASSERT(view);
 		
 		tiledmap = &testmapTiledmap;
+
+		int count = tiledmap->size.width * tiledmap->size.height;
+		map = new ETile[count];
+		for(int i = 0; i < count; i++){
+			switch(tiledmap->map[i]){
+			case 255:	map[i] = TILE_EMPTY; break;
+			case 0:		map[i] = TILE_GRASS; break;
+			case 8:		map[i] = TILE_CHERNOZEM; break;
+			case 9:		map[i] = TILE_STONE; break;
+			case 16:	map[i] = TILE_LADDERS; break;
+			default:
+				OX_ASSERT(false);
+			}
+		}
+
 		view->setSize(Vector2(tiledmap->size.width * TILE_SIZE, tiledmap->size.height * TILE_SIZE));
 
 		pushCtypeValue(os, this);

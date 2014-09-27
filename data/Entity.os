@@ -14,11 +14,15 @@ Entity = extends Actor {
 		// moveTween = null,
 		
 		isPlayer = false,
-		falling = false,
-		moving = false,
-		jumping = false,
 		
-		repeatMove = 0,
+		moveAnimatedX = false,
+		moveAnimatedY = false,
+		moving = false,
+		// moveActive = false,
+		moveDir = vec2(randSign(), randSign()),
+		prevMoveDir = vec2(0, 0),
+		// moveStarted = false,
+		// moveFinishedCallback = null,
 	},
 	
 	__construct = function(game, name){
@@ -69,12 +73,13 @@ Entity = extends Actor {
 	},
 	
 	getTileEnt = function(tx, ty){
-		return @game.getTileEnt(tx, ty)
+		var ent = @game.getTileEnt(tx, ty)
+		return ent === this ? null : ent
 	},
 	
 	isTileEmptyToMove = function(tx, ty){
 		var type = @getTileType(tx, ty)
-		return (type == TILE_EMPTY || type == TILE_STAIRS) 
+		return (type == TILE_EMPTY || type == TILE_LADDERS) 
 			&& !@getTileEnt(tx, ty)
 	},
 	
@@ -84,152 +89,200 @@ Entity = extends Actor {
 			&& !@getTileEnt(tx, ty)
 	},
 	
-	moveToSide = function(dx, dy, ease){
-		assert(dx == 1 || dx == -1 || dx == 0)
-		assert(dy == 1 || dy == -1 || dy == 0)
-		if(dx != 0){
-			var tx, ty = @tileX + dx, @tileY
-			if(@moving){
-				if(tx != @prevTileX){
-					@repeatMove++
-					return
-				}else{
-					@repeatMove = 0
-				}
-			}
-			if(@isTileEmptyToMove(tx, ty)
-				// && (dy <= 0 || @getTileType(@tileX, @tileY+1) != TILE_STAIRS)
-				)
+	pushByEnt = function(ev, ent, dx, dy){
+		if(!@moving){
+			@moveDir = vec2(dx, dy)
+			@update(ev)
+			return true
+		}
+	},
+	
+	onMoveFinished = function(){
+		
+	},
+	
+	update = function(ev){
+		var pos = @pos
+		var tileX, tileY = @game.posToTile(pos)
+		var curTileX, curTileY = tileX, tileY
+		var sensorSizeX, sensorSizeY = 0.4, 0.4
+		// var isDestTile = tileX == @tileX && tileY == @tileY
+		var moveDirX, moveDirY = @moveDir.x, @moveDir.y
+		if(moveDirX != 0 || moveDirY != 0) do{
+			@prevMoveDir = @moveDir
+			@moveDir = null
+			@moving = true
+			// print "cur pos tile: ${tileX}, ${tileY}"
+			// print "   dest tile: ${@tileX}, ${@tileY}"
+			// print "  pos: ${pos}, move dir: ${moveDirX}, ${moveDirY}"
+			if(!@moveAnimatedY && moveDirY > sensorSizeY
+				// && @isTileEmptyToMove(tileX, tileY + 1)
+				&& @getTileType(tileX, tileY + 1) == TILE_LADDERS
+				&& !@getTileEnt(tileX, tileY + 1))
 			{
-				var time = 0.3 * @moveSpeed
-				@setTile(tx, ty)
-				@moving = @replaceTweenAction {
-					name = "moving",
-					duration = time,
-					x = @game.tileToCenterPos(tx, ty).x,
-					ease = ease || Ease.LINEAR,
-					doneCallback = function(){
-						@moving = false
-						if(@repeatMove > 0){
-							@repeatMove--
-							@moveToSide(dx, dy, Ease.LINEAR)
-						}
-					}.bind(this),
-				}
-				return
+				// print "move down ladders: ${tileX}, ${tileY + 1}"
+				@setTile(tileX, tileY + 1)
+				break
 			}
-			ty--
-			if(!@falling && !@jumping && !@moving && @isTileEmptyToMove(tx, ty) 
-				&& @isTileEmptyToMove(@tileX, ty)
-				&& (dy <= 0 || @getTileType(@tileX, @tileY+1) != TILE_STAIRS))
-			{
-				/* if(@falling){
-					if(tx != @prevTileX){
-						@repeatMove++
-					}else{
-						@repeatMove = 0
+			if(!@moveAnimatedX && math.abs(moveDirX) > sensorSizeX){
+				var dx = moveDirX < 0 ? -1 : 1
+				/* if(tileX + dx != @prevTileX){ // same side move
+					if(tileX != @tileX){
+						break
 					}
-					return
 				} */
-				var time = 0.3 * @moveSpeed
-				@setTile(tx, ty)
-				var pos = @game.tileToCenterPos(tx, ty)
-				@moving = @replaceTweenAction {
-					name = "moving",
-					duration = time * 1.7,
-					x = pos.x,
-					ease = ease || Ease.LINEAR,
-					doneCallback = function(){
-						@moving = false
-						if(@repeatMove > 0){
-							@repeatMove--
-							@moveToSide(dx, dy, Ease.LINEAR)
-						}
-					}.bind(this),
+				if(@isTileEmptyToMove(tileX + dx, tileY)){
+					// print "side move: ${tileX + dx}, ${tileY}"
+					@setTile(tileX + dx, tileY)
+					break
 				}
-				@jumping = @replaceTweenAction {
-					name = "jumping",
-					duration = time * 1.5,
-					y = pos.y,
-					ease = Ease.BACK_IN_OUT,
-					doneCallback = function(){
-						@jumping = false
-						// callback()
-					}.bind(this),
+				var ent = @getTileEnt(tileX + dx, tileY)
+				if(ent.pushByEnt(ev, this, dx, 0) && @isTileEmptyToMove(tileX + dx, tileY)){
+					@setTile(tileX + dx, tileY)
+					break
 				}
-				return
-			}
-		}
-		if(dy != 0){
-			var tx, ty = @tileX, @tileY + dy
-			if(@moving){
-				if(ty != @prevTileY){
-					@repeatMove++
-					return
-				}else{
-					@repeatMove = 0
-				}
-			}
-			if(@isTileEmptyToMove(tx, ty)){
-				var time = 0.3 * @moveSpeed
-				@setTile(tx, ty)
-				@moving = @replaceTweenAction {
-					name = "moving",
-					duration = time,
-					y = @game.tileToCenterPos(tx, ty).y,
-					ease = ease || Ease.LINEAR,
-					doneCallback = function(){
-						@moving = false
-						if(@repeatMove > 0){
-							@repeatMove--
-							@moveToSide(dx, dy, Ease.LINEAR)
-						}
-					}.bind(this),
-				}
-				return
-			}
-		}
-	},
-	
-	startFalling = function(){
-		DEBUG && assert(@canFalling())
-		@falling = true
-		var time, fallTiles = 0.3 * @moveSpeed, 0
-		var fall = function(ease){
-			var tx, ty = @tileX, @tileY + 1
-			@setTile(tx, ty)
-			@replaceTweenAction {
-				name = "falling",
-				duration = time,
-				y = @game.tileToCenterPos(tx, ty).y,
-				ease = ease,
-				doneCallback = function(){
-					fallTiles++
-					if(@isTileEmptyToFall(@tileX, @tileY + 1)){
-						time = math.max(0.3 * @moveSpeed * 0.5, time * 0.8)
-						fall(Ease.LINEAR)					
-					}else{
-						@falling = false
+				if((@getTileType(tileX, tileY + 1) != TILE_EMPTY || @getTileEnt(tileX, tileY + 1))
+					&& @isTileEmptyToMove(tileX, tileY - 1)
+					&& @isTileEmptyToMove(tileX + dx, tileY - 1))
+				{	// side jump
+					// print "side jump move: ${tileX + dx}, ${tileY - 1}"
+					@setTile(tileX + dx, tileY - 1)
+					var time = 0.3 * @moveSpeed
+					var pos = @game.tileToCenterPos(tileX + dx, tileY - 1)
+					
+					@moveAnimatedX = @addTweenAction {
+						// name = "moving",
+						duration = time * 1.7,
+						x = pos.x,
+						// ease = Ease.QUAD_IN,
+						doneCallback = function(){ @moveAnimatedX = false }.bind(this),
 					}
-				}.bind(this),
+					@moveAnimatedY = @addTweenAction {
+						// name = "jumping",
+						duration = time * 1.5,
+						y = pos.y,
+						ease = Ease.BACK_IN_OUT,
+						doneCallback = function(){ @moveAnimatedY = false }.bind(this),
+					}
+					return
+				}
+				if(@game.player === this)
+				switch(@game.inventary.mode){
+				case "pick":
+					@game.pickTile(tileX + dx, tileY)
+					break
+					
+				default:
+				case "move":
+					break
+					
+				case "ladders":
+					break
+					
+				case "attack":
+					break
+				}
 			}
-		}.bind(this)
-		fall(Ease.LINEAR) // CUBIC_IN)
-	},
-	
-	jump = function(callback){
-	},
-	
-	canFalling = function(){
-		return !@jumping && !@falling 
-			&& @isTileEmptyToFall(@tileX, @tileY + 1)
-			&& @getTileType(@tileX, @tileY) != TILE_STAIRS
-	},
-	
-	update = function(){
-		if(@canFalling()){
-			@startFalling()
-			return
+			if(!@moveAnimatedY && math.abs(moveDirY) > sensorSizeY){
+				var dy = moveDirY < 0 ? -1 : 1
+				var empty = @isTileEmptyToMove(tileX, tileY + dy)
+				if(!empty){
+					var ent = @getTileEnt(tileX, tileY + dy)
+					if(ent.pushByEnt(ev, this, 0, dy)){
+						empty = @isTileEmptyToMove(tileX, tileY + dy)
+					}
+				}
+				if(empty){
+					if(dy < 0){
+						var upTileType = @getTileType(tileX, tileY - 1)
+						var curTileType = @getTileType(tileX, tileY)
+						var downTileType = @getTileType(tileX, tileY + 1)
+						// print "tiles ${tileX}x${tileY}, up-down: ${upTileType}, ${curTileType}, ${downTileType}"
+						if(curTileType == TILE_EMPTY && upTileType == TILE_EMPTY 
+							&& (downTileType != TILE_EMPTY || @getTileEnt(tileX, tileY + 1)))
+						{
+							@setTile(tileX, tileY - 1)
+							var time = 0.3 * @moveSpeed
+							var pos = @game.tileToCenterPos(tileX, tileY - 1)
+							@moveAnimatedY = @addTweenAction {
+								// name = "jumping",
+								duration = time * 1.5,
+								y = pos.y,
+								ease = Ease.BACK_IN_OUT,
+								doneCallback = function(){ @moveAnimatedY = false }.bind(this),
+							}
+							return
+						}
+						if(curTileType == TILE_EMPTY && upTileType != TILE_LADDERS){
+							// print "#1 curTileType == TILE_EMPTY && upTileType != TILE_LADDERS"
+							break
+						}
+						// print "#3 no"
+					}
+					// print "vert move: ${tileX}, ${tileY + dy}"
+					@setTile(tileX, tileY + dy)
+					break
+				}
+				if(@game.player === this)
+				switch(@game.inventary.mode){
+				case "pick":
+					@game.pickTile(tileX, tileY + dy)
+					break
+					
+				default:
+				case "move":
+					break
+					
+				case "ladders":
+					break
+					
+				case "attack":
+					break
+				}
+			}
+		}while(false)
+		
+		var tileX, tileY = @tileX, @tileY
+		if(!@moveAnimatedY && tileY == curTileY 
+			&& @isTileEmptyToFall(tileX, tileY + 1)
+			&& @getTileType(tileX, tileY) != TILE_LADDERS)
+		{
+			// print "falling move: ${tileX}, ${tileY + 1}"
+			@setTile(tileX, ++tileY)
+			@moving = true
+		}
+		
+		if(@moving){
+			var dest = @game.tileToCenterPos(tileX, tileY)
+			var offs = dest - pos
+			var len = #offs
+			if(len > 0){
+				var speed = TILE_SIZE / (0.3 * @moveSpeed)
+				var moveOffs = speed * ev.dt
+				if(moveOffs >= len){
+					// prevent float number accuracy
+					if(!@moveAnimatedX){
+						@x = dest.x
+					}
+					if(!@moveAnimatedY){
+						@y = dest.y
+					}
+				}else{
+					var offsScale = moveOffs / len
+					if(!@moveAnimatedX){
+						@x += offs.x * offsScale
+					}
+					if(!@moveAnimatedY){
+						@y += offs.y * offsScale
+					}
+				}
+			}
+			if(!@moveAnimatedX && !@moveAnimatedY){
+				if(@x == dest.x && @y == dest.y){
+					@moving = false
+					@onMoveFinished()
+				}
+			}
 		}
 	},
 	

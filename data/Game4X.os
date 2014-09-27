@@ -3,6 +3,7 @@ Game4X = extends BaseGame4X {
 		time = 0,
 		tiles = {},
 		tileEnt = {},
+		tileCracks = {},
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
@@ -42,21 +43,84 @@ Game4X = extends BaseGame4X {
 		}
 		@lightMask = LightMask().attrs {
 			pos = @centerViewPos,
-			scale = 6.0,
+			scale = 5.0,
 			priority = 10,
 			parent = this,
 		}
 		@lightMask.updateDark()
-		
 		if(false)
 			@lightMask.animateLight(2.5, 2, function(){
 				@lightMask.animateLight(0.5, 20, function(){
 					print "ligth off"			
 				}.bind(this))
 			}.bind(this))
-		else
+		else if(false)
 			@lightMask.animateLight(2.5)
 		
+		@inventary = Sprite().attrs {
+			resAnim = res.get("inv_pick"),
+			pivot = vec2(1, 1),
+			pos = @size,
+			opacity = 0.5,
+			priority = 15,
+			parent = this,
+			mode = "pick",
+		}
+		
+		@moveJoystick = Joystick().attrs {
+			priority = 20,
+			parent = this,
+			pivot = vec2(-0.25, 1.25),
+			pos = vec2(0, @height),
+		}
+		@keyPressed = {}
+		if(PLATFORM == "windows"){
+			var moveJoystickActivated = false
+			var keyboardEvent = function(ev){
+				var pressed = ev.type == KeyboardEvent.DOWN
+				if(ev.scancode == KeyboardEvent.SCANCODE_LEFT || ev.scancode == KeyboardEvent.SCANCODE_A){
+					@keyPressed.left = pressed
+				}
+				if(ev.scancode == KeyboardEvent.SCANCODE_RIGHT || ev.scancode == KeyboardEvent.SCANCODE_D){
+					@keyPressed.right = pressed
+				}
+				if(ev.scancode == KeyboardEvent.SCANCODE_UP || ev.scancode == KeyboardEvent.SCANCODE_W){
+					@keyPressed.up = pressed
+				}
+				if(ev.scancode == KeyboardEvent.SCANCODE_DOWN || ev.scancode == KeyboardEvent.SCANCODE_S){
+					@keyPressed.down = pressed
+				}
+				var dx, dy = 0, 0
+				if(@keyPressed.left) dx--
+				if(@keyPressed.right) dx++
+				if(@keyPressed.up) dy--
+				if(@keyPressed.down) dy++
+				if(dx != 0 || dy != 0){
+					var dir = vec2(dx, dy).normalizeTo(@moveJoystick.maxLen)
+					if(!moveJoystickActivated){
+						moveJoystickActivated = true
+						@moveJoystick.dispatchEvent {
+							type = TouchEvent.START,
+							localPosition = @moveJoystick.size/2 + dir
+						}
+					}else{
+						@moveJoystick.dispatchEvent {
+							type = TouchEvent.MOVE,
+							localPosition = @moveJoystick.size/2 + dir
+						}
+					}
+				}else if(moveJoystickActivated){
+					moveJoystickActivated = false
+					@moveJoystick.dispatchEvent {
+						type = TouchEvent.END,
+						localPosition = @moveJoystick.size/2
+					}
+				}
+			}.bind(this)
+			stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
+			stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
+		}
+
 		@initMap("testmap")
 		
 		@addUpdate(@update.bind(this))
@@ -81,24 +145,35 @@ Game4X = extends BaseGame4X {
 		
 		@addEventListener(TouchEvent.CLICK, function(ev){
 			if(ev.target is Tile){
-				// print "tile clicked: ${ev.target.tileX}, ${ev.target.tileY}"
-				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
+				switch(@inventary.mode){
+				case "pick":
+					@pickTile(ev.target.tileX, ev.target.tileY, true)
+					break
+					
+				default:
+				case "move":
+					break
+					
+				case "ladders":
+					break
+					
+				case "attack":
+					break
+				}
 				return
 			}
 			if(ev.target is Monster){
 				// print "monster clicked: ${ev.target.name}"
-				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
 				return
 			}
 			if(ev.target is Player){
 				// print "player clicked: ${ev.target.name}"
-				@movePlayerToTile(ev.target.tileX, ev.target.tileY)
 				return
 			}
-			print "unknown clicked: ${ev.localPos}"
+			print "unknown clicked: ${ev.localPosition}"
 			
 			// var pos = @toLocalPos(@player)
-			// var touch = ev.localPos
+			// var touch = ev.localPosition
 		}.bind(this))
 		
 		if(false){
@@ -244,19 +319,6 @@ Game4X = extends BaseGame4X {
 		} // if(false)
 	},
 
-	movePlayerToTile = function(tx, ty){
-		var px, py = @player.tileX, @player.tileY
-		var dx = tx > px ? 1 : tx < px ? -1 : 0
-		var dy = ty > py ? 1 : ty < py ? -1 : 0
-		if(dx == 0 && dy == 0 && (@player.moving || @player.jumping || @following)){
-			var dx = px - @player.prevTileX
-			var dy = py - @player.prevTileY
-			print "player auto continue move: ${dx}, ${dy}"
-			// @movePlayerToTile(@player.tileX + dx, @player.tileY + dy)
-		}
-		@player.moveToSide(dx, dy)
-	},
-	
 	toLocalPos = function(child, pos){
 		pos || pos = vec2(0, 0)
 		for(var cur = child; cur && cur !== this;){
@@ -275,12 +337,14 @@ Game4X = extends BaseGame4X {
 	},
 	
 	setEntTile = function(ent, tx, ty){
-		var key = "${ent.tileX}-${ent.tileY}"
-		DEBUG && assert(@tileEnt[key] === ent, "tile busy at ${ent.tileX}x${ent.tileY} by ${@tileEnt[key].tileX}x${@tileEnt[key].tileY}")
-		delete @tileEnt[key]
-		ent.prevTileX, ent.prevTileY = ent.tileX, ent.tileY
-		ent.tileX, ent.tileY = tx, ty
-		@tileEnt["${tx}-${ty}"] = ent
+		if(ent.tileX != tx || ent.tileY != ty){
+			var key = "${ent.tileX}-${ent.tileY}"
+			DEBUG && assert(@tileEnt[key] === ent, "tile busy at ${ent.tileX}x${ent.tileY} by ${@tileEnt[key].tileX}x${@tileEnt[key].tileY}")
+			delete @tileEnt[key]
+			ent.prevTileX, ent.prevTileY = ent.tileX, ent.tileY
+			ent.tileX, ent.tileY = tx, ty
+			@tileEnt["${tx}-${ty}"] = ent
+		}
 	},
 	
 	unsetEntTile = function(ent){
@@ -292,6 +356,74 @@ Game4X = extends BaseGame4X {
 	
 	getTileEnt = function(tx, ty){
 		return @tileEnt["${tx}-${ty}"]
+	},
+	
+	tileStrengthInfo = {
+		[TILE_GRASS] = {
+			strength = 3,
+		},
+		[TILE_CHERNOZEM] = {
+			strength = 6,
+			// damageDelay = 0.1,
+		},
+		/* [TILE_LADDERS] = {
+			strength = 0,
+		}, */
+	},
+	
+	pickTile = function(tx, ty, byTouch){
+		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
+			return
+		}
+		var type = @getTileType(tx, ty)
+		var info = @tileStrengthInfo[type]
+		if(!info){
+			return
+		}
+		var key = "${tx}-${ty}"
+		var crack = @tileCracks[key] || @{
+			var pos = @tileToCenterPos(tx, ty)
+			var crack = Sprite().attrs {
+				resAnim = res.get("crack"),
+				pivot = vec2(0.5, 0.5),
+				pos = pos,
+				opacity = 0.9,
+				priority = ty * @tiledmapWidth + tx,
+				// tileX = tx,
+				// tileY = ty,
+				// tileType = type,
+				touchEnabled = false,
+				parent = @layers[LAYER_DECALS],
+				damageDelay = info.damageDelay || 0.3,
+				strength = info.strength || 3,
+				damage = -1,				
+				nextDamageTime = 0,
+			}
+			if(@player.tileX > tx){
+				crack.angle = 0
+			}else if(@player.tileX < tx){
+				crack.angle = 90*2
+			}else if(@player.tileY > ty){
+				crack.angle = 90*1
+			}else if(@player.tileY < ty){
+				crack.angle = 90*3
+			}
+			crack.scaleY = math.random() < 0.5 ? -1 : 1
+			@tileCracks[key] = crack
+			return crack
+		}
+		if(byTouch || crack.nextDamageTime <= @time){
+			if(++crack.damage >= crack.strength-1){
+				@setTileType(tx, ty, TILE_EMPTY)
+				@deleteTile(tx, ty)
+				delete @tileCracks[key]
+				crack.detach()
+				return true
+			}
+			crack.nextDamageTime = @time + crack.damageDelay
+		}
+		crack.resAnimFrameNum = crack.damage * crack.resAnim.totalFrames / (crack.strength-1)
+		return true
 	},
 	
 	/* getEntitiesInArea = function(ax, ay, bx, by, ignoreEnt){
@@ -320,7 +452,7 @@ Game4X = extends BaseGame4X {
 	},
 	
 	getTile = function(x, y){
-		return @tiles[x][y]
+		return @tiles["${x}-${y}"]
 	},
 	
 	updateTiledmapViewport = function(ax, ay, bx, by){
@@ -342,8 +474,13 @@ Game4X = extends BaseGame4X {
 						var tileName = sprintf("tile-%02d", math.round(@getTileRandom(x, y, 2, 4)));
 						break;
 						
-					case TILE_STAIRS:
-						var tileName = "tile-05";
+					case TILE_BLOCK:
+					case TILE_STONE:
+						var tileName = sprintf("tile-%02d", math.round(@getTileRandom(x, y, 5, 7)));
+						break;
+						
+					case TILE_LADDERS:
+						var tileName = "tile-ladders";
 						break;
 					}
 					// print "create tile ${x}x${y}, type: ${type}, name: ${tileName}"
@@ -358,7 +495,7 @@ Game4X = extends BaseGame4X {
 						tileType = type,
 						parent = @layers[LAYER_TILES],
 					}
-					;(@tiles[tile.tileX] || @tiles[tile.tileX] = {})[tile.tileY] = tile
+					@tiles["${x}-${y}"] = tile
 				}
 				tile.time = @time
 			}
@@ -400,10 +537,19 @@ Game4X = extends BaseGame4X {
 		throw "unknown entity tilemap type: ${type}"
 	},
 	
+	deleteTile = function(tx, ty){
+		var key = "${tx}-${ty}"
+		var tile = @tiles[key]
+		if(tile){
+			delete @tiles[key]
+			tile.detach()
+		}
+	},
+	
 	markTileVisibility = function(tile, visible){
 		if(!visible){
 			// print "DELETE tile ${tile.tileX}x${tile.tileY}, type: ${tile.tileType}, name: ${tile.resAnim.name}"
-			delete @tiles[tile.tileX][tile.tileY]
+			delete @tiles["${tile.tileX}-${tile.tileY}"]
 			tile.detach()
 		}
 	},
@@ -420,15 +566,14 @@ Game4X = extends BaseGame4X {
 	
 	followPlayer = function(){
 		// if(!@following){
-			var tx, ty = @player.tileX, @player.tileY
+			var tx, ty = @posToTile(@player.pos) // @player.tileX, @player.tileY
 			if(@followTileX != tx || @followTileY != ty){
 				@followTileX, @followTileY = tx, ty
 				var pos = -(@tileToCenterPos(tx, ty) - @centerViewPos / @view.scale) * @view.scale
 				@following = @view.replaceTweenAction {
 					name = "following",
-					duration = 0.7,
+					duration = 0.6,
 					pos = pos,
-					ease = Ease.LINEAR,
 					doneCallback = function(){
 						@following = false
 					}.bind(this),
@@ -459,6 +604,10 @@ Game4X = extends BaseGame4X {
 		return math.ceil(pos.x / TILE_SIZE), math.ceil(pos.y / TILE_SIZE)
 	},
 	
+	posToRoundTile = function(pos){
+		return math.round(pos.x / TILE_SIZE), math.round(pos.y / TILE_SIZE)
+	},
+	
 	updateView = function(){
 		var offs = -@view.pos / @view.scale
 		var startX, startY = @posToTile(offs)
@@ -483,10 +632,17 @@ Game4X = extends BaseGame4X {
 	
 	update = function(ev){
 		@time = ev.time
+		if(@moveJoystick.active){
+			@player.moveActive = true
+			@player.moveDir = @moveJoystick.dir
+		}else{
+			@player.moveActive = false
+		}
+		// @player.update(ev)
 		@followPlayer()
 		for(var i, layer in @layers){
 			for(var _, obj in layer){
-				"update" in obj && obj.update()
+				"update" in obj && obj.update(ev)
 			}
 		}
 	},

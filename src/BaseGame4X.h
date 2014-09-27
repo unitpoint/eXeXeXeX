@@ -11,16 +11,17 @@ enum ETile
 	TILE_EMPTY,
 	TILE_GRASS,
 	TILE_CHERNOZEM,
-	TILE_STAIRS,
+	TILE_STONE,
+	TILE_LADDERS,
 	TILE_BLOCK,
 };
 
 enum ELayer
 {
 	LAYER_TILES,
+	LAYER_DECALS,
 	LAYER_MONSTERS,
 	LAYER_PLAYER,
-	// LAYER_LIGHT_DARK,
 	LAYER_COUNT
 };
 
@@ -62,7 +63,9 @@ public:
 	void initMap(const char * name);
 
 	float getTileRandom(int x, int y);
+
 	ETile getTileType(int x, int y);
+	void setTileType(int x, int y, ETile type);
 
 	// Vector2 tileToCenterPos(int x, int y);
 	// Vector2 tileToPos(int x, int y);
@@ -71,7 +74,10 @@ public:
 protected:
 
 	const Tiledmap * tiledmap;
+	ETile * map;
 	spActor view;
+
+	std::map<int, bool> destroyedTiles;
 
 	// Vector2 oldViewPos;
 };

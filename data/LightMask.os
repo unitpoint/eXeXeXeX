@@ -23,7 +23,7 @@ LightMask = extends Actor {
 		}
 		@fillElements = []
 		for(var i = 0; i < 4; i++){
-			var elem = ColorRectSprite().attrs {
+			var elem = Sprite().attrs {
 				resAnim = fill,
 				pos = vec2(0, 0),
 				pivot = vec2(0, 0),

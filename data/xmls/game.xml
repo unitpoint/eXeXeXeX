@@ -6,6 +6,12 @@
 		<image file="screen-blood-scratch.png" />
 		<image file="screen-blood-breaks-01.png" />
 		<image file="screen-blood-breaks-02.png" />
+		<image file="crack.png" cols="5" />
+		<image file="pick.png" />
+		<image file="inv_pick.png" />
+		
+		<image file="joystick.png" />
+		<image file="finger.png" />
 		
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />
@@ -21,6 +27,9 @@
 		<image file="tile-03.png" />
 		<image file="tile-04.png" />
 		<image file="tile-05.png" />
+		<image file="tile-06.png" />
+		<image file="tile-07.png" />
+		<image file="tile-ladders.png" />
 	</atlas>
 
 	<set path = "../data_debug/fonts/" />

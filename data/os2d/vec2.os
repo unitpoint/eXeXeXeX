@@ -106,4 +106,21 @@ vec2 = extends Object {
 		b = numberOf(b) || throw "number or vec2 required"
 		return vec2(@x / b, @y / b)
 	},
+	
+	__get = function(i){
+		if(typeOf(i) === "number"){
+			i |= 0 // fast way to convert to int
+			return i == 0 ? @x : i == 1 ? @y : throw "error index ${i}, 0 or 1 required"
+		}
+		throw "property \"${i}\" not found in ${@__name || @classname}"
+	},
+	
+	__set = function(i, value){
+		if(typeOf(i) === "number"){
+			i |= 0 // fast way to convert to int
+			i == 0 ? @x = value : i == 1 ? @y = value : throw "error index ${i}, 0 or 1 required"
+			return
+		}
+		super(i, value)
+	},
 }
