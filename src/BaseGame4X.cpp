@@ -198,21 +198,19 @@ void BaseGame4X::initMap(const char * _name)
 		view->setSize(Vector2(tiledmap->size.width * TILE_SIZE, tiledmap->size.height * TILE_SIZE));
 
 		pushCtypeValue(os, this);
-		pushCtypeValue(os, (char*)"tiledmapWidth");
 		pushCtypeValue(os, tiledmap->size.width);
-		os->setProperty();
+		os->setProperty("tiledmapWidth");
 		
 		pushCtypeValue(os, this);
-		pushCtypeValue(os, (char*)"tiledmapHeight");
 		pushCtypeValue(os, tiledmap->size.height);
-		os->setProperty();
+		os->setProperty("tiledmapHeight");
 		
 		// oldViewPos = view->getPosition() + Vector2(100, 100);
 		// view->setPosition(-tileToPos(43, 14));
 
 		for(int i = 0; i < tiledmap->numEntities; i++){
 			pushCtypeValue(os, this);
-			os->getProperty(-1, "addTilemapEntity");
+			os->getProperty(-1, "addTiledmapEntity");
 			OX_ASSERT(os->isFunction());
 			pushCtypeValue(os, tiledmap->entities[i].x);
 			pushCtypeValue(os, tiledmap->entities[i].y);

@@ -415,7 +415,7 @@ Game4X = extends BaseGame4X {
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
 				@setTileType(tx, ty, TILE_EMPTY)
-				@deleteTile(tx, ty)
+				@removeTile(tx, ty)
 				delete @tileCracks[key]
 				crack.detach()
 				return true
@@ -512,7 +512,7 @@ Game4X = extends BaseGame4X {
 		9: 2,
 	},
 	
-	addTilemapEntity = function(x, y, type){
+	addTiledmapEntity = function(x, y, type){
 		if(type in @tiledmapMonsterMap){
 			var name = sprintf("monster-%02d", @tiledmapMonsterMap[type])
 			var monster = Monster(this, name).attrs {
@@ -537,7 +537,7 @@ Game4X = extends BaseGame4X {
 		throw "unknown entity tilemap type: ${type}"
 	},
 	
-	deleteTile = function(tx, ty){
+	removeTile = function(tx, ty){
 		var key = "${tx}-${ty}"
 		var tile = @tiles[key]
 		if(tile){
@@ -633,10 +633,9 @@ Game4X = extends BaseGame4X {
 	update = function(ev){
 		@time = ev.time
 		if(@moveJoystick.active){
-			@player.moveActive = true
 			@player.moveDir = @moveJoystick.dir
 		}else{
-			@player.moveActive = false
+			@player.moveDir = vec2(0, 0)
 		}
 		// @player.update(ev)
 		@followPlayer()
