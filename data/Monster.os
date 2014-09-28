@@ -1,6 +1,7 @@
 Monster = extends Entity {
 	__construct = function(game, name){
 		super(game, name)
+		@parent = game.layers[LAYER_MONSTERS]
 		@aiQueryTime = 0
 		@aiNextTime = null
 		@nextMoveDir = null
@@ -20,7 +21,7 @@ Monster = extends Entity {
 				return
 			}
 		}
-		@getTileType(@tileX, @tileY + 1) == TILE_EMPTY && return;
+		@getTileType(@tileX, @tileY + 1) == TILE_TYPE_EMPTY && return;
 		
 		@patrolArea = {
 			start = vec2(@tileX, @tileY - 2),
@@ -34,13 +35,13 @@ Monster = extends Entity {
 			for(var side = 0; side < 2; side++){
 				if(!sideLocked[side]){
 					var tx, ty = @tileX + (side == 0 ? -i : i), @tileY
-					if(@getTileType(tx, ty) == TILE_EMPTY
-						&& @getTileType(tx, ty + 1) == TILE_EMPTY
-						&& @getTileType(tx, ty + 2) == TILE_EMPTY)
+					if(@getTileType(tx, ty) == TILE_TYPE_EMPTY
+						&& @getTileType(tx, ty + 1) == TILE_TYPE_EMPTY
+						&& @getTileType(tx, ty + 2) == TILE_TYPE_EMPTY)
 					{
 						sideLocked[side] = true
-					}else if(@getTileType(tx, ty) != TILE_EMPTY
-						&& @getTileType(tx, ty - 1) != TILE_EMPTY)
+					}else if(@getTileType(tx, ty) != TILE_TYPE_EMPTY
+						&& @getTileType(tx, ty - 1) != TILE_TYPE_EMPTY)
 					{
 						sideLocked[side] = true
 					}else if(side == 0){
@@ -80,7 +81,7 @@ Monster = extends Entity {
 				var px, py = @game.player.tileX, @game.player.tileY
 				var dx = px > @tileX ? 1 : px < @tileX ? -1 : -@prevMoveDir.x
 				var dy = py > @tileY ? 1 : py < @tileY ? -1 : 0
-				/* if(dy != 0 && @getTileType(@tileX, @tileY + dy) == TILE_EMPTY){
+				/* if(dy != 0 && @getTileType(@tileX, @tileY + dy) == TILE_TYPE_EMPTY){
 					dx = 0
 				} */
 				@nextMoveDir = vec2(dx, dy)

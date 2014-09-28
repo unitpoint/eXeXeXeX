@@ -6,7 +6,9 @@
 
 using namespace ObjectScript;
 
-enum ETile
+#define TILE_TYPE_BLOCK 255
+/*
+enum TileType
 {
 	TILE_EMPTY,
 	TILE_GRASS,
@@ -14,6 +16,25 @@ enum ETile
 	TILE_STONE,
 	TILE_LADDERS,
 	TILE_BLOCK,
+};
+
+enum EFossil
+{
+	TILE_ITEM_EMPTY,
+	TILE_ITEM_GOLD,
+	TILE_ITEM_AMBER,
+	TILE_ITEM_EMERALD,
+	TILE_ITEM_APATITE,
+};
+*/
+
+typedef OS_BYTE TileType;
+typedef OS_BYTE ItemType;
+
+struct Tile
+{
+	TileType tile;
+	ItemType item;
 };
 
 enum ELayer
@@ -31,18 +52,19 @@ struct Tiledmap
 {
 	struct Size
 	{
-		unsigned char width, height;
+		int width, height;
 	};
 
 	struct Entity
 	{
-		unsigned char x, y, type;
+		int x, y, type;
 	};
 
 	const Size size;
 	const Entity * entities;
 	const int numEntities;
-	const unsigned char * map;
+	const OS_BYTE * items;
+	const OS_BYTE * tiles;
 };
 
 // OS2D * getOS();
@@ -64,8 +86,11 @@ public:
 
 	float getTileRandom(int x, int y);
 
-	ETile getTileType(int x, int y);
-	void setTileType(int x, int y, ETile type);
+	TileType getTileType(int x, int y);
+	void setTileType(int x, int y, TileType type);
+
+	ItemType getItemType(int x, int y);
+	void setItemType(int x, int y, ItemType type);
 
 	// Vector2 tileToCenterPos(int x, int y);
 	// Vector2 tileToPos(int x, int y);
@@ -73,18 +98,15 @@ public:
 
 protected:
 
-	const Tiledmap * tiledmap;
-	ETile * map;
-	spActor view;
-
-	std::map<int, bool> destroyedTiles;
-
-	// Vector2 oldViewPos;
+	Tile * tiles;
+	int tiledmapWidth;	// in tiles
+	int tiledmapHeight;	// in tiles
 };
 
 namespace ObjectScript {
 
-OS_DECL_CTYPE_ENUM(ETile);
+// OS_DECL_CTYPE_ENUM(TileType);
+// OS_DECL_CTYPE_ENUM(TileType);
 
 OS_DECL_OX_CLASS(BaseGame4X);
 

@@ -1,6 +1,6 @@
 #include "BaseGame4X.h"
 #include "RandomValue.h"
-#include "level_testmap.inc"
+#include "level_testmap.inc.h"
 
 namespace ObjectScript
 {
@@ -18,13 +18,7 @@ static void registerGlobals(OS * os)
 
 	OS::NumberDef nums[] = {
 		DEF_CONST(TILE_SIZE),
-		// tile types
-		DEF_CONST(TILE_EMPTY),
-		DEF_CONST(TILE_GRASS),
-		DEF_CONST(TILE_CHERNOZEM),
-		DEF_CONST(TILE_STONE),
-		DEF_CONST(TILE_LADDERS),
-		DEF_CONST(TILE_BLOCK),
+		DEF_CONST(TILE_TYPE_BLOCK),
 		// layres
 		DEF_CONST(LAYER_TILES),
 		DEF_CONST(LAYER_MONSTERS),
@@ -73,6 +67,8 @@ static void registerBaseGame4X(OS * os)
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getTileType", &BaseGame4X::getTileType),
 		def("setTileType", &BaseGame4X::setTileType),
+		def("getItemType", &BaseGame4X::getItemType),
+		def("setItemType", &BaseGame4X::setItemType),
 		// def("tileToCenterPos", &BaseGame4X::tileToCenterPos),
 		// def("tileToPos", &BaseGame4X::tileToPos),
 		// {"posToTile", &Lib::posToTile},
@@ -108,13 +104,14 @@ Actor * getOSChild(Actor * actor, const char * name)
 
 BaseGame4X::BaseGame4X()
 {
-	tiledmap = NULL;
-	map = NULL;
+	tiles = NULL;
+	tiledmapWidth = 0;
+	tiledmapHeight = 0;
 }
 
 BaseGame4X::~BaseGame4X()
 {
-	delete [] map;
+	delete [] tiles;
 }
 
 Actor * BaseGame4X::getOSChild(const char * name)
@@ -136,22 +133,41 @@ float BaseGame4X::getTileRandom(int x, int y)
 #endif
 }
 
-ETile BaseGame4X::getTileType(int x, int y)
+TileType BaseGame4X::getTileType(int x, int y)
 {
-	if(x >= 0 && x < tiledmap->size.width
-		&& y >= 0 && y < tiledmap->size.height)
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
 	{
-		return map[y * tiledmap->size.width + x];
+		return tiles[y * tiledmapWidth + x].tile;
 	}
-	return TILE_BLOCK;
+	return TILE_TYPE_BLOCK;
 }
 
-void BaseGame4X::setTileType(int x, int y, ETile type)
+void BaseGame4X::setTileType(int x, int y, TileType type)
 {
-	if(x >= 0 && x < tiledmap->size.width
-		&& y >= 0 && y < tiledmap->size.height)
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
 	{
-		map[y * tiledmap->size.width + x] = type;
+		tiles[y * tiledmapWidth + x].tile = type;
+	}
+}
+
+ItemType BaseGame4X::getItemType(int x, int y)
+{
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
+	{
+		return tiles[y * tiledmapWidth + x].item;
+	}
+	return 0;
+}
+
+void BaseGame4X::setItemType(int x, int y, ItemType type)
+{
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
+	{
+		tiles[y * tiledmapWidth + x].item = type;
 	}
 }
 
@@ -177,37 +193,50 @@ void BaseGame4X::initMap(const char * _name)
 {
 	std::string name = _name;
 	if(name == "testmap"){
-		view = getOSChild("view"); OX_ASSERT(view);
-		
-		tiledmap = &testmapTiledmap;
-
-		int count = tiledmap->size.width * tiledmap->size.height;
-		map = new ETile[count];
+		OX_ASSERT(!tiles);
+		const Tiledmap * tiledmap = &testmapTiledmap;
+		tiledmapWidth = tiledmap->size.width;
+		tiledmapHeight = tiledmap->size.height;
+		int count = tiledmapWidth * tiledmapHeight;
+		tiles = new Tile[count];
+		std::map<TileType, bool> usedTiles;
+		std::map<ItemType, bool> usedItems;
 		for(int i = 0; i < count; i++){
-			switch(tiledmap->map[i]){
-			case 255:	map[i] = TILE_EMPTY; break;
-			case 0:		map[i] = TILE_GRASS; break;
-			case 8:		map[i] = TILE_CHERNOZEM; break;
-			case 9:		map[i] = TILE_STONE; break;
-			case 16:	map[i] = TILE_LADDERS; break;
-			default:
-				OX_ASSERT(false);
-			}
+			tiles[i].tile = tiledmap->tiles[i];
+			tiles[i].item = tiledmap->items[i];
+			usedTiles[tiles[i].tile] = true;
+			usedItems[tiles[i].item] = true;
+		}
+		std::map<ItemType, bool>::iterator it = usedTiles.begin();
+		for(; it != usedTiles.end(); ++it){
+			pushCtypeValue(os, this);
+			os->getProperty(-1, "touchTileRes");
+			OX_ASSERT(os->isFunction());
+			pushCtypeValue(os, it->first);
+			os->callTF(1);
+		}
+		it = usedItems.begin();
+		for(; it != usedItems.end(); ++it){
+			pushCtypeValue(os, this);
+			os->getProperty(-1, "touchItemRes");
+			OX_ASSERT(os->isFunction());
+			pushCtypeValue(os, it->first);
+			os->callTF(1);
 		}
 
-		view->setSize(Vector2(tiledmap->size.width * TILE_SIZE, tiledmap->size.height * TILE_SIZE));
+		spActor view = getOSChild("view"); OX_ASSERT(view);
+		view->setSize(Vector2(tiledmapWidth * TILE_SIZE, tiledmapHeight * TILE_SIZE));
 
 		pushCtypeValue(os, this);
-		pushCtypeValue(os, tiledmap->size.width);
+		pushCtypeValue(os, tiledmapWidth);
 		os->setProperty("tiledmapWidth");
 		
 		pushCtypeValue(os, this);
-		pushCtypeValue(os, tiledmap->size.height);
+		pushCtypeValue(os, tiledmapHeight);
 		os->setProperty("tiledmapHeight");
 		
 		// oldViewPos = view->getPosition() + Vector2(100, 100);
 		// view->setPosition(-tileToPos(43, 14));
-
 		for(int i = 0; i < tiledmap->numEntities; i++){
 			pushCtypeValue(os, this);
 			os->getProperty(-1, "addTiledmapEntity");

@@ -16,20 +16,35 @@
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />
 		
-		<image file="player-01.png" />
-		<image file="monster-01.png" />
-		<image file="monster-02.png" />
-		<image file="monster-03.png" />
-		
-		<image file="tile-00.png" />
-		<image file="tile-01.png" />
-		<image file="tile-02.png" />
-		<image file="tile-03.png" />
-		<image file="tile-04.png" />
-		<image file="tile-05.png" />
-		<image file="tile-06.png" />
-		<image file="tile-07.png" />
-		<image file="tile-ladders.png" />
+		<!-- begin auto generated assets -->
+		<image file="ent-001.png" />
+		<image file="ent-008.png" />
+		<image file="ent-009.png" />
+		<image file="ent-010.png" />
+		<image file="item-001.png" />
+		<image file="item-002.png" />
+		<image file="item-003.png" />
+		<image file="item-004.png" />
+		<image file="item-005.png" />
+		<image file="item-006.png" />
+		<image file="item-007.png" />
+		<image file="item-008.png" />
+		<image file="item-009.png" />
+		<image file="item-010-01.png" />
+		<image file="item-010-02.png" />
+		<image file="tile-000.png" />
+		<image file="tile-001.png" />
+		<image file="tile-002-01.png" />
+		<image file="tile-002-02.png" />
+		<image file="tile-003.png" />
+		<image file="tile-008-01.png" />
+		<image file="tile-008-02.png" />
+		<image file="tile-008-03.png" />
+		<image file="tile-009-01.png" />
+		<image file="tile-009-02.png" />
+		<image file="tile-009-03.png" />
+		<image file="tile-016.png" />
+		<!-- end auto generated assets -->
 	</atlas>
 
 	<set path = "../data_debug/fonts/" />

@@ -1,6 +1,7 @@
 Player = extends Entity {
 	__construct = function(game, name){
 		super(game, name)
+		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
 		
 		@addUpdate(0.3, @updatePlayerSector.bind(this))

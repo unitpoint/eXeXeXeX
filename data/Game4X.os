@@ -1,3 +1,36 @@
+TILE_TYPE_EMPTY = 0
+TILE_ITEM_EMPTY = 0
+
+TILE_TYPE_GRASS = 1
+TILE_TYPE_CHERNOZEM = 8
+TILE_TYPE_LADDERS = 16
+
+TILES_INFO = {
+	[TILE_TYPE_GRASS] = {
+		strength = 3,
+	},
+	[TILE_TYPE_CHERNOZEM] = {
+		variants = 3,
+		strength = 6,
+		// damageDelay = 0.1,
+	},
+	/* [TILE_TYPE_LADDERS] = {
+		strength = 0,
+	}, */
+	2 = {
+		variants = 2,
+	},
+	9 = {
+		variants = 3,
+	},
+}
+
+ITEMS_INFO = {
+	10 = {
+		variants = 2,
+	},
+}
+
 Game4X = extends BaseGame4X {
 	__object = {
 		time = 0,
@@ -99,6 +132,7 @@ Game4X = extends BaseGame4X {
 					var dir = vec2(dx, dy).normalizeTo(@moveJoystick.maxLen)
 					if(!moveJoystickActivated){
 						moveJoystickActivated = true
+						@moveJoystick.touchEnabled = false
 						@moveJoystick.dispatchEvent {
 							type = TouchEvent.START,
 							localPosition = @moveJoystick.size/2 + dir
@@ -115,6 +149,7 @@ Game4X = extends BaseGame4X {
 						type = TouchEvent.END,
 						localPosition = @moveJoystick.size/2
 					}
+					@moveJoystick.touchEnabled = true
 				}
 			}.bind(this)
 			stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
@@ -358,26 +393,13 @@ Game4X = extends BaseGame4X {
 		return @tileEnt["${tx}-${ty}"]
 	},
 	
-	tileStrengthInfo = {
-		[TILE_GRASS] = {
-			strength = 3,
-		},
-		[TILE_CHERNOZEM] = {
-			strength = 6,
-			// damageDelay = 0.1,
-		},
-		/* [TILE_LADDERS] = {
-			strength = 0,
-		}, */
-	},
-	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			return
 		}
 		var type = @getTileType(tx, ty)
-		var info = @tileStrengthInfo[type]
-		if(!info){
+		var info = TILES_INFO[type]
+		if(!info.strength){
 			return
 		}
 		var key = "${tx}-${ty}"
@@ -387,7 +409,7 @@ Game4X = extends BaseGame4X {
 				resAnim = res.get("crack"),
 				pivot = vec2(0.5, 0.5),
 				pos = pos,
-				opacity = 0.9,
+				opacity = 0.8,
 				priority = ty * @tiledmapWidth + tx,
 				// tileX = tx,
 				// tileY = ty,
@@ -414,7 +436,8 @@ Game4X = extends BaseGame4X {
 		}
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
-				@setTileType(tx, ty, TILE_EMPTY)
+				@setTileType(tx, ty, TILE_TYPE_EMPTY)
+				@setItemType(tx, ty, ITEM_TYPE_EMPTY)
 				@removeTile(tx, ty)
 				delete @tileCracks[key]
 				crack.detach()
@@ -451,8 +474,46 @@ Game4X = extends BaseGame4X {
 		return r
 	},
 	
+	getTileRandomInt = function(x, y, a, b){
+		return math.round(@getTileRandom(x, y, a, b))
+	},
+	
+	getResName = function(group, i, j){
+		if(j){
+			return sprintf("${group}-%03d-%02d", i, j)
+		}
+		return sprintf("${group}-%03d", i)
+	},
+	
+	getTileResName = function(group, i, x, y, b){
+		b && return @getResName(group, i, @getTileRandomInt(x, y, 1, b))
+		// x && return @getResName(group, i, x)
+		return @getResName(group, i)
+	},
+	
 	getTile = function(x, y){
 		return @tiles["${x}-${y}"]
+	},
+	
+	touchGroupRes = function(group, type){
+		var info = group == "tile" ? TILES_INFO
+			: group == "item" ? ITEMS_INFO
+			: throw "unknown group ${group}"
+		var variants = info[type].variants
+		if(variants){
+			for(var i = 1; i <= variants; i++){
+				res.get(@getResName(group, type, i))
+			}
+		}else
+			res.get(@getResName(group, type))
+	},
+	
+	touchTileRes = function(type){
+		@touchGroupRes("tile", type)
+	},
+	
+	touchItemRes = function(type){
+		type != 0 && @touchGroupRes("item", type)
 	},
 	
 	updateTiledmapViewport = function(ax, ay, bx, by){
@@ -461,80 +522,56 @@ Game4X = extends BaseGame4X {
 				var tile = @getTile(x, y)
 				if(!tile){
 					var type = @getTileType(x, y)
-					switch(type){
-					default:
-						var tileName = "tile-00";
-						break;
-						
-					case TILE_GRASS:
-						var tileName = "tile-01";
-						break;
-						
-					case TILE_CHERNOZEM:
-						var tileName = sprintf("tile-%02d", math.round(@getTileRandom(x, y, 2, 4)));
-						break;
-						
-					case TILE_BLOCK:
-					case TILE_STONE:
-						var tileName = sprintf("tile-%02d", math.round(@getTileRandom(x, y, 5, 7)));
-						break;
-						
-					case TILE_LADDERS:
-						var tileName = "tile-ladders";
-						break;
-					}
-					// print "create tile ${x}x${y}, type: ${type}, name: ${tileName}"
+					type == TILE_TYPE_BLOCK && type = 9
+					var name = @getTileResName("tile", type, x, y, TILES_INFO[type].variants)
+					// print "create tile ${x}x${y}, type: ${type}, name: ${name}"
 					var pos = @tileToPos(x, y)
 					tile = Tile().attrs {
-						resAnim = res.get(tileName),
+						resAnim = res.get(name),
 						pivot = vec2(0, 0),
 						pos = pos,
 						priority = y * @tiledmapWidth + x,
 						tileX = x,
 						tileY = y,
 						tileType = type,
+						itemType = 0,
 						parent = @layers[LAYER_TILES],
 					}
 					@tiles["${x}-${y}"] = tile
+					
+					var itemType = @getItemType(x, y)
+					if(itemType > 0){
+						var name = @getTileResName("item", itemType, x, y, ITEMS_INFO[type].variants)
+						Sprite().attrs {
+							resAnim = res.get(name),
+							pivot = vec2(0.5, 0.5),
+							pos = tile.size/2,
+							parent = tile,
+							touchEnabled = false,
+						}
+						tile.itemType = itemType
+					}
 				}
 				tile.time = @time
 			}
 		}
 	},
 	
-	tiledmapPlayerMap = {
-		0: 1,
-	},
-	
-	tiledmapMonsterMap = {
-		8: 3,
-		10: 1,
-		9: 2,
-	},
-	
 	addTiledmapEntity = function(x, y, type){
-		if(type in @tiledmapMonsterMap){
-			var name = sprintf("monster-%02d", @tiledmapMonsterMap[type])
-			var monster = Monster(this, name).attrs {
-				// pos = @tileToCenterPos(x, y),
-				parent = @layers[LAYER_MONSTERS],
-			}
-			@initEntTilePos(monster, x, y)
-			return
-		}
-		if(type in @tiledmapPlayerMap){
+		if(type == 1){
 			@player && throw "player is already exist"
 			
-			var name = sprintf("player-%02d", @tiledmapPlayerMap[type])
-			@player = Player(this, name).attrs {
-				// pos = @tileToCenterPos(x, y),
-				parent = @layers[LAYER_PLAYER],
-			}
+			@player = Player(this, @getResName("ent", type))
 			@initEntTilePos(@player, x, y)
 			@centerViewToTile(x, y)
 			return
 		}
-		throw "unknown entity tilemap type: ${type}"
+		if(type > 0){
+			var monster = Monster(this, @getResName("ent", type))
+			@initEntTilePos(monster, x, y)
+			return
+		}
+		throw "unknown entity tiledmap type: ${type}"
 	},
 	
 	removeTile = function(tx, ty){

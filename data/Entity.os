@@ -79,13 +79,13 @@ Entity = extends Actor {
 	
 	isTileEmptyToMove = function(tx, ty){
 		var type = @getTileType(tx, ty)
-		return (type == TILE_EMPTY || type == TILE_LADDERS) 
+		return (type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS) 
 			&& !@getTileEnt(tx, ty)
 	},
 	
 	isTileEmptyToFall = function(tx, ty){
 		var type = @getTileType(tx, ty)
-		return type == TILE_EMPTY
+		return type == TILE_TYPE_EMPTY
 			&& !@getTileEnt(tx, ty)
 	},
 	
@@ -117,7 +117,7 @@ Entity = extends Actor {
 			// print "  pos: ${pos}, move dir: ${moveDirX}, ${moveDirY}"
 			if(!@moveAnimatedY && moveDirY > sensorSizeY
 				// && @isTileEmptyToMove(tileX, tileY + 1)
-				&& @getTileType(tileX, tileY + 1) == TILE_LADDERS
+				&& @getTileType(tileX, tileY + 1) == TILE_TYPE_LADDERS
 				&& !@getTileEnt(tileX, tileY + 1))
 			{
 				// print "move down ladders: ${tileX}, ${tileY + 1}"
@@ -141,7 +141,8 @@ Entity = extends Actor {
 					@setTile(tileX + dx, tileY)
 					break
 				}
-				if((@getTileType(tileX, tileY + 1) != TILE_EMPTY || @getTileEnt(tileX, tileY + 1))
+				if((@getTileType(tileX, tileY) == TILE_TYPE_LADDERS
+						|| (@getTileType(tileX, tileY + 1) != TILE_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
 					&& @isTileEmptyToMove(tileX, tileY - 1)
 					&& @isTileEmptyToMove(tileX + dx, tileY - 1))
 				{	// side jump
@@ -198,8 +199,8 @@ Entity = extends Actor {
 						var curTileType = @getTileType(tileX, tileY)
 						var downTileType = @getTileType(tileX, tileY + 1)
 						// print "tiles ${tileX}x${tileY}, up-down: ${upTileType}, ${curTileType}, ${downTileType}"
-						if(curTileType == TILE_EMPTY && upTileType == TILE_EMPTY 
-							&& (downTileType != TILE_EMPTY || @getTileEnt(tileX, tileY + 1)))
+						if(curTileType == TILE_TYPE_EMPTY && upTileType == TILE_TYPE_EMPTY 
+							&& (downTileType != TILE_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
 						{
 							@setTile(tileX, tileY - 1)
 							var time = 0.3 * @moveSpeed
@@ -213,8 +214,8 @@ Entity = extends Actor {
 							}
 							return
 						}
-						if(curTileType == TILE_EMPTY && upTileType != TILE_LADDERS){
-							// print "#1 curTileType == TILE_EMPTY && upTileType != TILE_LADDERS"
+						if(curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDERS){
+							// print "#1 curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDERS"
 							break
 						}
 						// print "#3 no"
@@ -245,7 +246,7 @@ Entity = extends Actor {
 		var tileX, tileY = @tileX, @tileY
 		if(!@moveAnimatedY && tileY == curTileY 
 			&& @isTileEmptyToFall(tileX, tileY + 1)
-			&& @getTileType(tileX, tileY) != TILE_LADDERS)
+			&& @getTileType(tileX, tileY) != TILE_TYPE_LADDERS)
 		{
 			// print "falling move: ${tileX}, ${tileY + 1}"
 			@setTile(tileX, ++tileY)
