@@ -1,9 +1,15 @@
 TILE_TYPE_EMPTY = 0
-TILE_ITEM_EMPTY = 0
+ITEM_TYPE_EMPTY = 0
 
 TILE_TYPE_GRASS = 1
 TILE_TYPE_CHERNOZEM = 8
-TILE_TYPE_LADDERS = 16
+TILE_TYPE_ROCK = 9
+TILE_TYPE_DOOR_01 = 16
+TILE_TYPE_LADDERS = 17
+TILE_TYPE_TRADE_STOCK = 24
+
+TILE_BASE_PRIORITY = 2
+TILE_DOOR_PRIORITY = 3
 
 TILES_INFO = {
 	[TILE_TYPE_GRASS] = {
@@ -14,14 +20,23 @@ TILES_INFO = {
 		strength = 6,
 		// damageDelay = 0.1,
 	},
+	[TILE_TYPE_ROCK] = {
+		variants = 3,
+	},
 	/* [TILE_TYPE_LADDERS] = {
 		strength = 0,
 	}, */
 	2 = {
 		variants = 2,
 	},
-	9 = {
-		variants = 3,
+	[TILE_TYPE_DOOR_01] = {
+		class = "Door",
+		// door = true,
+		handle = "door-handle",
+		handleShadow = "door-handle-shadow",
+	},
+	[TILE_TYPE_TRADE_STOCK] = {
+		variants = 4,
 	},
 }
 
@@ -31,9 +46,39 @@ ITEMS_INFO = {
 	},
 }
 
+ENTITIES_INFO = {
+	1 = {
+	},
+	2 = {
+	},
+	3 = {
+	},
+	4 = {
+	},
+	5 = {
+	},
+	6 = {
+	},
+	7 = {
+	},
+	11 = {
+		fly = true,
+	},
+	12 = {
+		fly = true,
+	},
+	28 = {
+		fly = true,
+	},
+	30 = {
+		fly = true,
+	},
+}
+
 Game4X = extends BaseGame4X {
 	__object = {
 		time = 0,
+		dt = 0,
 		tiles = {},
 		tileEnt = {},
 		tileCracks = {},
@@ -63,7 +108,7 @@ Game4X = extends BaseGame4X {
 		@view = Actor().attrs {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			// scale = 0.9,
+			scale = 0.7,
 			priority = 1,			
 			parent = this,
 		}
@@ -76,7 +121,7 @@ Game4X = extends BaseGame4X {
 		}
 		@lightMask = LightMask().attrs {
 			pos = @centerViewPos,
-			scale = 5.0,
+			scale = 10.0,
 			priority = 10,
 			parent = this,
 		}
@@ -89,10 +134,13 @@ Game4X = extends BaseGame4X {
 			}.bind(this))
 		else if(false)
 			@lightMask.animateLight(2.5)
+		else
+			@lightMask.animateLight(2.5)
 		
 		@inventary = Sprite().attrs {
-			resAnim = res.get("inv_pick"),
-			pivot = vec2(1, 1),
+			resAnim = res.get("shovel-01"),
+			pivot = vec2(0.5, 1.25),
+			angle = -45,
 			pos = @size,
 			opacity = 0.5,
 			priority = 15,
@@ -179,7 +227,7 @@ Game4X = extends BaseGame4X {
 
 		
 		@addEventListener(TouchEvent.CLICK, function(ev){
-			if(ev.target is Tile){
+			if(ev.target is BaseTile){
 				switch(@inventary.mode){
 				case "pick":
 					@pickTile(ev.target.tileX, ev.target.tileY, true)
@@ -393,13 +441,21 @@ Game4X = extends BaseGame4X {
 		return @tileEnt["${tx}-${ty}"]
 	},
 	
+	getAutoFrontType = function(tx, ty){
+		var tile = @getTile(tx, ty)
+		tile.openState > 0.7 && return TILE_TYPE_EMPTY
+		return @getFrontType(tx, ty)
+	},
+	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			return
 		}
-		var type = @getTileType(tx, ty)
+		var type = @getAutoFrontType(tx, ty)
 		var info = TILES_INFO[type]
 		if(!info.strength){
+			var tile = @getTile(tx, ty)
+			tile.pickByEnt(@player)
 			return
 		}
 		var key = "${tx}-${ty}"
@@ -436,11 +492,11 @@ Game4X = extends BaseGame4X {
 		}
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
-				@setTileType(tx, ty, TILE_TYPE_EMPTY)
+				delete @tileCracks[key]; crack.detach()
+				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
 				@setItemType(tx, ty, ITEM_TYPE_EMPTY)
 				@removeTile(tx, ty)
-				delete @tileCracks[key]
-				crack.detach()
+				@updateTile(tx, ty)
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
@@ -516,59 +572,36 @@ Game4X = extends BaseGame4X {
 		type != 0 && @touchGroupRes("item", type)
 	},
 	
+	updateTile = function(x, y){
+		var tile = @getTile(x, y)
+		if(!tile){
+			var type = @getFrontType(x, y)
+			tile = _G[TILES_INFO[type].class || "Tile"](this, x, y)
+			// tile = Tile(this, x, y)
+		}
+		tile.time = @time
+	},
+	
 	updateTiledmapViewport = function(ax, ay, bx, by){
 		for(var y = ay; y <= by; y++){
 			for(var x = ax; x <= bx; x++){
-				var tile = @getTile(x, y)
-				if(!tile){
-					var type = @getTileType(x, y)
-					type == TILE_TYPE_BLOCK && type = 9
-					var name = @getTileResName("tile", type, x, y, TILES_INFO[type].variants)
-					// print "create tile ${x}x${y}, type: ${type}, name: ${name}"
-					var pos = @tileToPos(x, y)
-					tile = Tile().attrs {
-						resAnim = res.get(name),
-						pivot = vec2(0, 0),
-						pos = pos,
-						priority = y * @tiledmapWidth + x,
-						tileX = x,
-						tileY = y,
-						tileType = type,
-						itemType = 0,
-						parent = @layers[LAYER_TILES],
-					}
-					@tiles["${x}-${y}"] = tile
-					
-					var itemType = @getItemType(x, y)
-					if(itemType > 0){
-						var name = @getTileResName("item", itemType, x, y, ITEMS_INFO[type].variants)
-						Sprite().attrs {
-							resAnim = res.get(name),
-							pivot = vec2(0.5, 0.5),
-							pos = tile.size/2,
-							parent = tile,
-							touchEnabled = false,
-						}
-						tile.itemType = itemType
-					}
-				}
-				tile.time = @time
+				@updateTile(x, y)
 			}
 		}
 	},
 	
-	addTiledmapEntity = function(x, y, type){
-		if(type == 1){
+	addTiledmapEntity = function(x, y, type, isPlayer){
+		if(isPlayer){
 			@player && throw "player is already exist"
-			
-			@player = Player(this, @getResName("ent", type))
+			@player = Player(this, type)
 			@initEntTilePos(@player, x, y)
 			@centerViewToTile(x, y)
 			return
 		}
 		if(type > 0){
-			var monster = Monster(this, @getResName("ent", type))
+			var monster = Monster(this, type)
 			@initEntTilePos(monster, x, y)
+			monster.createPatrolAreaIfNecessary()
 			return
 		}
 		throw "unknown entity tiledmap type: ${type}"
@@ -668,7 +701,7 @@ Game4X = extends BaseGame4X {
 	},
 	
 	update = function(ev){
-		@time = ev.time
+		@time, @dt = ev.time, ev.dt
 		if(@moveJoystick.active){
 			@player.moveDir = @moveJoystick.dir
 		}else{
@@ -678,7 +711,7 @@ Game4X = extends BaseGame4X {
 		@followPlayer()
 		for(var i, layer in @layers){
 			for(var _, obj in layer){
-				"update" in obj && obj.update(ev)
+				"update" in obj && obj.update()
 			}
 		}
 	},
