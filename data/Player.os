@@ -7,11 +7,11 @@ Player = extends Entity {
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
 	},
 	
-	updatePlayerSector = function(ev){
+	updatePlayerSector = function(){
 		for(var _, tile in @game.tiles){
 			var ent = @getTileEnt(tile.tileX, tile.tileY)
 			if(ent is Monster){
-				ent.queryAI(ev)
+				ent.queryAI()
 			}
 		}
 		/* for(var x = -2; x <= 2; x++){
@@ -19,13 +19,13 @@ Player = extends Entity {
 				// x == 0 && y == 0 && continue
 				var ent = @getTileEnt(@tileX + x, @tileY + y)
 				if(ent is Monster){
-					ent.queryAI(ev)
+					ent.queryAI()
 				}
 			}
 		} */
 	},
 	
-	update = function(ev){
-		super(ev)
+	update = function(){
+		super()
 	},
 }
