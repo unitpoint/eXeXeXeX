@@ -1,3 +1,5 @@
+TILE_FADE_SIZE = 32
+
 TILE_TYPE_EMPTY = 0
 ITEM_TYPE_EMPTY = 0
 
@@ -497,6 +499,7 @@ Game4X = extends BaseGame4X {
 				@setItemType(tx, ty, ITEM_TYPE_EMPTY)
 				@removeTile(tx, ty)
 				@updateTile(tx, ty)
+				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
@@ -582,12 +585,22 @@ Game4X = extends BaseGame4X {
 		tile.time = @time
 	},
 	
+	updateTiledmapShadowViewport = function(ax, ay, bx, by){
+		for(var y = ay; y <= by; y++){
+			for(var x = ax; x <= bx; x++){
+				var tile = @getTile(x, y)
+				tile.updateShadow()
+			}
+		}
+	},
+	
 	updateTiledmapViewport = function(ax, ay, bx, by){
 		for(var y = ay; y <= by; y++){
 			for(var x = ax; x <= bx; x++){
 				@updateTile(x, y)
 			}
 		}
+		@updateTiledmapShadowViewport(ax, ay, bx, by)
 	},
 	
 	addTiledmapEntity = function(x, y, type, isPlayer){

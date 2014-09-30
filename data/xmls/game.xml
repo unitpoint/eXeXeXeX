@@ -23,6 +23,10 @@
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />
 		
+		<image file="tile-fade-outer-left-top.png" />
+		<image file="tile-fade-inner-left-top.png" />
+		<image file="tile-fade-left.png" />
+		
 		<!-- begin auto generated assets -->
 		<image file="ent-001.png" />
 		<image file="ent-002.png" />

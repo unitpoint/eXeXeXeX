@@ -20,6 +20,10 @@ BaseTile = extends Actor {
 		return 0.0
 	},
 	
+	__get@isEmpty = function(){
+		return true
+	},
+	
 	pickByEnt = function(ent){
 		
 	},

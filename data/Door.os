@@ -7,6 +7,7 @@ Door = extends Tile {
 	__construct = function(game, x, y){
 		super(game, x, y)
 		@priority = TILE_DOOR_PRIORITY
+		@front.priority = 5
 		@handle = Sprite().attrs {
 			resAnim = res.get(TILES_INFO[@frontType].handle),
 			pivot = vec2(0.51, 0.51),
@@ -32,6 +33,10 @@ Door = extends Tile {
 		return @front.y / @openY
 	},
 	
+	__get@isEmpty = function(){
+		return @state != @STATE_CLOSED
+	},
+	
 	open = function(){
 		if(@state == @STATE_OPENING || @state == @STATE_OPENED){
 			return
@@ -50,6 +55,7 @@ Door = extends Tile {
 			}.bind(this),
 			doneCallback = function(){
 				@back.visible = true
+				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1)
 				@handleAction = @front.addTweenAction {
 					duration = 1.0, // (1 - @openState) * 1.0,
 					y = @openY,
@@ -88,6 +94,8 @@ Door = extends Tile {
 			ease = Ease.CUBIC_IN_OUT,
 			doneCallback = function(){
 				@back.visible = false
+				@state = @STATE_CLOSED
+				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1)
 				@handleAction = @handle.addTweenAction {
 					duration = 1.0,
 					angle = 0,
@@ -97,7 +105,6 @@ Door = extends Tile {
 					}.bind(this),
 					doneCallback = function(){
 						@handleAction = null
-						@state = @STATE_CLOSED
 					}.bind(this),
 				}
 			}.bind(this),
