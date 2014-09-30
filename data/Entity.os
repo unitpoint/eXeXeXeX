@@ -18,19 +18,24 @@ Entity = extends Actor {
 		moveAnimatedX = false,
 		moveAnimatedY = false,
 		moving = false,
+		pushing = false,
 		// moveActive = false,
-		moveDir = vec2(randSign(), randSign()),
+		moveDir = vec2(0, 0), // vec2(randSign(), randSign()),
 		prevMoveDir = vec2(0, 0),
 		// moveStarted = false,
 		// moveFinishedCallback = null,
+		
+		fly = false
 	},
 	
-	__construct = function(game, name){
+	__construct = function(game, type){
 		super()
 		@game = game
-		@name = name
+		@type = type
+		@name = game.getResName("ent", type)
+		@fly = ENTITIES_INFO[type].fly
 		@sprite = Sprite().attrs {
-			resAnim = res.get(name),
+			resAnim = res.get(@name),
 			pivot = vec2(0.5, 0.5),
 			scale = 0.9,
 			parent = this,
@@ -61,6 +66,15 @@ Entity = extends Actor {
 			}
 		}
 		@game.setEntTile(this, tx, ty)
+		
+		var dx = @tileX - @prevTileX
+		if((dx == 1 || dx == -1) && @prevTileY == @tileY){
+			var ent = @getTileEnt(@prevTileX, @prevTileY - 1)
+			if(ent && !ent.moving){
+				ent.moveDir = vec2(dx, 0)
+				ent.update()
+			}
+		}
 	},
 	
 	setTilePos = function(tx, ty){
@@ -68,8 +82,8 @@ Entity = extends Actor {
 		@pos = @game.tileToCenterPos(tx, ty)
 	},
 	
-	getTileType = function(tx, ty){
-		return @game.getTileType(tx, ty)
+	getAutoFrontType = function(tx, ty){
+		return @game.getAutoFrontType(tx, ty)
 	},
 	
 	getTileEnt = function(tx, ty){
@@ -78,22 +92,24 @@ Entity = extends Actor {
 	},
 	
 	isTileEmptyToMove = function(tx, ty){
-		var type = @getTileType(tx, ty)
+		var type = @getAutoFrontType(tx, ty)
 		return (type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS) 
 			&& !@getTileEnt(tx, ty)
 	},
 	
 	isTileEmptyToFall = function(tx, ty){
-		var type = @getTileType(tx, ty)
+		var type = @getAutoFrontType(tx, ty)
 		return type == TILE_TYPE_EMPTY
 			&& !@getTileEnt(tx, ty)
 	},
 	
-	pushByEnt = function(ev, ent, dx, dy){
-		if(!@moving){
-			@moveDir = vec2(dx, dy)
-			@update(ev)
-			return true
+	pushByEnt = function(ent, dx, dy){
+		if(!@moving && !@pushing){
+			var tileX, tileY = @tileX, @tileY
+			@moveDir, @pushing = vec2(dx, dy), true
+			@update()
+			@pushing = false
+			return tileX != @tileX || tileY != @tileY
 		}
 	},
 	
@@ -101,76 +117,115 @@ Entity = extends Actor {
 		
 	},
 	
-	update = function(ev){
+	checkMoveDir = function(){
+	
+	},
+	
+	update = function(){
 		var pos = @pos
 		var tileX, tileY = @game.posToTile(pos)
 		var curTileX, curTileY = tileX, tileY
+		var pickTileX, pickTileY
 		var sensorSizeX, sensorSizeY = 0.4, 0.4
 		// var isDestTile = tileX == @tileX && tileY == @tileY
-		var moveDirX, moveDirY = @moveDir.x, @moveDir.y
-		if(moveDirX != 0 || moveDirY != 0) do{
+		if(@moveDir.x != 0 || @moveDir.y != 0) do{
+			@checkMoveDir()
+			var dx, dy = @moveDir.x, @moveDir.y
+			if(math.abs(dx) > sensorSizeX){
+				dx = dx < 0 ? -1 : 1
+			}else{
+				dx = 0
+			}
+			if(math.abs(dy) > sensorSizeY){
+				dy = dy < 0 ? -1 : 1
+			}else{
+				dy = 0
+			}
+			dx == 0 && dy == 0 && break
+			
 			@prevMoveDir = @moveDir
-			@moveDir = null
+			@moveDir = vec2(0, 0)
 			@moving = true
 			// print "cur pos tile: ${tileX}, ${tileY}"
 			// print "   dest tile: ${@tileX}, ${@tileY}"
-			// print "  pos: ${pos}, move dir: ${moveDirX}, ${moveDirY}"
-			if(!@moveAnimatedY && moveDirY > sensorSizeY
+			// print "  pos: ${pos}, move dir: ${dx}, ${dy}"
+			/* if(!@fly && !@moveAnimatedY && moveDirY > sensorSizeY
 				// && @isTileEmptyToMove(tileX, tileY + 1)
-				&& @getTileType(tileX, tileY + 1) == TILE_TYPE_LADDERS
+				&& @getAutoFrontType(tileX, tileY + 1) == TILE_TYPE_LADDERS
 				&& !@getTileEnt(tileX, tileY + 1))
 			{
 				// print "move down ladders: ${tileX}, ${tileY + 1}"
 				@setTile(tileX, tileY + 1)
 				break
-			}
-			if(!@moveAnimatedX && math.abs(moveDirX) > sensorSizeX){
-				var dx = moveDirX < 0 ? -1 : 1
-				/* if(tileX + dx != @prevTileX){ // same side move
-					if(tileX != @tileX){
-						break
+			} */
+			do{ if(!@moveAnimatedX && dx != 0){
+				var sideJump = function(){
+					var empty = @isTileEmptyToMove(tileX + dx, tileY - 1)
+					if(!empty){
+						var ent = @getTileEnt(tileX + dx, tileY - 1)
+						// print "begin try push ent to jump: ${ent.name}, ent.moving: ${ent.moving}, my pos: ${tileX}x${tileY}"
+						if(ent.pushByEnt(this, dx, 0) || ent.pushByEnt(this, -dx, 0)){
+							empty = @isTileEmptyToMove(tileX + dx, tileY - 1)
+						}
+						// print "end try push ent, ok: ${empty}"
 					}
-				} */
+					if(empty){
+						@setTile(tileX + dx, tileY - 1)
+						var time = 0.3 * @moveSpeed
+						var pos = @game.tileToCenterPos(tileX + dx, tileY - 1)
+						
+						@moveAnimatedX = @addTweenAction {
+							// name = "moving",
+							duration = time * 1.7,
+							x = pos.x,
+							// ease = Ease.QUAD_IN,
+							doneCallback = function(){ @moveAnimatedX = false }.bind(this),
+						}
+						@moveAnimatedY = @addTweenAction {
+							// name = "jumping",
+							duration = time * 1.5,
+							y = pos.y,
+							ease = Ease.BACK_IN_OUT,
+							doneCallback = function(){ @moveAnimatedY = false }.bind(this),
+						}
+						return true
+					}
+				}.bind(this)
+				
 				if(@isTileEmptyToMove(tileX + dx, tileY)){
 					// print "side move: ${tileX + dx}, ${tileY}"
-					@setTile(tileX + dx, tileY)
+					if(dy < 0 
+						// && @isTileEmptyToMove(tileX, tileY) // == TILE_TYPE_LADDERS
+						&& (@getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDERS
+							|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY)
+						&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
+						&& sideJump())
+					{
+						return
+					}
+					@setTile(tileX += dx, tileY)
 					break
 				}
 				var ent = @getTileEnt(tileX + dx, tileY)
-				if(ent.pushByEnt(ev, this, dx, 0) && @isTileEmptyToMove(tileX + dx, tileY)){
-					@setTile(tileX + dx, tileY)
+				if(ent.pushByEnt(this, dx, 0) && @isTileEmptyToMove(tileX + dx, tileY)){
+					// print "push & side move: ${tileX + dx}, ${tileY}"
+					@setTile(tileX += dx, tileY)
 					break
 				}
-				if((@getTileType(tileX, tileY) == TILE_TYPE_LADDERS
-						|| (@getTileType(tileX, tileY + 1) != TILE_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
-					&& @isTileEmptyToMove(tileX, tileY - 1)
-					&& @isTileEmptyToMove(tileX + dx, tileY - 1))
-				{	// side jump
-					// print "side jump move: ${tileX + dx}, ${tileY - 1}"
-					@setTile(tileX + dx, tileY - 1)
-					var time = 0.3 * @moveSpeed
-					var pos = @game.tileToCenterPos(tileX + dx, tileY - 1)
-					
-					@moveAnimatedX = @addTweenAction {
-						// name = "moving",
-						duration = time * 1.7,
-						x = pos.x,
-						// ease = Ease.QUAD_IN,
-						doneCallback = function(){ @moveAnimatedX = false }.bind(this),
-					}
-					@moveAnimatedY = @addTweenAction {
-						// name = "jumping",
-						duration = time * 1.5,
-						y = pos.y,
-						ease = Ease.BACK_IN_OUT,
-						doneCallback = function(){ @moveAnimatedY = false }.bind(this),
-					}
+				if(dy < 1 && (@fly 
+						|| @getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDERS
+						|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY 
+						|| @getTileEnt(tileX, tileY + 1))
+					&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
+					&& sideJump())
+				{
 					return
 				}
 				if(@game.player === this)
 				switch(@game.inventary.mode){
 				case "pick":
-					@game.pickTile(tileX + dx, tileY)
+					pickTileX = tileX + dx
+					// @game.pickTile(tileX + dx, tileY)
 					break
 					
 				default:
@@ -183,25 +238,29 @@ Entity = extends Actor {
 				case "attack":
 					break
 				}
-			}
-			if(!@moveAnimatedY && math.abs(moveDirY) > sensorSizeY){
-				var dy = moveDirY < 0 ? -1 : 1
+			} }while(false)
+			if(!@moveAnimatedY && dy != 0){
+				if(tileX != curTileX && dy < 0 && !@fly && (this is Monster)){
+					// print "tileX is changed, skip jump"
+					break
+				}
 				var empty = @isTileEmptyToMove(tileX, tileY + dy)
 				if(!empty){
 					var ent = @getTileEnt(tileX, tileY + dy)
-					if(ent.pushByEnt(ev, this, 0, dy)){
+					if(ent.pushByEnt(this, 0, dy)){
 						empty = @isTileEmptyToMove(tileX, tileY + dy)
 					}
 				}
 				if(empty){
-					if(dy < 0){
-						var upTileType = @getTileType(tileX, tileY - 1)
-						var curTileType = @getTileType(tileX, tileY)
-						var downTileType = @getTileType(tileX, tileY + 1)
+					if(!@fly && dy < 0){
+						var upTileType = @getAutoFrontType(tileX, tileY - 1)
+						var curTileType = @getAutoFrontType(tileX, tileY)
+						var downTileType = @getAutoFrontType(tileX, tileY + 1)
 						// print "tiles ${tileX}x${tileY}, up-down: ${upTileType}, ${curTileType}, ${downTileType}"
 						if(curTileType == TILE_TYPE_EMPTY && upTileType == TILE_TYPE_EMPTY 
 							&& (downTileType != TILE_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
 						{
+							// print "jump move: ${tileX}, ${tileY - 1}"
 							@setTile(tileX, tileY - 1)
 							var time = 0.3 * @moveSpeed
 							var pos = @game.tileToCenterPos(tileX, tileY - 1)
@@ -227,7 +286,8 @@ Entity = extends Actor {
 				if(@game.player === this)
 				switch(@game.inventary.mode){
 				case "pick":
-					@game.pickTile(tileX, tileY + dy)
+					pickTileY = tileY + dy
+					// @game.pickTile(tileX, tileY + dy)
 					break
 					
 				default:
@@ -244,9 +304,9 @@ Entity = extends Actor {
 		}while(false)
 		
 		var tileX, tileY = @tileX, @tileY
-		if(!@moveAnimatedY && tileY == curTileY 
+		if(!@fly && !@moveAnimatedY && tileY == curTileY 
 			&& @isTileEmptyToFall(tileX, tileY + 1)
-			&& @getTileType(tileX, tileY) != TILE_TYPE_LADDERS)
+			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDERS)
 		{
 			// print "falling move: ${tileX}, ${tileY + 1}"
 			@setTile(tileX, ++tileY)
@@ -259,7 +319,7 @@ Entity = extends Actor {
 			var len = #offs
 			if(len > 0){
 				var speed = TILE_SIZE / (0.3 * @moveSpeed)
-				var moveOffs = speed * ev.dt
+				var moveOffs = speed * @game.dt
 				if(moveOffs >= len){
 					// prevent float number accuracy
 					if(!@moveAnimatedX){
@@ -281,6 +341,9 @@ Entity = extends Actor {
 			if(!@moveAnimatedX && !@moveAnimatedY){
 				if(@x == dest.x && @y == dest.y){
 					@moving = false
+					if(pickTileX || pickTileY){
+						@game.pickTile(pickTileX || tileX, pickTileY || tileY)
+					}
 					@onMoveFinished()
 				}
 			}
