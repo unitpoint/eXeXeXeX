@@ -7,8 +7,15 @@
 		<image file="screen-blood-breaks-01.png" />
 		<image file="screen-blood-breaks-02.png" />
 		<image file="crack.png" cols="5" />
-		<image file="pick.png" />
-		<image file="inv_pick.png" />
+
+		<image file="shovel-01.png" />
+		<image file="pick-01.png" />
+		<image file="pick-02.png" />
+		<image file="pick-03.png" />
+		<image file="axe-02.png" />
+		
+		<image file="door-handle.png" />
+		<image file="door-handle-shadow.png" />
 		
 		<image file="joystick.png" />
 		<image file="finger.png" />
@@ -18,9 +25,48 @@
 		
 		<!-- begin auto generated assets -->
 		<image file="ent-001.png" />
+		<image file="ent-002.png" />
+		<image file="ent-003.png" />
+		<image file="ent-004.png" />
+		<image file="ent-005.png" />
+		<image file="ent-006.png" />
+		<image file="ent-007.png" />
 		<image file="ent-008.png" />
 		<image file="ent-009.png" />
 		<image file="ent-010.png" />
+		<image file="ent-011.png" />
+		<image file="ent-012.png" />
+		<image file="ent-013.png" />
+		<image file="ent-014.png" />
+		<image file="ent-015.png" />
+		<image file="ent-016.png" />
+		<image file="ent-017.png" />
+		<image file="ent-018.png" />
+		<image file="ent-019.png" />
+		<image file="ent-020.png" />
+		<image file="ent-021.png" />
+		<image file="ent-022.png" />
+		<image file="ent-023.png" />
+		<image file="ent-024.png" />
+		<image file="ent-025.png" />
+		<image file="ent-026.png" />
+		<image file="ent-027.png" />
+		<image file="ent-028.png" />
+		<image file="ent-029.png" />
+		<image file="ent-030.png" />
+		<image file="ent-031.png" />
+		<image file="ent-032.png" />
+		<image file="ent-033.png" />
+		<image file="ent-034.png" />
+		<image file="ent-035.png" />
+		<image file="ent-036.png" />
+		<image file="ent-037.png" />
+		<image file="ent-038.png" />
+		<image file="ent-039.png" />
+		<image file="ent-040.png" />
+		<image file="ent-041.png" />
+		<image file="ent-042.png" />
+		<image file="ent-043.png" />
 		<image file="item-001.png" />
 		<image file="item-002.png" />
 		<image file="item-003.png" />
@@ -43,7 +89,13 @@
 		<image file="tile-009-01.png" />
 		<image file="tile-009-02.png" />
 		<image file="tile-009-03.png" />
+		<image file="tile-010.png" />
 		<image file="tile-016.png" />
+		<image file="tile-017.png" />
+		<image file="tile-024-01.png" />
+		<image file="tile-024-02.png" />
+		<image file="tile-024-03.png" />
+		<image file="tile-024-04.png" />
 		<!-- end auto generated assets -->
 	</atlas>
 
