@@ -112,7 +112,7 @@ vec2 = extends Object {
 			i |= 0 // fast way to convert to int
 			return i == 0 ? @x : i == 1 ? @y : throw "error index ${i}, 0 or 1 required"
 		}
-		throw "property \"${i}\" not found in ${@__name || @classname}"
+		return super(i)
 	},
 	
 	__set = function(i, value){
