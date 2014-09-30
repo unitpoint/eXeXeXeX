@@ -7,34 +7,15 @@
 using namespace ObjectScript;
 
 #define TILE_TYPE_BLOCK 255
-/*
-enum TileType
-{
-	TILE_EMPTY,
-	TILE_GRASS,
-	TILE_CHERNOZEM,
-	TILE_STONE,
-	TILE_LADDERS,
-	TILE_BLOCK,
-};
-
-enum EFossil
-{
-	TILE_ITEM_EMPTY,
-	TILE_ITEM_GOLD,
-	TILE_ITEM_AMBER,
-	TILE_ITEM_EMERALD,
-	TILE_ITEM_APATITE,
-};
-*/
 
 typedef OS_BYTE TileType;
 typedef OS_BYTE ItemType;
 
 struct Tile
 {
-	TileType tile;
 	ItemType item;
+	TileType front;
+	TileType back;
 };
 
 enum ELayer
@@ -57,14 +38,18 @@ struct Tiledmap
 
 	struct Entity
 	{
-		int x, y, type;
+		float x, y;
+		int type;
+		bool player;
 	};
 
 	const Size size;
+	const int floor;
 	const Entity * entities;
 	const int numEntities;
 	const OS_BYTE * items;
-	const OS_BYTE * tiles;
+	const OS_BYTE * front;
+	const OS_BYTE * back;
 };
 
 // OS2D * getOS();
@@ -86,8 +71,11 @@ public:
 
 	float getTileRandom(int x, int y);
 
-	TileType getTileType(int x, int y);
-	void setTileType(int x, int y, TileType type);
+	TileType getFrontType(int x, int y);
+	void setFrontType(int x, int y, TileType type);
+
+	TileType getBackType(int x, int y);
+	void setBackType(int x, int y, TileType type);
 
 	ItemType getItemType(int x, int y);
 	void setItemType(int x, int y, ItemType type);

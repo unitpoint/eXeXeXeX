@@ -65,13 +65,12 @@ static void registerBaseGame4X(OS * os)
 		def("__newinstance", &Lib::__newinstance),
 		def("initMap", &BaseGame4X::initMap),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
-		def("getTileType", &BaseGame4X::getTileType),
-		def("setTileType", &BaseGame4X::setTileType),
+		def("getFrontType", &BaseGame4X::getFrontType),
+		def("setFrontType", &BaseGame4X::setFrontType),
+		def("getBackType", &BaseGame4X::getBackType),
+		def("setBackType", &BaseGame4X::setBackType),
 		def("getItemType", &BaseGame4X::getItemType),
 		def("setItemType", &BaseGame4X::setItemType),
-		// def("tileToCenterPos", &BaseGame4X::tileToCenterPos),
-		// def("tileToPos", &BaseGame4X::tileToPos),
-		// {"posToTile", &Lib::posToTile},
 		{}
 	};
 	OS::NumberDef nums[] = {
@@ -133,22 +132,41 @@ float BaseGame4X::getTileRandom(int x, int y)
 #endif
 }
 
-TileType BaseGame4X::getTileType(int x, int y)
+TileType BaseGame4X::getFrontType(int x, int y)
 {
 	if(x >= 0 && x < tiledmapWidth
 		&& y >= 0 && y < tiledmapHeight)
 	{
-		return tiles[y * tiledmapWidth + x].tile;
+		return tiles[y * tiledmapWidth + x].front;
 	}
 	return TILE_TYPE_BLOCK;
 }
 
-void BaseGame4X::setTileType(int x, int y, TileType type)
+void BaseGame4X::setFrontType(int x, int y, TileType type)
 {
 	if(x >= 0 && x < tiledmapWidth
 		&& y >= 0 && y < tiledmapHeight)
 	{
-		tiles[y * tiledmapWidth + x].tile = type;
+		tiles[y * tiledmapWidth + x].front = type;
+	}
+}
+
+TileType BaseGame4X::getBackType(int x, int y)
+{
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
+	{
+		return tiles[y * tiledmapWidth + x].back;
+	}
+	return TILE_TYPE_BLOCK;
+}
+
+void BaseGame4X::setBackType(int x, int y, TileType type)
+{
+	if(x >= 0 && x < tiledmapWidth
+		&& y >= 0 && y < tiledmapHeight)
+	{
+		tiles[y * tiledmapWidth + x].back = type;
 	}
 }
 
@@ -202,9 +220,11 @@ void BaseGame4X::initMap(const char * _name)
 		std::map<TileType, bool> usedTiles;
 		std::map<ItemType, bool> usedItems;
 		for(int i = 0; i < count; i++){
-			tiles[i].tile = tiledmap->tiles[i];
 			tiles[i].item = tiledmap->items[i];
-			usedTiles[tiles[i].tile] = true;
+			tiles[i].front = tiledmap->front[i];
+			tiles[i].back = tiledmap->back[i];
+			usedTiles[tiles[i].front] = true;
+			usedTiles[tiles[i].back] = true;
 			usedItems[tiles[i].item] = true;
 		}
 		std::map<ItemType, bool>::iterator it = usedTiles.begin();
@@ -235,6 +255,10 @@ void BaseGame4X::initMap(const char * _name)
 		pushCtypeValue(os, tiledmapHeight);
 		os->setProperty("tiledmapHeight");
 		
+		pushCtypeValue(os, this);
+		pushCtypeValue(os, tiledmap->floor);
+		os->setProperty("tiledmapFloor");
+		
 		// oldViewPos = view->getPosition() + Vector2(100, 100);
 		// view->setPosition(-tileToPos(43, 14));
 		for(int i = 0; i < tiledmap->numEntities; i++){
@@ -244,7 +268,8 @@ void BaseGame4X::initMap(const char * _name)
 			pushCtypeValue(os, tiledmap->entities[i].x);
 			pushCtypeValue(os, tiledmap->entities[i].y);
 			pushCtypeValue(os, tiledmap->entities[i].type);
-			os->callTF(3);
+			pushCtypeValue(os, tiledmap->entities[i].player);
+			os->callTF(4);
 		}
 		return;
 	}

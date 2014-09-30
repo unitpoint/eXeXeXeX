@@ -43,8 +43,12 @@ void example_init()
 
 void example_update()
 {
-#if defined WIN32 // && !defined OS_DEBUG
+#ifdef WIN32 // && !defined 
+#ifdef OS_DEBUG
 	sleep(10);
+#else
+	sleep(15);
+#endif
 #endif
 	SoundSystem::instance->update();
 }

@@ -89,6 +89,8 @@ void run()
 	desc.w = 960;
 	desc.h = 640;
 	// desc.fullscreen = true;
+	// desc.fulldesktop = true;
+	desc.maximized = true;
 	//marmalade settings could be changed from emulator's menu
 #endif
 	desc.title = "eXeXeXeX OS2D";
