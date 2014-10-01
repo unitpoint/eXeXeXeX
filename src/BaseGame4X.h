@@ -18,15 +18,6 @@ struct Tile
 	TileType back;
 };
 
-enum ELayer
-{
-	LAYER_TILES,
-	LAYER_DECALS,
-	LAYER_MONSTERS,
-	LAYER_PLAYER,
-	LAYER_COUNT
-};
-
 #define TILE_SIZE 128.0f
 
 struct Tiledmap
@@ -67,7 +58,7 @@ public:
 	Actor * getOSChild(const char * name);
 	Actor * getLayer(int num);
 
-	void initMap(const char * name);
+	// void initMap(const char * name);
 
 	float getTileRandom(int x, int y);
 
@@ -83,6 +74,8 @@ public:
 	// Vector2 tileToCenterPos(int x, int y);
 	// Vector2 tileToPos(int x, int y);
 	// void posToTile(const Vector2& pos, int& x, int& y);
+
+	void registerLevelInfo(int tiledmapWidth, int tiledmapHeight, const OS::String& front, const OS::String& back, const OS::String& items);
 
 protected:
 

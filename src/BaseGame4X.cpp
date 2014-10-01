@@ -19,12 +19,6 @@ static void registerGlobals(OS * os)
 	OS::NumberDef nums[] = {
 		DEF_CONST(TILE_SIZE),
 		DEF_CONST(TILE_TYPE_BLOCK),
-		// layres
-		DEF_CONST(LAYER_TILES),
-		DEF_CONST(LAYER_MONSTERS),
-		DEF_CONST(LAYER_PLAYER),
-		DEF_CONST(LAYER_DECALS),
-		DEF_CONST(LAYER_COUNT),
 		{}
 	};
 	os->pushGlobals();
@@ -63,7 +57,7 @@ static void registerBaseGame4X(OS * os)
 
 	OS::FuncDef funcs[] = {
 		def("__newinstance", &Lib::__newinstance),
-		def("initMap", &BaseGame4X::initMap),
+		def("registerLevelInfo", &BaseGame4X::registerLevelInfo),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getFrontType", &BaseGame4X::getFrontType),
 		def("setFrontType", &BaseGame4X::setFrontType),
@@ -207,6 +201,62 @@ void BaseGame4X::posToTile(const Vector2& pos, int& x, int& y)
 }
 */
 
+void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, const OS::String& p_front, const OS::String& p_back, const OS::String& p_items)
+{
+	struct Lib
+	{
+		static int decode(OS_BYTE * data, int i)
+		{
+			int a = data[i*2] + (data[i*2+1]<<8);
+			OX_ASSERT(a < 256);
+			return a;
+		}
+	};
+
+	delete [] tiles;
+	int count = p_tiledmapWidth * p_tiledmapHeight;
+	OS_BYTE * front = (OS_BYTE*)p_front.toChar();
+	OS_BYTE * back = (OS_BYTE*)p_back.toChar();
+	OS_BYTE * items = (OS_BYTE*)p_items.toChar();
+	if(count*2 != p_front.getDataSize() || count*2 != p_back.getDataSize() || count*2 != p_items.getDataSize()){
+		os->setException("error layer data size");
+		tiles = NULL;
+		tiledmapWidth = tiledmapHeight = 0;
+		return;
+	}
+	tiledmapWidth = p_tiledmapWidth;
+	tiledmapHeight = p_tiledmapHeight;
+	tiles = new Tile[count];
+
+	std::map<TileType, bool> usedTiles;
+	std::map<ItemType, bool> usedItems;
+	for(int i = 0; i < count; i++){
+		tiles[i].front = (TileType)Lib::decode(front, i);
+		tiles[i].back = (TileType)Lib::decode(back, i);
+		tiles[i].item = (ItemType)Lib::decode(items, i);
+		usedTiles[tiles[i].front] = true;
+		usedTiles[tiles[i].back] = true;
+		usedItems[tiles[i].item] = true;
+	}
+	std::map<ItemType, bool>::iterator it = usedTiles.begin();
+	for(; it != usedTiles.end(); ++it){
+		pushCtypeValue(os, this);
+		os->getProperty(-1, "touchTileRes");
+		OX_ASSERT(os->isFunction());
+		pushCtypeValue(os, it->first);
+		os->callTF(1);
+	}
+	it = usedItems.begin();
+	for(; it != usedItems.end(); ++it){
+		pushCtypeValue(os, this);
+		os->getProperty(-1, "touchItemRes");
+		OX_ASSERT(os->isFunction());
+		pushCtypeValue(os, it->first);
+		os->callTF(1);
+	}
+}
+
+#if 0
 void BaseGame4X::initMap(const char * _name)
 {
 	std::string name = _name;
@@ -275,10 +325,10 @@ void BaseGame4X::initMap(const char * _name)
 	}
 	os->setException(("level "+name+" is not found").c_str());
 }
+#endif
 
 Actor * BaseGame4X::getLayer(int num)
 {
-	OX_ASSERT(num >= 0 && num < LAYER_COUNT);
 	SaveStackSize saveStackSize;
 	pushCtypeValue(os, this);
 	os->getProperty("layers");
