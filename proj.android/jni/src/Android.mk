@@ -8,7 +8,19 @@ LOCAL_SRC_FILES := ../../../../../SDL/src/main/android/SDL_android_main.c
 
 LOCAL_SRC_FILES += ../../../../../objectscript/src/objectscript.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/os-heap.cpp
+
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-datetime/os-datetime.cpp
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-json/os-json.cpp
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/os-base64.cpp
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cencode.cpp
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cdecode.cpp
+
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-zlib/os-zlib.cpp
+LOCAL_SRC_FILES += \
+				$(subst $(LOCAL_PATH)/,, \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-zlib/zlib/*.c) \
+				)
+				
 LOCAL_SRC_FILES += ../../../../../objectscript/src/EaseFunction.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ox-binder.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ox-sound-binder.cpp

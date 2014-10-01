@@ -13,6 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ext-base64">
+      <UniqueIdentifier>{94e42266-cc9b-4b84-a211-d977b8bb3bd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ext-json">
+      <UniqueIdentifier>{e8b0760d-42bd-4cc7-adfd-e9b629cea988}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="objectscript">
+      <UniqueIdentifier>{d13fdf5f-f9f8-4897-8cb7-02df7d4afd8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ext-datetime">
+      <UniqueIdentifier>{6fdf8a56-bd87-485d-a210-1bd87e0c7e91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ext-zlib">
+      <UniqueIdentifier>{a0aa4788-7283-4cf1-87d6-d084646265a2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../src/entry_point.cpp">
@@ -21,22 +36,7 @@
     <ClCompile Include="../src/example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\os-heap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\objectscript.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\ext-datetime\os-datetime.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\objectscript\src\EaseFunction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\ox-binder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\ox-sound-binder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\BaseGame4X.cpp">
@@ -45,22 +45,97 @@
     <ClCompile Include="..\src\RandomValue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-base64\os-base64.cpp">
+      <Filter>ext-base64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-base64\cencode.cpp">
+      <Filter>ext-base64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-base64\cdecode.cpp">
+      <Filter>ext-base64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-json\os-json.cpp">
+      <Filter>ext-json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\objectscript.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\os-heap.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ox-binder.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ox-sound-binder.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-datetime\os-datetime.cpp">
+      <Filter>ext-datetime</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\os-zlib.cpp">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\adler32.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\compress.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\crc32.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\deflate.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\gzclose.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\gzlib.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\gzread.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\gzwrite.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\infback.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\inffast.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\inflate.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\inftrees.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\trees.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\uncompr.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\zutil.c">
+      <Filter>ext-zlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\objectscript\src\ox-binder.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\BaseGame4X.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\RandomValue.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ox-binder.h">
+      <Filter>objectscript</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h">
+      <Filter>objectscript</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

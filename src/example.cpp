@@ -2,12 +2,20 @@
 #include "SoundPlayer.h"
 #include "SoundSystem.h"
 #include <ox-binder.h>
+#include <ext-base64/os-base64.h>
+#include <ext-json/os-json.h>
+#include <ext-zlib/os-zlib.h>
 
 using namespace oxygine;
 
 void example_preinit()
 {
 	ObjectScript::Oxygine::init();
+
+	ObjectScript::OS * os = ObjectScript::os;
+	initBase64Extension(os);
+	initJsonExtension(os);
+	initZlibExtension(os);
 }
 
 #ifdef WIN32
