@@ -1,0 +1,1 @@
+..\..\..\tools\os tmx2json.os %1 %2 %3 
