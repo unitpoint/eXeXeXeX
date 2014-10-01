@@ -5,6 +5,7 @@ Entity = extends Actor {
 		prevTileX = -1,
 		prevTileY = -1,
 		
+		breathingAction = null,
 		breathingSpeed = 1.0,
 		attackSpeed = 1.0,
 		moveSpeed = 1.0,
@@ -44,12 +45,12 @@ Entity = extends Actor {
 		@size = @sprite.size 
 		@sprite.pos = @idealPos = @size/2
 		@touchChildrenEnabled = false
-		@breathing()
+		// @breathing()
 	},
 	
 	centerSprite = function(){
 		@sprite.replaceTweenAction {
-			name = "centerSprite",
+			name = "sprite",
 			duration = 0.1,
 			pos = @idealPos,
 			angle = 0,
@@ -351,15 +352,18 @@ Entity = extends Actor {
 	},
 	
 	stopBreathing = function(){
+		@breathingAction || return;
 		@centerSprite()
 		@sprite.replaceTweenAction {
 			name = "breathing",
 			duration = 0.1,
 			scale = 0.9,
 		}
+		@breathingAction = null
 	},
 	
-	breathing = function(speed){
+	startBreathing = function(speed){
+		@breathingAction && return;
 		@centerSprite()
 		speed && @breathingSpeed = speed
 		var anim = function(){
@@ -378,6 +382,7 @@ Entity = extends Actor {
 			action.name = "breathing"
 			action.doneCallback = anim
 			@sprite.replaceAction(action)
+			@breathingAction = action
 		}.bind(this)
 		anim()
 	},

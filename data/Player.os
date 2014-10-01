@@ -3,7 +3,7 @@ Player = extends Entity {
 		super(game, name)
 		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
-		
+		@startBreathing()
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
 	},
 	

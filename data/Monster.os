@@ -179,6 +179,9 @@ Monster = extends Entity {
 				// print "ai update:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}"
 				@moveDir = @nextMoveDir || vec2(randSign(), randSign())
 				@nextMoveDir = null
+				@startBreathing()
+			}else{
+				@stopBreathing()
 			}
 			@aiNextTime = null
 		}
