@@ -7,7 +7,7 @@ Door = extends Tile {
 	__construct = function(game, x, y){
 		super(game, x, y)
 		@priority = TILE_DOOR_PRIORITY
-		@front.priority = 5
+		// @front.priority = 5
 		@handle = Sprite().attrs {
 			resAnim = res.get(TILES_INFO[@frontType].handle),
 			pivot = vec2(0.51, 0.51),

@@ -1,4 +1,9 @@
 Tile = extends BaseTile {
+	BACK_PRIORITY 	= 10,
+	SHADOW_PRIORITY = 20,
+	FRONT_PRIORITY 	= 30,
+	ITEM_PRIORITY 	= 40,
+	
 	__construct = function(game, x, y){
 		super(game, x, y)
 		
@@ -13,7 +18,7 @@ Tile = extends BaseTile {
 			resAnim = res.get(frontResName),
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			priority = 2,
+			priority = @FRONT_PRIORITY,
 			parent = this
 		}
 		@front.scale = @size / @front.size
@@ -23,7 +28,7 @@ Tile = extends BaseTile {
 			resAnim = res.get(backResName),
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			priority = 1,
+			priority = @BACK_PRIORITY,
 			parent = this
 		}
 		if(backType < 16)
@@ -45,7 +50,7 @@ Tile = extends BaseTile {
 				resAnim = res.get(itemResName),
 				pivot = vec2(0.5, 0.5),
 				pos = @size/2,
-				priority = 3,
+				priority = @ITEM_PRIORITY,
 				parent = this,
 			}
 			@item.scale = @size / math.max(@item.width, @item.height)
@@ -53,9 +58,79 @@ Tile = extends BaseTile {
 		
 		@shadow = Actor().attrs {
 			size = @size,
-			priority = 4,
+			priority = @SHADOW_PRIORITY,
 			parent = this,
 		}
+		
+		@fallingAction = null
+		@fallingTimeout = null
+		@fallingInProgress = null
+	},
+	
+	falling = function(){
+		@fallingInProgress && return;
+		var tx, ty = @tileX, @tileY
+		var frontType = @game.getFrontType(tx, ty)
+		var itemType = @game.getItemType(tx, ty)
+		@game.setFrontType(tx, ty, TILE_TYPE_EMPTY)
+		@game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
+		@game.removeTile(tx, ty)
+		@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
+		@parent = @game.layers[LAYER_FALLING_TILES]
+		@shadow.removeChildren()
+		@fallingInProgress = @addTweenAction {
+			duration = 0.5,
+			y = @y + TILE_SIZE,
+			// ease = Ease.CUBIC_IN,
+			doneCallback = function(){
+				@detach()
+				// @fallingInProgress = null
+				// @parent = @game.layers[LAYER_TILES]
+				ty = ty + 1
+				@game.setFrontType(tx, ty, frontType)
+				@game.setItemType(tx, ty, itemType)
+				@game.removeTile(tx, ty)
+				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
+				frontType = @game.getFrontType(tx, ty + 1)
+				if(frontType == TILE_TYPE_EMPTY){
+					var tile = @game.getTile(tx, ty)
+					tile.falling()
+				}
+			}.bind(this),
+		}
+	},
+	
+	startFalling = function(){
+		@fallingInProgress && return;
+		if(!@fallingTimeout){
+			@fallingTimeout = @addTimeout(3.0, function(){
+				@front.replaceTweenAction {
+					name = "falling",
+					duration = 0.05,
+					pos = vec2(0, 0),
+				}
+				@fallingAction = null
+				@fallingTimeout = null
+				@priority = @savePriority
+				@back.visible = @saveBackVisible
+				@falling()
+			}.bind(this))
+		}
+		@fallingAction && return;
+		@fallingAction = @front.replaceTweenAction {
+			name = "falling",
+			duration = 0.05,
+			pos = vec2(randSign(), randSign()) * (TILE_SIZE * 0.05),
+			doneCallback = function(){
+				@fallingAction = null
+				@startFalling()
+			}.bind(this)
+		}
+		@savePriority = @priority
+		@priority = TILE_FALLING_PRIORITY
+		
+		@saveBackVisible = @back.visible
+		@back.visible = true
 	},
 	
 	__get@isEmpty = function(){

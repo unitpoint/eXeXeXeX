@@ -1,3 +1,11 @@
+var enumCount = 0
+LAYER_TILES = enumCount++
+LAYER_DECALS = enumCount++
+LAYER_MONSTERS = enumCount++
+LAYER_PLAYER = enumCount++
+LAYER_FALLING_TILES = enumCount++
+LAYER_COUNT = enumCount
+
 TILE_FADE_SIZE = 32
 
 TILE_TYPE_EMPTY = 0
@@ -12,6 +20,7 @@ TILE_TYPE_TRADE_STOCK = 24
 
 TILE_BASE_PRIORITY = 2
 TILE_DOOR_PRIORITY = 3
+TILE_FALLING_PRIORITY = 4
 
 TILES_INFO = {
 	[TILE_TYPE_GRASS] = {
@@ -206,8 +215,6 @@ Game4X = extends BaseGame4X {
 			stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
 		}
 
-		@initMap("testmap")
-		
 		@addUpdate(@update.bind(this))
 		
 		/* var style = TextStyle()
@@ -282,126 +289,151 @@ Game4X = extends BaseGame4X {
 		
 		if(false){
 		
-		for(var i = 0; i < 10; i++){
-			Sprite().attrs {
-				resAnim = res.get("tile-01"),
-				pivot = vec2(0.5, 0.5),
-				pos = vec2(i*128, 300+128),
-				parent = this,
-			}
-			Sprite().attrs {
-				resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
-				pivot = vec2(0.5, 0.5),
-				pos = vec2(i*128, 300+128*2),
-				parent = this,
-			}
-			Sprite().attrs {
-				resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
-				pivot = vec2(0.5, 0.5),
-				pos = vec2(i*128, 300+128*3),
-				parent = this,
-			}
-		}
-
-		// lightMask.animateLight(1.5)
-		/* lightMask.addTimeout(0.0, function(){
-			var scale = 2.5
-			lightMask.addTweenAction {
-				duration = 3.0,
-				scale = scale,
-				ease = Ease.QUINT_IN,
-				doneCallback = function(){
-					lightMask.animateLight(scale)
-				}.bind(this)
-			}
-		}.bind(this)) */
-		/* lightMask.addAction(RepeatForeverAction(SequenceAction(
-			TweenAction {
-				duration = 2.0,
-				scale = 2.8,
-				ease = Ease.CIRC_IN_OUT,
-			},
-			TweenAction {
-				duration = 2.0,
-				scale = 1.0,
-				ease = Ease.CIRC_IN_OUT,
-			},
-		))) */
-
-		var monster = Monster("monster-01").attrs {
-			pos = player.pos - vec2(128*2, 0),
-			parent = this,
-		}
-		// monster.breathing(2)
-		
-		var monster = Monster("monster-03").attrs {
-			pos = player.pos + vec2(128, 0),
-			parent = this,
-		}
-		
-		var screenBlood_01 = Sprite().attrs {
-			resAnim = res.get("screen-blood-scratch"),
-			priority = 1000,
-			// parent = this,
-			pivot = vec2(0.5, 0.5),
-			pos = @size / 2,
-			touchEnabled = false,
-		}
-		screenBlood_01.scale = @width / screenBlood_01.width
-		
-		var screenBlood_02 = Sprite().attrs {
-			resAnim = res.get("screen-blood-breaks-01"),
-			priority = 1000,
-			// parent = this,
-			pivot = vec2(0, 0),
-			pos = vec2(0, 0),
-			touchEnabled = false,
-		}
-		screenBlood_02.scale = @height / screenBlood_02.height
-		
-		var screenBlood_03 = Sprite().attrs {
-			resAnim = res.get("screen-blood-breaks-02"),
-			priority = 1000,
-			// parent = this,
-			pivot = vec2(0, 0),
-			pos = vec2(0, 0),
-			touchEnabled = false,
-		}
-		screenBlood_03.scale = @height / screenBlood_03.height
-		
-		var self = this
-		var screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03]
-		
-		monster.attackCallback = function(){
-			// print "attackCallback"
-			for(var i = 0; i < #screenBloods; i++){
-				if(screenBloods[i].parent){
-					// print "screenBloods[${i}].parent found"
-					return
+			for(var i = 0; i < 10; i++){
+				Sprite().attrs {
+					resAnim = res.get("tile-01"),
+					pivot = vec2(0.5, 0.5),
+					pos = vec2(i*128, 300+128),
+					parent = this,
+				}
+				Sprite().attrs {
+					resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
+					pivot = vec2(0.5, 0.5),
+					pos = vec2(i*128, 300+128*2),
+					parent = this,
+				}
+				Sprite().attrs {
+					resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
+					pivot = vec2(0.5, 0.5),
+					pos = vec2(i*128, 300+128*3),
+					parent = this,
 				}
 			}
-			if(math.random() < 0.9){
-				var b = randItem(screenBloods)
-				b.parent = self
-				b.opacity = 1
-				b.addTimeout(math.random(1, 3), function(){
-					b.addTweenAction {
-						duration = math.random(2, 4),
-						opacity = 0,
-						detachTarget = true,
+
+			// lightMask.animateLight(1.5)
+			/* lightMask.addTimeout(0.0, function(){
+				var scale = 2.5
+				lightMask.addTweenAction {
+					duration = 3.0,
+					scale = scale,
+					ease = Ease.QUINT_IN,
+					doneCallback = function(){
+						lightMask.animateLight(scale)
+					}.bind(this)
+				}
+			}.bind(this)) */
+			/* lightMask.addAction(RepeatForeverAction(SequenceAction(
+				TweenAction {
+					duration = 2.0,
+					scale = 2.8,
+					ease = Ease.CIRC_IN_OUT,
+				},
+				TweenAction {
+					duration = 2.0,
+					scale = 1.0,
+					ease = Ease.CIRC_IN_OUT,
+				},
+			))) */
+
+			var monster = Monster("monster-01").attrs {
+				pos = player.pos - vec2(128*2, 0),
+				parent = this,
+			}
+			// monster.breathing(2)
+			
+			var monster = Monster("monster-03").attrs {
+				pos = player.pos + vec2(128, 0),
+				parent = this,
+			}
+			
+			var screenBlood_01 = Sprite().attrs {
+				resAnim = res.get("screen-blood-scratch"),
+				priority = 1000,
+				// parent = this,
+				pivot = vec2(0.5, 0.5),
+				pos = @size / 2,
+				touchEnabled = false,
+			}
+			screenBlood_01.scale = @width / screenBlood_01.width
+			
+			var screenBlood_02 = Sprite().attrs {
+				resAnim = res.get("screen-blood-breaks-01"),
+				priority = 1000,
+				// parent = this,
+				pivot = vec2(0, 0),
+				pos = vec2(0, 0),
+				touchEnabled = false,
+			}
+			screenBlood_02.scale = @height / screenBlood_02.height
+			
+			var screenBlood_03 = Sprite().attrs {
+				resAnim = res.get("screen-blood-breaks-02"),
+				priority = 1000,
+				// parent = this,
+				pivot = vec2(0, 0),
+				pos = vec2(0, 0),
+				touchEnabled = false,
+			}
+			screenBlood_03.scale = @height / screenBlood_03.height
+			
+			var self = this
+			var screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03]
+			
+			monster.attackCallback = function(){
+				// print "attackCallback"
+				for(var i = 0; i < #screenBloods; i++){
+					if(screenBloods[i].parent){
+						// print "screenBloods[${i}].parent found"
+						return
 					}
+				}
+				if(math.random() < 0.9){
+					var b = randItem(screenBloods)
+					b.parent = self
+					b.opacity = 1
+					b.addTimeout(math.random(1, 3), function(){
+						b.addTweenAction {
+							duration = math.random(2, 4),
+							opacity = 0,
+							detachTarget = true,
+						}
+					})
+				}
+			}
+			
+			var attack = function(){
+				player.attack(function(){
+					monster.attack(-1, attack)
 				})
 			}
-		}
-		
-		var attack = function(){
-			player.attack(function(){
-				monster.attack(-1, attack)
-			})
-		}
-		attack()
+			attack()
 		
 		} // if(false)
+		
+		@initLevel(0)
+	},
+	
+	initLevel = function(num){
+		var filenames = require("levels")
+		var names = filenames.keys
+		var filename = filenames[names[@levelNum = num % #names]]
+		var level = json.decode(File.readContents(filename))
+		
+		@tiledmapWidth = level.width
+		@tiledmapHeight = level.height
+		@tiledmapFloor = level.floor
+		
+		var decode = function(data){
+			return zlib.gzuncompress(base64.decode(data))
+		}
+		var frontLayerData = decode(level.layers.front.data)
+		var backLayerData = decode(level.layers.back.data)
+		var itemsLayerData = decode(level.layers.items.data)
+		@registerLevelInfo(@tiledmapWidth, @tiledmapHeight, frontLayerData, backLayerData, itemsLayerData)
+		
+		for(var _, obj in level.groups.entities.objects){
+			@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
+		}
 	},
 
 	toLocalPos = function(child, pos){
@@ -603,21 +635,21 @@ Game4X = extends BaseGame4X {
 		@updateTiledmapShadowViewport(ax, ay, bx, by)
 	},
 	
-	addTiledmapEntity = function(x, y, type, isPlayer){
-		if(isPlayer){
+	addTiledmapEntity = function(obj){ // x, y, type, isPlayer){
+		if(obj.type == "player"){
 			@player && throw "player is already exist"
-			@player = Player(this, type)
-			@initEntTilePos(@player, x, y)
-			@centerViewToTile(x, y)
+			@player = Player(this, obj.gid)
+			@initEntTilePos(@player, obj.x, obj.y)
+			@centerViewToTile(obj.x, obj.y)
 			return
 		}
-		if(type > 0){
-			var monster = Monster(this, type)
-			@initEntTilePos(monster, x, y)
+		if(obj.gid > 0){
+			var monster = Monster(this, obj.gid)
+			@initEntTilePos(monster, obj.x, obj.y)
 			monster.createPatrolAreaIfNecessary()
 			return
 		}
-		throw "unknown entity tiledmap type: ${type}"
+		throw "unknown entity tiledmap type: ${obj.gid}"
 	},
 	
 	removeTile = function(tx, ty){
@@ -721,11 +753,23 @@ Game4X = extends BaseGame4X {
 			@player.moveDir = vec2(0, 0)
 		}
 		// @player.update(ev)
-		@followPlayer()
 		for(var i, layer in @layers){
 			for(var _, obj in layer){
 				"update" in obj && obj.update()
 			}
 		}
+		var tx, ty = @player.tileX, @player.tileY
+		var type = @getFrontType(tx, ty - 1)
+		if(type == TILE_TYPE_ROCK){
+			var tile = @getTile(tx, ty)
+			if(!(tile is Door)){
+				type = @getFrontType(tx, ty + 1)
+				if(type != TILE_TYPE_EMPTY){
+					var tile = @getTile(tx, ty - 1)
+					tile.startFalling()
+				}
+			}
+		}
+		@followPlayer()
 	},
 }
