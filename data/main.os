@@ -12,5 +12,11 @@ scale = math.min(scale.x, scale.y)
 stage.size = displaySize / scale
 stage.scale = scale
 
+mplayer.play { 
+	sound = "music",
+	looping = true,
+	volume = 0.3,
+}
+
 Game4X().parent = stage
 
