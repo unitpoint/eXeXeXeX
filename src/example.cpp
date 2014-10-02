@@ -53,7 +53,7 @@ void example_update()
 {
 #ifdef WIN32 // && !defined 
 #ifdef OS_DEBUG
-	sleep(10);
+	// sleep(10);
 #else
 	sleep(15);
 #endif

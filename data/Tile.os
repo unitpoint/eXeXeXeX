@@ -1,7 +1,9 @@
 Tile = extends BaseTile {
 	BACK_PRIORITY 	= 10,
-	SHADOW_PRIORITY = 20,
-	FRONT_PRIORITY 	= 30,
+	FRONT_PRIORITY 	= 20,
+	SHADOW_PRIORITY = 30,
+	FRONT_FALLING_PRIORITY = 35,
+	FRONT_DOOR_PRIORITY = 35,
 	ITEM_PRIORITY 	= 40,
 	
 	__construct = function(game, x, y){
@@ -67,7 +69,7 @@ Tile = extends BaseTile {
 		@fallingInProgress = null
 	},
 	
-	falling = function(){
+	falling = function(continues){
 		@fallingInProgress && return;
 		var tx, ty = @tileX, @tileY
 		var frontType = @game.getFrontType(tx, ty)
@@ -79,9 +81,9 @@ Tile = extends BaseTile {
 		@parent = @game.layers[LAYER_FALLING_TILES]
 		@shadow.removeChildren()
 		@fallingInProgress = @addTweenAction {
-			duration = 0.5,
+			duration = continues ? 0.2 : 0.5,
 			y = @y + TILE_SIZE,
-			// ease = Ease.CUBIC_IN,
+			ease = continues ? Ease.LINEAR : Ease.CUBIC_IN,
 			doneCallback = function(){
 				@detach()
 				// @fallingInProgress = null
@@ -94,7 +96,7 @@ Tile = extends BaseTile {
 				frontType = @game.getFrontType(tx, ty + 1)
 				if(frontType == TILE_TYPE_EMPTY){
 					var tile = @game.getTile(tx, ty)
-					tile.falling()
+					tile.falling(true)
 				}
 			}.bind(this),
 		}

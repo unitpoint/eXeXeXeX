@@ -32,7 +32,7 @@ TILES_INFO = {
 		// damageDelay = 0.1,
 	},
 	[TILE_TYPE_ROCK] = {
-		variants = 3,
+		// variants = 1,
 	},
 	/* [TILE_TYPE_LADDERS] = {
 		strength = 0,
