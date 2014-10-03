@@ -28,6 +28,9 @@
     <Filter Include="ext-zlib">
       <UniqueIdentifier>{a0aa4788-7283-4cf1-87d6-d084646265a2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ext-url">
+      <UniqueIdentifier>{f03b8a1a-3667-4927-ae80-891b3177cbb4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../src/entry_point.cpp">
@@ -120,6 +123,9 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\zutil.c">
       <Filter>ext-zlib</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-url\os-url.cpp">
+      <Filter>ext-url</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
@@ -136,6 +142,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h">
       <Filter>objectscript</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h">
+      <Filter>ext-url</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

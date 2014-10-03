@@ -26,6 +26,12 @@
 		<image file="tile-fade-outer-left-top.png" />
 		<image file="tile-fade-inner-left-top.png" />
 		<image file="tile-fade-left.png" />
+
+		<image file="panel.png" />
+		<image file="slot.png" />
+		<image file="backpack.png" />
+		<image file="stamina-border.png" />
+		<image file="white.png" />
 		
 		<!-- begin auto generated assets -->
 		<image file="ent-001.png" />
@@ -82,6 +88,12 @@
 		<image file="item-009.png" />
 		<image file="item-010-01.png" />
 		<image file="item-010-02.png" />
+		<image file="item-101.png" />
+		<image file="item-102.png" />
+		<image file="item-103.png" />
+		<image file="item-201.png" />
+		<image file="item-301.png" />
+		<image file="item-401.png" />
 		<image file="tile-000.png" />
 		<image file="tile-001.png" />
 		<image file="tile-002-01.png" />
@@ -101,7 +113,7 @@
 		<!-- end auto generated assets -->
 	</atlas>
 
-	<set path = "../data_debug/fonts/" />
-	<font file="normal.fnt"/>
-	<font id="big" file="huge.fnt"/>
+	<set path = "fonts/" />
+	<font file="normal.fnt" />
+	<font file="test.fnt" />
 </resources>

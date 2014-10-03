@@ -137,9 +137,11 @@ Monster = extends Entity {
 	},
 	
 	onMoveFinished = function(){
+		super()
 		// print "onMoveFinished:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}"
 		if(math.random() < 0.8 && (@saveTileX != @tileX || @saveTileY != @tileY)){
 			@moveDir = @prevMoveDir
+			@updateMoveDir()
 		}else if(math.random() < 0.8){
 			if(math.random() < 0.8){
 				var px, py = @game.player.tileX, @game.player.tileY
@@ -155,6 +157,11 @@ Monster = extends Entity {
 		}
 		@aiNextTime = @game.time + math.random(2, 4)
 		@saveTileX, @saveTileY = @tileX, @tileY
+	},
+	
+	onTileChanged = function(){
+		super()
+		@createPatrolAreaIfNecessary()
 	},
 	
 	pushByEnt = function(ent, dx, dy){
@@ -173,12 +180,13 @@ Monster = extends Entity {
 	update = function(){
 		super()
 		if(!@moving && @aiNextTime <= @game.time){
-			@createPatrolAreaIfNecessary()
-			if(@game.time - @aiQueryTime < 3){
+			@patrolArea || @createPatrolAreaIfNecessary()
+			if(@game.time - @aiQueryTime < 0.5){
 				// @aiNextTime = @game.time + math.random(0.3, 1)
 				// print "ai update:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}"
 				@moveDir = @nextMoveDir || vec2(randSign(), randSign())
 				@nextMoveDir = null
+				@updateMoveDir()
 				@startBreathing()
 			}else{
 				@stopBreathing()

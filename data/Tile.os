@@ -1,10 +1,10 @@
 Tile = extends BaseTile {
-	BACK_PRIORITY 	= 10,
-	FRONT_PRIORITY 	= 20,
-	SHADOW_PRIORITY = 30,
-	FRONT_FALLING_PRIORITY = 35,
-	FRONT_DOOR_PRIORITY = 35,
-	ITEM_PRIORITY 	= 40,
+	PRIORITY_BACK 	= 10,
+	PRIORITY_FRONT 	= 20,
+	PRIORITY_SHADOW = 30,
+	PRIORITY_FRONT_FALLING = 35,
+	PRIORITY_FRONT_DOOR = 35,
+	PRIORITY_ITEM 	= 40,
 	
 	__construct = function(game, x, y){
 		super(game, x, y)
@@ -20,7 +20,7 @@ Tile = extends BaseTile {
 			resAnim = res.get(frontResName),
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			priority = @FRONT_PRIORITY,
+			priority = @PRIORITY_FRONT,
 			parent = this
 		}
 		@front.scale = @size / @front.size
@@ -30,7 +30,7 @@ Tile = extends BaseTile {
 			resAnim = res.get(backResName),
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			priority = @BACK_PRIORITY,
+			priority = @PRIORITY_BACK,
 			parent = this
 		}
 		if(backType < 16)
@@ -52,7 +52,7 @@ Tile = extends BaseTile {
 				resAnim = res.get(itemResName),
 				pivot = vec2(0.5, 0.5),
 				pos = @size/2,
-				priority = @ITEM_PRIORITY,
+				priority = @PRIORITY_ITEM,
 				parent = this,
 			}
 			@item.scale = @size / math.max(@item.width, @item.height)
@@ -60,7 +60,7 @@ Tile = extends BaseTile {
 		
 		@shadow = Actor().attrs {
 			size = @size,
-			priority = @SHADOW_PRIORITY,
+			priority = @PRIORITY_SHADOW,
 			parent = this,
 		}
 		
@@ -129,7 +129,7 @@ Tile = extends BaseTile {
 			}.bind(this)
 		}
 		@savePriority = @priority
-		@priority = TILE_FALLING_PRIORITY
+		@priority = TILE_PRIORITY_FALLING
 		
 		@saveBackVisible = @back.visible
 		@back.visible = true

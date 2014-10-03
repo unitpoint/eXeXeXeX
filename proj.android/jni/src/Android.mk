@@ -11,6 +11,7 @@ LOCAL_SRC_FILES += ../../../../../objectscript/src/os-heap.cpp
 
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-datetime/os-datetime.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-json/os-json.cpp
+LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-url/os-url.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/os-base64.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cencode.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cdecode.cpp

@@ -18,9 +18,20 @@ TILE_TYPE_DOOR_01 = 16
 TILE_TYPE_LADDERS = 17
 TILE_TYPE_TRADE_STOCK = 24
 
-TILE_BASE_PRIORITY = 2
-TILE_DOOR_PRIORITY = 3
-TILE_FALLING_PRIORITY = 4
+TILE_PRIORITY_BASE = 2
+TILE_PRIORITY_DOOR = 3
+TILE_PRIORITY_FALLING = 4
+
+GAME_PRIORITY_BG = 1
+GAME_PRIORITY_VIEW = 2
+GAME_PRIORITY_LIGHTMASK = 3
+GAME_PRIORITY_HUD = 4
+// GAME_PRIORITY_HUD_INVENTARY = 4
+// GAME_PRIORITY_HUD_JOYSTICK = 5
+
+HUD_ICON_INDENT = 10
+HUD_ICON_SIZE = 80
+SLOT_SIZE = 80
 
 TILES_INFO = {
 	[TILE_TYPE_GRASS] = {
@@ -51,9 +62,16 @@ TILES_INFO = {
 	},
 }
 
+ITEM_TYPE_COAL = 7
+ITEM_TYPE_GOLD = 10
+
 ITEMS_INFO = {
-	10 = {
+	[ITEM_TYPE_COAL] = {
+		strength = 1,
+	},
+	[ITEM_TYPE_GOLD] = {
 		variants = 2,
+		strength = 3,
 	},
 }
 
@@ -96,6 +114,7 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
+		playerMaxStamina = 200,
 		lightMask = null,
 		following = null,
 		followTileX = -1,
@@ -111,7 +130,7 @@ Game4X = extends BaseGame4X {
 			resAnim = res.get("bg-start"),
 			pivot = vec2(0.5, 0),
 			pos = vec2(@width/2, 0),
-			priority = 0,
+			priority = GAME_PRIORITY_BG,
 			parent = this,
 		}
 		@bg.scale = @width / @bg.width
@@ -120,7 +139,7 @@ Game4X = extends BaseGame4X {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
 			scale = 0.7,
-			priority = 1,			
+			priority = GAME_PRIORITY_VIEW,			
 			parent = this,
 		}
 		@layers = []
@@ -133,7 +152,7 @@ Game4X = extends BaseGame4X {
 		@lightMask = LightMask().attrs {
 			pos = @centerViewPos,
 			scale = 10.0,
-			priority = 10,
+			priority = GAME_PRIORITY_LIGHTMASK,
 			parent = this,
 		}
 		@lightMask.updateDark()
@@ -145,8 +164,29 @@ Game4X = extends BaseGame4X {
 			}.bind(this))
 		else if(false)
 			@lightMask.animateLight(2.5)
-		else
-			@lightMask.animateLight(2.5)
+		else @lightMask.animateLight(2.5)
+			
+		@hud = Actor().attrs {
+			name = "hud",
+			size = @size,
+			priority = GAME_PRIORITY_HUD,
+			parent = this,
+			touchEnabled = false,
+		}
+		
+		@hudStamina = HealthBar("stamina-border").attrs {
+			name = "stamina",
+			pos = vec2(1, 1),
+			parent = @hud,
+			value = 1,
+		}
+		
+		@backpackIcon = HudIcon("backpack").attrs {
+			x = 1,
+			y = @hudStamina.x + @hudStamina.height + HUD_ICON_INDENT,
+			parent = @hud,
+			onClicked = @openBackpack.bind(this),
+		}
 		
 		@inventary = Sprite().attrs {
 			resAnim = res.get("shovel-01"),
@@ -154,17 +194,36 @@ Game4X = extends BaseGame4X {
 			angle = -45,
 			pos = @size,
 			opacity = 0.5,
-			priority = 15,
-			parent = this,
+			// priority = GAME_PRIORITY_INVENTARY,
+			parent = @hud,
 			mode = "pick",
 		}
 		
-		@moveJoystick = Joystick().attrs {
-			priority = 20,
+		/*
+		@panel = Box9Sprite().attrs {
+			resAnim = res.get("panel"),
+			pos = vec2(100, 100),
+			size = vec2(500, 400),
+			opacity = 0.8,
+			priority = 17,
 			parent = this,
+		}
+		@panel.setGuides(10, 10, 10, 10)
+		*/
+		
+		/*
+		@backpack = Backpack()
+		@backpack.parent = @hud
+		@backpack.pos = (@size - @backpack.size) / 2
+		*/
+		
+		@moveJoystick = Joystick().attrs {
+			// priority = GAME_PRIORITY_JOYSTICK,
+			parent = @hud,
 			pivot = vec2(-0.25, 1.25),
 			pos = vec2(0, @height),
 		}
+		
 		@keyPressed = {}
 		if(PLATFORM == "windows"){
 			var moveJoystickActivated = false
@@ -216,6 +275,7 @@ Game4X = extends BaseGame4X {
 		}
 
 		@addUpdate(@update.bind(this))
+		// @addUpdate(0.5, @checkFalling.bind(this))
 		
 		/* var style = TextStyle()
 		style.resFont = res.get("big")
@@ -413,22 +473,43 @@ Game4X = extends BaseGame4X {
 		@initLevel(0)
 	},
 	
+	openBackpack = function(){
+		
+	},
+	
 	initLevel = function(num){
 		var filenames = require("levels")
 		var names = filenames.keys
 		var filename = filenames[names[@levelNum = num % #names]]
 		var level = json.decode(File.readContents(filename))
+		print "level: "..typeOf(level)
+		print "level.layers: ${#level.layers}"
 		
 		@tiledmapWidth = level.width
 		@tiledmapHeight = level.height
 		@tiledmapFloor = level.floor
 		
+		var encoder = level.encoder == "base64" ? base64 
+			: level.encoder == "url" ? url
+			: throw "unknown encoder"
+		// print encoder
+		
 		var decode = function(data){
-			return zlib.gzuncompress(base64.decode(data))
+			/* var d2 = encoder.decode(data)
+			var d3 = zlib.gzuncompress(d2)
+			print "decode data: ${#data}, ${#d2}, ${#d3}"
+			// print d2
+			return d3 */
+			return zlib.gzuncompress(encoder.decode(data))
 		}
 		var frontLayerData = decode(level.layers.front.data)
 		var backLayerData = decode(level.layers.back.data)
 		var itemsLayerData = decode(level.layers.items.data)
+		
+		// print "front: ${#frontLayerData}"
+		// print "back: ${#backLayerData}"
+		// print "items: ${#itemsLayerData}"
+		
 		@registerLevelInfo(@tiledmapWidth, @tiledmapHeight, frontLayerData, backLayerData, itemsLayerData)
 		
 		for(var _, obj in level.groups.entities.objects){
@@ -485,13 +566,14 @@ Game4X = extends BaseGame4X {
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			return
 		}
+		var tile = @getTile(tx, ty)
 		var type = @getAutoFrontType(tx, ty)
 		var info = TILES_INFO[type]
 		if(!info.strength){
-			var tile = @getTile(tx, ty)
 			tile.pickByEnt(@player)
 			return
 		}
+		var itemInfo = ITEMS_INFO[tile.itemType]
 		var key = "${tx}-${ty}"
 		var crack = @tileCracks[key] || @{
 			var pos = @tileToCenterPos(tx, ty)
@@ -507,7 +589,7 @@ Game4X = extends BaseGame4X {
 				touchEnabled = false,
 				parent = @layers[LAYER_DECALS],
 				damageDelay = info.damageDelay || 0.3,
-				strength = info.strength || 3,
+				strength = (info.strength || 3) + (itemInfo.strength || 0),
 				damage = -1,				
 				nextDamageTime = 0,
 			}
@@ -535,6 +617,7 @@ Game4X = extends BaseGame4X {
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
+			@player.useStaminaByCrack()
 		}
 		crack.resAnimFrameNum = crack.damage * crack.resAnim.totalFrames / (crack.strength-1)
 		return true
@@ -747,17 +830,21 @@ Game4X = extends BaseGame4X {
 	
 	update = function(ev){
 		@time, @dt = ev.time, ev.dt
-		if(@moveJoystick.active){
+		/* if(@moveJoystick.active){
 			@player.moveDir = @moveJoystick.dir
 		}else{
 			@player.moveDir = vec2(0, 0)
-		}
+		} */
 		// @player.update(ev)
-		for(var i, layer in @layers){
+		/* for(var i, layer in @layers){
 			for(var _, obj in layer){
 				"update" in obj && obj.update()
 			}
-		}
+		} */
+		@followPlayer()
+	},
+	
+	/* checkFalling = function(){
 		var tx, ty = @player.tileX, @player.tileY
 		var type = @getFrontType(tx, ty - 1)
 		if(type == TILE_TYPE_ROCK){
@@ -770,6 +857,5 @@ Game4X = extends BaseGame4X {
 				}
 			}
 		}
-		@followPlayer()
-	},
+	}, */
 }

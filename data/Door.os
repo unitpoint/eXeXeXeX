@@ -6,8 +6,8 @@ Door = extends Tile {
 
 	__construct = function(game, x, y){
 		super(game, x, y)
-		@priority = TILE_DOOR_PRIORITY
-		@front.priority = @FRONT_DOOR_PRIORITY
+		@priority = TILE_PRIORITY_DOOR
+		@front.priority = @PRIORITY_FRONT_DOOR
 		// @front.priority = 5
 		@handle = Sprite().attrs {
 			resAnim = res.get(TILES_INFO[@frontType].handle),
@@ -19,7 +19,7 @@ Door = extends Tile {
 		@handleShadow = Sprite().attrs {
 			resAnim = res.get(TILES_INFO[@frontType].handleShadow),
 			pivot = @handle.pivot,
-			pos = @handle.pos + vec2(@width * 0.02, @height * 0.04),
+			pos = @handle.pos + vec2(@width * 0.02, @height * 0.05),
 			opacity = 0.5,
 			priority = 1,
 			parent = @front,
@@ -46,7 +46,7 @@ Door = extends Tile {
 		@removeTimeout(@timeoutHandle); @timeoutHandle = null
 		@handleAction.target.removeAction(@handleAction)
 		
-		var destAngle = 360*3.3
+		var destAngle = 360*2.3
 		@handleAction = @handle.addTweenAction {
 			duration = (1 - @handle.angle / destAngle) * 1.0,
 			angle = destAngle,

@@ -9,7 +9,7 @@ BaseTile = extends Actor {
 		// @itemType = ITEM_TYPE_EMPTY
 		@size = vec2(TILE_SIZE, TILE_SIZE)
 		@pos = game.tileToPos(x, y)
-		@priority = TILE_BASE_PRIORITY
+		@priority = TILE_PRIORITY_BASE
 		@touchChildrenEnabled = false
 		
 		@parent = game.layers[LAYER_TILES]

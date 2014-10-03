@@ -2,6 +2,7 @@
 #include "SoundPlayer.h"
 #include "SoundSystem.h"
 #include <ox-binder.h>
+#include <ext-url/os-url.h>
 #include <ext-base64/os-base64.h>
 #include <ext-json/os-json.h>
 #include <ext-zlib/os-zlib.h>
@@ -13,6 +14,7 @@ void example_preinit()
 	ObjectScript::Oxygine::init();
 
 	ObjectScript::OS * os = ObjectScript::os;
+	initUrlExtension(os);
 	initBase64Extension(os);
 	initJsonExtension(os);
 	initZlibExtension(os);
@@ -45,7 +47,7 @@ void example_init()
 	//initialize SoundPlayer
 	SoundPlayer::initialize();
 
-	DebugActor::showFPS = false;
+	// DebugActor::showFPS = false;
 	ObjectScript::Oxygine::run();
 }
 
@@ -55,7 +57,7 @@ void example_update()
 #ifdef OS_DEBUG
 	// sleep(10);
 #else
-	sleep(15);
+	// sleep(15);
 #endif
 #endif
 	SoundSystem::instance->update();

@@ -90,6 +90,7 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-base64\os-base64.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-datetime\os-datetime.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-json\os-json.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-url\os-url.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\os-zlib.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\adler32.c" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\compress.c" />
@@ -115,6 +116,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-binder.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h" />
     <ClInclude Include="..\src\BaseGame4X.h" />

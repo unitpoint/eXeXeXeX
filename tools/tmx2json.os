@@ -165,7 +165,8 @@ for(var i, v in m[1]){
 		}
 	}
 	layer.data = zlib.gzcompress(toString(data))
-	layer.data = base64.encode(layer.data)
+	layer.data = url.encode(layer.data) // base64 bugged on android
+	map.encoder = "url"
 
 	if(layer.name in layerNames){
 		map.layers[layer.name] && throw "layer ${layer.name} is already exist"
