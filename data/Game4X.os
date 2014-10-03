@@ -140,8 +140,10 @@ Game4X = extends BaseGame4X {
 			pos = vec2(0, 0),
 			scale = 0.7,
 			priority = GAME_PRIORITY_VIEW,			
+			clock = Clock(),
 			parent = this,
 		}
+		
 		@layers = []
 		for(var i = 0; i < LAYER_COUNT; i++){
 			@layers[] = Actor().attrs {
@@ -181,11 +183,21 @@ Game4X = extends BaseGame4X {
 			value = 1,
 		}
 		
-		@backpackIcon = HudIcon("backpack").attrs {
-			x = 1,
-			y = @hudStamina.x + @hudStamina.height + HUD_ICON_INDENT,
+		var hudIcons = []
+		hudIcons[] = @playerIcon = HudIcon("ent-001").attrs {
+			onClicked = @openPlayer.bind(this),
 			parent = @hud,
+		}
+		
+		hudIcons[] = @backpackIcon = HudIcon("backpack").attrs {
 			onClicked = @openBackpack.bind(this),
+			parent = @hud,
+		}
+		var hudIconY = @hudStamina.x + @hudStamina.height + HUD_ICON_INDENT
+		for(var _, hudIcon in hudIcons){
+			hudIcon.x = 2
+			hudIcon.y = hudIconY
+			hudIconY = hudIconY + hudIcon.height + HUD_ICON_INDENT
 		}
 		
 		@inventary = Sprite().attrs {
@@ -322,7 +334,7 @@ Game4X = extends BaseGame4X {
 				// print "player clicked: ${ev.target.name}"
 				return
 			}
-			print "unknown clicked: ${ev.localPosition}"
+			// print "unknown clicked: ${ev.localPosition}"
 			
 			// var pos = @toLocalPos(@player)
 			// var touch = ev.localPosition
@@ -473,8 +485,32 @@ Game4X = extends BaseGame4X {
 		@initLevel(0)
 	},
 	
-	openBackpack = function(){
+	openModal = function(window){
+		@view.clock.pause()
+		@moveJoystick.visible = false
+		var modalView = ColorRectSprite().attrs {
+			size = @size,
+			color = Color(0.2, 0.23, 0.23, 0.6),
+			parent = @hud,
+		}
+		window.parent = modalView
+		window.pos = (@size - window.size) / 2
+		modalView.addEventListener(TouchEvent.CLICK, function(ev){
+			if(ev.target == modalView){
+				modalView.removeChildren()
+				modalView.detach()
+				@view.clock.resume()
+				@moveJoystick.visible = true
+			}
+		}.bind(this))
+	},
+	
+	openPlayer = function(){
 		
+	},
+	
+	openBackpack = function(){
+		@openModal(Backpack(this))
 	},
 	
 	initLevel = function(num){
@@ -492,7 +528,6 @@ Game4X = extends BaseGame4X {
 		var encoder = level.encoder == "base64" ? base64 
 			: level.encoder == "url" ? url
 			: throw "unknown encoder"
-		// print encoder
 		
 		var decode = function(data){
 			/* var d2 = encoder.decode(data)
@@ -518,13 +553,7 @@ Game4X = extends BaseGame4X {
 	},
 
 	toLocalPos = function(child, pos){
-		pos || pos = vec2(0, 0)
-		for(var cur = child; cur && cur !== this;){
-			pos = cur.local2global(pos)
-			cur = cur.parent
-		}
-		cur || throw "${child} is not child of ${this}"
-		return pos
+		return child.localToGlobal(pos || vec2(0, 0), this)
 	},
 	
 	initEntTilePos = function(ent, tx, ty){
@@ -622,20 +651,6 @@ Game4X = extends BaseGame4X {
 		crack.resAnimFrameNum = crack.damage * crack.resAnim.totalFrames / (crack.strength-1)
 		return true
 	},
-	
-	/* getEntitiesInArea = function(ax, ay, bx, by, ignoreEnt){
-		var entList, entLayerIndices = {}, [LAYER_MONSTERS, LAYER_PLAYER]
-		for(var _, i in entLayerIndices){
-			for(var _, ent in @layers[i]){
-				if(ent.tileX >= ax && ent.tileX <= bx
-					&& ent.tileY >= ay && ent.tileY <= by)
-				{
-					ent !== ignoreEnt && entList[ent] = true
-				}
-			}
-		}
-		return entList
-	}, */
 	
 	getTileRandom = function(x, y, a, b){
 		var r = super(x, y)

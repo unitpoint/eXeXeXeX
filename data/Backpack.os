@@ -1,6 +1,16 @@
 Backpack = extends Actor {
+	items = {
+		{type = 101, count = 7}, 
+		{type = 102, count = 2}, 
+		{type = 103, count = 34}, 
+		{type = 201, count = 1}, 
+		{type = 301, count = 47}, 
+		{type = 401, count = 17}, 
+	},
+	
 	__construct = function(game){
 		super()
+		@game = game
 		
 		@cols = 4
 		@rows = 3
@@ -22,11 +32,14 @@ Backpack = extends Actor {
 		@slots = []
 		for(var y = 0; y < @rows; y++){
 			for(var x = 0; x < @cols; x++){
-				var slot = Sprite().attrs {
-					resAnim = res.get("slot"),
+				var slot = ItemSlot().attrs {
+					name = "backpackSlot",
+					// resAnim = res.get("slot"),
 					x = borderSize + (slotSize.x + paddingSize) * x,
 					y = borderSize + (slotSize.y + paddingSize) * y,
 					parent = this,
+					slotNum = #@slots,
+					touchChildrenEnabled = false,
 				}
 				@slots[] = slot
 			}
@@ -54,26 +67,117 @@ Backpack = extends Actor {
 			parent = backpack,
 		}
 		
-		var slotNum = 0
-		var items = [101, 102, 103, 201, 301, 401]
-		while(#items > 0 && slotNum < #@slots){
-			var i = math.random(#items)
-			var item = Sprite().attrs {
-				resAnim = res.get("item-"..items[i]),
+		@updateItems()
+		
+		var itemSelected, itemSlot, touchPos, targetSlot = null
+		@addEventListener(TouchEvent.START, function(ev){
+			if(ev.target is ItemSlot){ // .name == "backpackItem"){ // && (itemSelected = ev.target.getChild("backpackItem"))){
+				@extendedClickArea = stage.width
+				itemSlot = ev.target
+				itemSelected = itemSlot.item
+				targetSlot = null
+				
+				// itemSelected.touchEnabled = false
+				itemSelected.color = Color(0.9, 0.9, 0.99)
+				// print "${itemSelected.pos} == ${itemSelected.localToLocal(itemSelected.pos, itemSlot)}"
+				// itemSelected.pos = itemSelected.localToLocal(@parent)
+				// itemSelected.parent = @parent
+				itemSelected.changeParentAndSavePos(@parent)
+				
+				touchPos = @localToGlobal(ev.localPos)
+			}
+		}.bind(this))
+
+		@addEventListener(TouchEvent.MOVE, function(ev){
+			if(itemSelected){ // ev.target.name == "backpackSlot"){
+				// print "move: "..ev.localPos
+				var curTouchPos = @localToGlobal(ev.localPos)
+				var delta = curTouchPos - touchPos
+				touchPos = curTouchPos
+				
+				itemSelected.pos += delta
+				
+				var slot = stage.findActorByPos(curTouchPos, function(actor){
+					return actor is ItemSlot
+				})
+				if(slot && slot !== targetSlot){
+					targetSlot = slot
+					slot.color = Color.WHITE
+					var action = EaseAction(TweenAction {
+						duration = 0.5,
+						color = Color(1, 0.4, 0.4),
+					}, Ease.PING_PONG)
+					action.name = "selectTargetSlot"
+					slot.replaceAction(action)
+				}
+			}
+		}.bind(this))
+		
+		@addEventListener(TouchEvent.END, function(ev){
+			if(itemSelected){ // ev.target.name == "backpackSlot"){
+				if(!targetSlot || targetSlot == itemSlot){
+					itemSelected.pos = itemSlot.size/2
+					itemSelected.parent = itemSlot
+					itemSelected.color = Color.WHITE
+					itemSelected = null
+				}else{
+					var itemInfo = @items[itemSlot.slotNum]
+					var targetItemInfo = @items[targetSlot.slotNum]
+					if(!targetItemInfo){
+						var moveCount = math.ceil(itemInfo.count / 2)
+						if(moveCount == itemInfo.count){
+							@items[targetSlot.slotNum] = itemInfo
+							delete @items[itemSlot.slotNum]
+						}else{
+							@items[targetSlot.slotNum] = {
+								type = itemInfo.type,
+								count = moveCount,
+							}
+							itemInfo.count -= moveCount
+						}
+					}else if(targetItemInfo.type == itemInfo.type){
+						var moveCount = itemInfo.count
+						targetItemInfo.count += moveCount
+						delete @items[itemSlot.slotNum]
+					}else{
+						@items[itemSlot.slotNum] = targetItemInfo
+						@items[targetSlot.slotNum] = itemInfo
+					}
+					@updateItems()
+					itemSelected.detach()
+				}
+				itemSelected = itemSlot = targetSlot = null
+				@extendedClickArea = 0
+			}
+		}.bind(this))
+	},
+	
+	updateItems = function(){
+		for(var _, slot in @slots){
+			slot.removeChildren()
+			slot.item = null
+			slot.count = null
+		}
+		for(var slotNum, item in @items){
+			var slot = @slots[slotNum]
+			slot.item = Sprite().attrs {
+				name = "item",
+				resAnim = res.get("item-"..item.type),
 				pivot = vec2(0.5, 0.5),
 				pos = slot.size/2,
-				parent = @slots[slotNum],
+				priority = 1,
+				parent = slot,
+				touchEnabled = false,
 			}
-			var count = TextField().attrs {
+			slot.count = TextField().attrs {
 				resFont = res.get("test"),
 				vAlign = TEXT_VALIGN_BOTTOM,
 				hAlign = TEXT_HALIGN_RIGHT,
-				text = math.random(1, 100)|0,
+				text = item.count,
 				pos = slot.size - vec2(4, 5),
-				parent = @slots[slotNum++],
+				priority = 2,
+				parent = slot,
 			}
-			
-			delete items[i]
 		}
 	},
 }
