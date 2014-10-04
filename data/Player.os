@@ -29,6 +29,7 @@ Player = extends Entity {
 			@startBreathing(8.0)
 		}
 		@game.hudStamina.value = t
+		// @game.hudStaminaNumber.text = math.round(@_stamina, 1)
 	},
 	
 	useStamina = function(value){
@@ -72,11 +73,11 @@ Player = extends Entity {
 		if(type != TILE_TYPE_TRADE_STOCK){
 			@useStamina(0.5)
 			if(@staminaUpdateHandle){
-				@removeUpdate(@staminaUpdateHandle)
+				@game.removeUpdate(@staminaUpdateHandle)
 				@staminaUpdateHandle = null
 			}
 		}else if(!@staminaUpdateHandle){
-			@staminaUpdateHandle = @addUpdate(function(ev){
+			@staminaUpdateHandle = @game.addUpdate(function(ev){
 				@stamina += (@game.playerMaxStamina / 10) * ev.dt
 			}.bind(this))
 		}

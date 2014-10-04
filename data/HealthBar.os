@@ -10,13 +10,16 @@ HealthBar = extends Actor {
 		border is ResAnim || border = res.get(border) as ResAnim || throw "ResAnim required for ${border}"
 		filler is ResAnim || filler = res.get(filler) as ResAnim || throw "ResAnim required for ${filler}"
 		
-		@border = Sprite().attrs {
+		@border = Box9Sprite().attrs {
 			resAnim = border,
 			priority = 1,
 			parent = this,
 			// pivot = vec2(0, 0),
 			// pos = vec2(0, 0),
 		}
+		var guide = math.ceil(@border.height/3)
+		@border.setGuides(guide, guide, guide, guide)
+		
 		@filler = Box9Sprite().attrs {
 			resAnim = filler,
 			priority = 0,
@@ -29,6 +32,17 @@ HealthBar = extends Actor {
 		// @fillFullScaleX = @filler.scaleX
 		@blinkUpdateHandle = null
 		@value = 1
+	},
+	
+	__get@width = function(){
+		return super()
+	},
+	
+	__set@width = function(value){
+		super(@border.width = value)
+		var saveValue = @_value
+		@_value = 0
+		@value = saveValue
 	},
 	
 	__get@value = function(){

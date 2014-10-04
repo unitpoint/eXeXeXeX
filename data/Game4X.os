@@ -29,8 +29,12 @@ GAME_PRIORITY_HUD = 4
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
 
-HUD_ICON_INDENT = 10
 HUD_ICON_SIZE = 80
+HUD_ICON_INDENT = 10
+
+HUD_SLOT_SIZE = 80
+HUD_SLOT_INDENT = 5
+
 SLOT_SIZE = 80
 
 TILES_INFO = {
@@ -114,7 +118,7 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
-		playerMaxStamina = 200,
+		playerMaxStamina = 100,
 		lightMask = null,
 		following = null,
 		followTileX = -1,
@@ -138,7 +142,7 @@ Game4X = extends BaseGame4X {
 		@view = Actor().attrs {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			scale = 0.7,
+			// scale = 0.7,
 			priority = GAME_PRIORITY_VIEW,			
 			clock = Clock(),
 			parent = this,
@@ -176,19 +180,41 @@ Game4X = extends BaseGame4X {
 			touchEnabled = false,
 		}
 		
+		@modalView = ColorRectSprite().attrs {
+			size = @size,
+			color = Color(0.2, 0.23, 0.23, 0.6),
+			parent = @hud,
+			// touchEnabled = false,
+			visible = false,
+			touchEnabled = false,
+			closeCallback = null,
+		}
+		@modalView.addEventListener(TouchEvent.CLICK, function(ev){
+			ev.target == @modalView && @closeModal()
+		}.bind(this))
+		
 		@hudStamina = HealthBar("stamina-border").attrs {
 			name = "stamina",
 			pos = vec2(1, 1),
 			parent = @hud,
 			value = 1,
 		}
+		@hudStamina.width = @playerMaxStamina * 1.0
+		/* @hudStaminaNumber = TextField().attrs {
+			name = "staminaNumber",
+			resFont = res.get("test"),
+			vAlign = TEXT_VALIGN_TOP,
+			hAlign = TEXT_HALIGN_LEFT,
+			x = @hudStamina.width + 3,
+			text = math.round(@hudStamina.value * @playerMaxStamina),
+			parent = @hudStamina,
+		} */
 		
 		var hudIcons = []
 		hudIcons[] = @playerIcon = HudIcon("ent-001").attrs {
 			onClicked = @openPlayer.bind(this),
 			parent = @hud,
 		}
-		
 		hudIcons[] = @backpackIcon = HudIcon("backpack").attrs {
 			onClicked = @openBackpack.bind(this),
 			parent = @hud,
@@ -200,8 +226,36 @@ Game4X = extends BaseGame4X {
 			hudIconY = hudIconY + hudIcon.height + HUD_ICON_INDENT
 		}
 		
+		@hudSlots = []
+		if(false){
+			var hudSlotX = @width - 2
+			for(var i = 0; i < 3; i++){
+				var hudSlot = HudSlot(this).attrs {
+					pivot = vec2(1, 1),
+					x = hudSlotX,
+					y = @height - 2,
+					parent = @hud,
+				}
+				@hudSlots[] = hudSlot
+				hudSlotX = hudSlotX - hudSlot.width - HUD_SLOT_INDENT
+			}
+		}else{
+			var hudSlotY = 2
+			// var str = _T("Use item")
+			for(var i = 0; i < 3; i++){
+				var hudSlot = HudSlot(this).attrs {
+					pivot = vec2(1, 0),
+					x = @width - 2,
+					y = hudSlotY,
+					parent = @hud,
+				}
+				@hudSlots[] = hudSlot
+				hudSlotY = hudSlotY + hudSlot.height + HUD_SLOT_INDENT
+			}
+		}
+		
 		@inventary = Sprite().attrs {
-			resAnim = res.get("shovel-01"),
+			// resAnim = res.get("shovel-01"),
 			pivot = vec2(0.5, 1.25),
 			angle = -45,
 			pos = @size,
@@ -209,6 +263,7 @@ Game4X = extends BaseGame4X {
 			// priority = GAME_PRIORITY_INVENTARY,
 			parent = @hud,
 			mode = "pick",
+			// mode = "", 
 		}
 		
 		/*
@@ -485,32 +540,53 @@ Game4X = extends BaseGame4X {
 		@initLevel(0)
 	},
 	
-	openModal = function(window){
-		@view.clock.pause()
-		@moveJoystick.visible = false
-		var modalView = ColorRectSprite().attrs {
-			size = @size,
-			color = Color(0.2, 0.23, 0.23, 0.6),
-			parent = @hud,
+	cleanupActor = function(actor){
+		"cleanup" in actor && actor.cleanup()
+		for(var _, child in actor.childrenList){
+			@cleanupActor(child)
 		}
-		window.parent = modalView
+	},
+	
+	closeModal = function(){
+		if(@modalView.visible){
+			@view.clock.resume()
+			@modalView.visible = false
+			@modalView.touchEnabled = false
+			@cleanupActor(@modalView)
+			@modalView.removeChildren()
+			@modalView.closeCallback()
+			@modalView.closeCallback = null
+		}
+	},
+	
+	openModal = function(window, closeCallback){
+		@closeModal()
+		@modalView.visible = true
+		@modalView.touchEnabled = true
+		@view.clock.pause()
+		
+		@moveJoystick.visible = false
+		@modalView.closeCallback = function(){
+			@moveJoystick.visible = true
+			closeCallback()
+		}.bind(this)
+		
+		window.parent = @modalView
 		window.pos = (@size - window.size) / 2
-		modalView.addEventListener(TouchEvent.CLICK, function(ev){
-			if(ev.target == modalView){
-				modalView.removeChildren()
-				modalView.detach()
-				@view.clock.resume()
-				@moveJoystick.visible = true
-			}
-		}.bind(this))
 	},
 	
 	openPlayer = function(){
-		
+		@playerIcon.touchEnabled = false
+		@openModal(Shop(this), function(){
+			@playerIcon.touchEnabled = true
+		}.bind(this))
 	},
 	
 	openBackpack = function(){
-		@openModal(Backpack(this))
+		@backpackIcon.touchEnabled = false
+		@openModal(Backpack(this), function(){
+			@backpackIcon.touchEnabled = true
+		}.bind(this))
 	},
 	
 	initLevel = function(num){
@@ -737,6 +813,7 @@ Game4X = extends BaseGame4X {
 		if(obj.type == "player"){
 			@player && throw "player is already exist"
 			@player = Player(this, obj.gid)
+			@playerIcon.setResName(@player.name)
 			@initEntTilePos(@player, obj.x, obj.y)
 			@centerViewToTile(obj.x, obj.y)
 			return

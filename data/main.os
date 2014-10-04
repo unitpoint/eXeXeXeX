@@ -12,7 +12,7 @@ scale = math.min(scale.x, scale.y)
 stage.size = displaySize / scale
 stage.scale = scale
 
-// if(false)
+if(false)
 mplayer.play { 
 	sound = "music",
 	looping = true,

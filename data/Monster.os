@@ -155,7 +155,7 @@ Monster = extends Entity {
 				@nextMoveDir = vec2(-@prevMoveDir.x, 0)
 			}
 		}
-		@aiNextTime = @game.time + math.random(2, 4)
+		@aiNextTime = @game.time + math.random(3, 4)
 		@saveTileX, @saveTileY = @tileX, @tileY
 	},
 	

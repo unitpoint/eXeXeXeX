@@ -2,17 +2,24 @@ Backpack = extends Actor {
 	items = {
 		{type = 101, count = 7}, 
 		{type = 102, count = 2}, 
-		{type = 103, count = 34}, 
+		{type = 103, count = 4}, 
+		{type = 17, count = 34}, 
 		{type = 201, count = 1}, 
-		{type = 301, count = 47}, 
-		{type = 401, count = 17}, 
+		{type = 301, count = 3}, 
+		{type = 1, count = 1}, 
+		{type = 401, count = 2}, 
+		{type = 2, count = 1}, 
+		{type = 3, count = 1}, 
+		{type = 4, count = 1}, 
+	},
+	numItemsByType = {
 	},
 	
 	__construct = function(game){
 		super()
 		@game = game
 		
-		@cols = 4
+		@cols = 2
 		@rows = 3
 		
 		var bg = Box9Sprite().attrs {
@@ -22,21 +29,18 @@ Backpack = extends Actor {
 		}
 		bg.setGuides(20, 20, 20, 20)
 		
-		var temp = Sprite()
-		temp.resAnim = res.get("slot")
-		
-		var slotSize = temp.size
 		var borderSize = 10
 		var paddingSize = 4
 		
 		@slots = []
-		for(var y = 0; y < @rows; y++){
-			for(var x = 0; x < @cols; x++){
+		for(var x = 0; x < @cols; x++){
+			for(var y = 0; y < @rows; y++){
+				x == 0 && y == 0 && continue
 				var slot = ItemSlot().attrs {
 					name = "backpackSlot",
 					// resAnim = res.get("slot"),
-					x = borderSize + (slotSize.x + paddingSize) * x,
-					y = borderSize + (slotSize.y + paddingSize) * y,
+					x = borderSize + (SLOT_SIZE + paddingSize) * x,
+					y = borderSize + (SLOT_SIZE + paddingSize) * y,
 					parent = this,
 					slotNum = #@slots,
 					touchChildrenEnabled = false,
@@ -48,6 +52,15 @@ Backpack = extends Actor {
 		@height = slot.y + slot.height + borderSize
 		bg.size = @size
 		
+		var icon = Box9Sprite().attrs {
+			resAnim = res.get("backpack"),
+			pivot = vec2(0, 0),
+			pos = vec2(borderSize, borderSize),
+			size = vec2(SLOT_SIZE, SLOT_SIZE),
+			// scaleX = -1,
+			parent = this,
+		}
+		/*
 		var backpack = Sprite().attrs {
 			resAnim = res.get("backpack"),
 			pivot = vec2(0.2, 0.8),
@@ -59,13 +72,14 @@ Backpack = extends Actor {
 		
 		@text = TextField().attrs {
 			resFont = res.get("test"),
-			vAlign = TextStyle.VALIGN_BOTTOM,
-			hAlign = TextStyle.HALIGN_CENTER,
+			vAlign = TEXT_VALIGN_BOTTOM,
+			hAlign = TEXT_HALIGN_CENTER,
 			htmlText = "<div c='FF0000'>10</div>/10",
 			x = backpack.width/2,
 			// width = 30,
 			parent = backpack,
 		}
+		*/
 		
 		@updateItems()
 		
@@ -82,23 +96,23 @@ Backpack = extends Actor {
 				// print "${itemSelected.pos} == ${itemSelected.localToLocal(itemSelected.pos, itemSlot)}"
 				// itemSelected.pos = itemSelected.localToLocal(@parent)
 				// itemSelected.parent = @parent
-				itemSelected.changeParentAndSavePos(@parent)
+				itemSelected.changeParentAndSavePos(@game.hud)
 				
 				touchPos = @localToGlobal(ev.localPos)
 			}
 		}.bind(this))
 
-		@addEventListener(TouchEvent.MOVE, function(ev){
+		@moveEventId = stage.addEventListener(TouchEvent.MOVE, function(ev){
 			if(itemSelected){ // ev.target.name == "backpackSlot"){
 				// print "move: "..ev.localPos
-				var curTouchPos = @localToGlobal(ev.localPos)
+				var curTouchPos = stage.localToGlobal(ev.localPos)
 				var delta = curTouchPos - touchPos
 				touchPos = curTouchPos
 				
 				itemSelected.pos += delta
 				
 				var slot = stage.findActorByPos(curTouchPos, function(actor){
-					return actor is ItemSlot
+					return actor is ItemSlot || actor is HudSlot
 				})
 				if(slot && slot !== targetSlot){
 					targetSlot = slot
@@ -120,16 +134,23 @@ Backpack = extends Actor {
 					itemSelected.parent = itemSlot
 					itemSelected.color = Color.WHITE
 					itemSelected = null
+				}else if(targetSlot is HudSlot){
+					var itemInfo = Backpack.items[itemSlot.slotNum]
+					targetSlot.setItem(itemInfo.type)
+					itemSelected.pos = itemSlot.size/2
+					itemSelected.parent = itemSlot
+					itemSelected.color = Color.WHITE
+					itemSelected = null
 				}else{
-					var itemInfo = @items[itemSlot.slotNum]
-					var targetItemInfo = @items[targetSlot.slotNum]
+					var itemInfo = Backpack.items[itemSlot.slotNum]
+					var targetItemInfo = Backpack.items[targetSlot.slotNum]
 					if(!targetItemInfo){
 						var moveCount = math.ceil(itemInfo.count / 2)
 						if(moveCount == itemInfo.count){
-							@items[targetSlot.slotNum] = itemInfo
-							delete @items[itemSlot.slotNum]
+							Backpack.items[targetSlot.slotNum] = itemInfo
+							delete Backpack.items[itemSlot.slotNum]
 						}else{
-							@items[targetSlot.slotNum] = {
+							Backpack.items[targetSlot.slotNum] = {
 								type = itemInfo.type,
 								count = moveCount,
 							}
@@ -138,10 +159,10 @@ Backpack = extends Actor {
 					}else if(targetItemInfo.type == itemInfo.type){
 						var moveCount = itemInfo.count
 						targetItemInfo.count += moveCount
-						delete @items[itemSlot.slotNum]
+						delete Backpack.items[itemSlot.slotNum]
 					}else{
-						@items[itemSlot.slotNum] = targetItemInfo
-						@items[targetSlot.slotNum] = itemInfo
+						Backpack.items[itemSlot.slotNum] = targetItemInfo
+						Backpack.items[targetSlot.slotNum] = itemInfo
 					}
 					@updateItems()
 					itemSelected.detach()
@@ -150,19 +171,41 @@ Backpack = extends Actor {
 				@extendedClickArea = 0
 			}
 		}.bind(this))
+		
+		/* @opacity = 0
+		@addTweenAction {
+			duration = 0.1,
+			opacity = 1,
+		} */
+	},
+	
+	cleanup = function(){
+		stage.removeEventListener(@moveEventId)
+	},
+	
+	updateNumItems = function(){
+		Backpack.numItemsByType = {}
+		for(var _, item in Backpack.items){
+			var count = 0
+			if(item.type in Backpack.numItemsByType){
+				count = Backpack.numItemsByType[item.type]
+			}
+			Backpack.numItemsByType[item.type] = count + item.count
+		}
 	},
 	
 	updateItems = function(){
+		Backpack.updateNumItems()
 		for(var _, slot in @slots){
 			slot.removeChildren()
 			slot.item = null
 			slot.count = null
 		}
-		for(var slotNum, item in @items){
-			var slot = @slots[slotNum]
+		for(var slotNum, item in Backpack.items){
+			var slot = @slots[slotNum] || continue
 			slot.item = Sprite().attrs {
 				name = "item",
-				resAnim = res.get("item-"..item.type),
+				resAnim = res.get(@game.getResName("slot-item", item.type)),
 				pivot = vec2(0.5, 0.5),
 				pos = slot.size/2,
 				priority = 1,
