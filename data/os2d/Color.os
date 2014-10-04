@@ -1,15 +1,26 @@
 local function clamp(a){
-	// if(a < 0) return 0
-	// if(a > 1) return 1
-	return a
+	return a < 0 ? 0 : a > 1 ? 1 : a
 }
 
 Color = extends Object {
 	__construct = function(r, g, b, a){
-		@r = clamp(r || 0)
-		@g = clamp(g || 0)
-		@b = clamp(b || 0)
-		@a = clamp(a || 1)
+		@r = r || 0
+		@g = g || 0
+		@b = b || 0
+		@a = a || 1
+	},
+	
+	fromInt = function(value, a){
+		return Color(
+			((value >> 16) & 0xff) / 0xff,
+			((value >> 8) & 0xff) / 0xff,
+			((value >> 0) & 0xff) / 0xff,
+			a
+		)
+	},
+	
+	clamp = function(){
+		return Color(clamp(@r), clamp(@g), clamp(@b), clamp(@a))
 	},
 	
 	__cmp = function(b){

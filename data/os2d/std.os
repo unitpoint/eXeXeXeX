@@ -12,6 +12,10 @@ function __get(name){
 	throw "unknown class or global property \"${name}\""
 }
 
+function _T(text){
+	return text
+}
+
 function Object.__get(name){
 	if(@prototype !== Object || @getProperty("__instantiable", false) !== null){
 		throw "unknown \"${name}\" property in ${@__name || @classname}"
