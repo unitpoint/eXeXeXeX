@@ -91,7 +91,7 @@ void run()
 	// desc.fullscreen = true;
 	// desc.fulldesktop = true;
 #ifndef OS_DEBUG
-	desc.maximized = true;
+	// desc.maximized = true;
 #endif
 	//marmalade settings could be changed from emulator's menu
 #endif

@@ -47,7 +47,7 @@ Tile = extends BaseTile {
 		
 		@itemType = @game.getItemType(x, y)
 		if(@itemType > 0){
-			var itemResName = @game.getTileResName("item", @itemType, x, y, ITEMS_INFO[@itemType].variants)
+			var itemResName = @game.getTileItemResName(@itemType, x, y)
 			@item = Sprite().attrs {
 				resAnim = res.get(itemResName),
 				pivot = vec2(0.5, 0.5),
@@ -55,7 +55,7 @@ Tile = extends BaseTile {
 				priority = @PRIORITY_ITEM,
 				parent = this,
 			}
-			@item.scale = @size / math.max(@item.width, @item.height)
+			// @item.scale = @size / math.max(@item.width, @item.height)
 		}
 		
 		@shadow = Actor().attrs {

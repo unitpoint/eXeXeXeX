@@ -28,14 +28,16 @@ GAME_PRIORITY_LIGHTMASK = 3
 GAME_PRIORITY_HUD = 4
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
+GAME_PRIORITY_DRAGNDROP = 5
 
 HUD_ICON_SIZE = 80
 HUD_ICON_INDENT = 10
 
-HUD_SLOT_SIZE = 80
-HUD_SLOT_INDENT = 5
+// HUD_SLOT_SIZE = 80
+// HUD_SLOT_INDENT = 5
 
 SLOT_SIZE = 80
+SLOT_INDENT = 5
 
 TILES_INFO = {
 	[TILE_TYPE_GRASS] = {
@@ -68,14 +70,97 @@ TILES_INFO = {
 
 ITEM_TYPE_COAL = 7
 ITEM_TYPE_GOLD = 10
+ITEM_TYPE_BULLETS = 15
 
 ITEMS_INFO = {
+	1 = {
+		hasTileSprite = true,
+		price = 50,
+	},
+	2 = {
+		hasTileSprite = true,
+		price = 75,
+	},
+	3 = {
+		hasTileSprite = true,
+		price = 100,
+	},
+	4 = {
+		hasTileSprite = true,
+		price = 60,
+	},
+	5 = {
+		hasTileSprite = true,
+		price = 65,
+	},
+	6 = {
+		hasTileSprite = true,
+		price = 55,
+	},
 	[ITEM_TYPE_COAL] = {
+		hasTileSprite = true,
 		strength = 1,
+		price = 15,
+	},
+	8 = {
+		hasTileSprite = true,
+		price = 25,
+	},
+	9 = {
+		hasTileSprite = true,
+		price = 150,
 	},
 	[ITEM_TYPE_GOLD] = {
+		hasTileSprite = true,
 		variants = 2,
 		strength = 3,
+		price = 40,
+	},
+	11 = {
+		strength = 1,
+		price = 1,
+	},
+	12 = {
+		strength = 4,
+		price = 200,
+	},
+	13 = {
+		strength = 10,
+		price = 500,
+	},
+	14 = {
+		strength = 20,
+		price = 900,
+	},
+	15 = {
+		price = 1,
+	},
+	17 = {
+		price = 20,
+	},
+	101 = {
+		stamina = 100,
+		price = 100,
+	},
+	102 = {
+		stamina = 25,
+		price = 30,
+	},
+	103 = {
+		stamina = 150,
+		price = 120,
+	},
+	201 = {
+		staminaScale = 1.2,
+		price = 1000,
+	},
+	301 = {
+		staminaScale = 1.1,
+		price = 100,
+	},
+	401 = {
+		powerScale = 1.1,
+		price = 200,
 	},
 }
 
@@ -148,6 +233,11 @@ Game4X = extends BaseGame4X {
 			parent = this,
 		}
 		
+		@dragndrop = DragndropItems(this).attrs {
+			priority = GAME_PRIORITY_DRAGNDROP,			
+			parent = this,
+		}
+		
 		@layers = []
 		for(var i = 0; i < LAYER_COUNT; i++){
 			@layers[] = Actor().attrs {
@@ -210,6 +300,8 @@ Game4X = extends BaseGame4X {
 			parent = @hudStamina,
 		} */
 		
+		@shop = null
+		
 		var hudIcons = []
 		hudIcons[] = @playerIcon = HudIcon("ent-001").attrs {
 			onClicked = @openPlayer.bind(this),
@@ -230,14 +322,14 @@ Game4X = extends BaseGame4X {
 		if(false){
 			var hudSlotX = @width - 2
 			for(var i = 0; i < 3; i++){
-				var hudSlot = HudSlot(this).attrs {
+				var hudSlot = HudSlot(this, #@hudSlots).attrs {
 					pivot = vec2(1, 1),
 					x = hudSlotX,
 					y = @height - 2,
 					parent = @hud,
 				}
 				@hudSlots[] = hudSlot
-				hudSlotX = hudSlotX - hudSlot.width - HUD_SLOT_INDENT
+				hudSlotX = hudSlotX - hudSlot.width - SLOT_INDENT
 			}
 		}else{
 			var hudSlotY = 2
@@ -250,7 +342,7 @@ Game4X = extends BaseGame4X {
 					parent = @hud,
 				}
 				@hudSlots[] = hudSlot
-				hudSlotY = hudSlotY + hudSlot.height + HUD_SLOT_INDENT
+				hudSlotY = hudSlotY + hudSlot.height + SLOT_INDENT
 			}
 		}
 		
@@ -577,8 +669,9 @@ Game4X = extends BaseGame4X {
 	
 	openPlayer = function(){
 		@playerIcon.touchEnabled = false
-		@openModal(Shop(this), function(){
+		@openModal(@shop = Shop(this), function(){
 			@playerIcon.touchEnabled = true
+			@shop = null
 		}.bind(this))
 	},
 	
@@ -756,15 +849,32 @@ Game4X = extends BaseGame4X {
 		return @getResName(group, i)
 	},
 	
+	getSlotItemResName = function(type){
+		return @getResName("slot-item", type)
+	},
+	
+	getTileItemResName = function(type, x, y){
+		var info = ITEMS_INFO[type] || throw "item ${type} not found"
+		if(info.hasTileSprite){
+			return @getTileResName("tile-item", x, y, info.variants)
+		}
+		return @getSlotItemResName(type)
+	},
+	
 	getTile = function(x, y){
 		return @tiles["${x}-${y}"]
 	},
 	
 	touchGroupRes = function(group, type){
-		var info = group == "tile" ? TILES_INFO
-			: group == "item" ? ITEMS_INFO
-			: throw "unknown group ${group}"
-		var variants = info[type].variants
+		var variants = null
+		if(group == "tile-item" && ITEMS_INFO[type].hasTileSprite){
+			variants = ITEMS_INFO[type].variants
+		}else if(group == "tile"){
+			variants = TILES_INFO[type].variants
+		}else if(group == "slot-item"){
+		}else{
+			throw "unknown group ${group}"
+		}
 		if(variants){
 			for(var i = 1; i <= variants; i++){
 				res.get(@getResName(group, type, i))
@@ -778,7 +888,10 @@ Game4X = extends BaseGame4X {
 	},
 	
 	touchItemRes = function(type){
-		type != 0 && @touchGroupRes("item", type)
+		if(type != 0){
+			@touchGroupRes("tile-item", type)
+			@touchGroupRes("slot-item", type)
+		}
 	},
 	
 	updateTile = function(x, y){

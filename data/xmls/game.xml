@@ -28,7 +28,11 @@
 		<image file="tile-fade-left.png" />
 
 		<image file="panel.png" />
+		<image file="panel-title.png" />
 		<image file="slot.png" />
+		<image file="slot-target.png" />
+		<image file="slot-arrow-right.png" />
+		<image file="slot-arrow-left.png" />
 		<image file="backpack.png" />
 		<image file="stamina-border.png" />
 		<image file="white.png" />
@@ -77,21 +81,21 @@
 		<image file="ent-041.png" />
 		<image file="ent-042.png" />
 		<image file="ent-043.png" />
-		<image file="item-001.png" />
-		<image file="item-002.png" />
-		<image file="item-003.png" />
-		<image file="item-004.png" />
-		<image file="item-005.png" />
-		<image file="item-006.png" />
-		<image file="item-007.png" />
-		<image file="item-008.png" />
-		<image file="item-009.png" />
-		<image file="item-010-01.png" />
-		<image file="item-010-02.png" />
 		<image file="slot-item-001.png" />
 		<image file="slot-item-002.png" />
 		<image file="slot-item-003.png" />
 		<image file="slot-item-004.png" />
+		<image file="slot-item-005.png" />
+		<image file="slot-item-006.png" />
+		<image file="slot-item-007.png" />
+		<image file="slot-item-008.png" />
+		<image file="slot-item-009.png" />
+		<image file="slot-item-010.png" />
+		<image file="slot-item-011.png" />
+		<image file="slot-item-012.png" />
+		<image file="slot-item-013.png" />
+		<image file="slot-item-014.png" />
+		<image file="slot-item-015.png" />
 		<image file="slot-item-017.png" />
 		<image file="slot-item-101.png" />
 		<image file="slot-item-102.png" />
@@ -115,10 +119,22 @@
 		<image file="tile-024-02.png" />
 		<image file="tile-024-03.png" />
 		<image file="tile-024-04.png" />
+		<image file="tile-item-001.png" />
+		<image file="tile-item-002.png" />
+		<image file="tile-item-003.png" />
+		<image file="tile-item-004.png" />
+		<image file="tile-item-005.png" />
+		<image file="tile-item-006.png" />
+		<image file="tile-item-007.png" />
+		<image file="tile-item-008.png" />
+		<image file="tile-item-009.png" />
+		<image file="tile-item-010-01.png" />
+		<image file="tile-item-010-02.png" />
 		<!-- end auto generated assets -->
 	</atlas>
 
 	<set path = "fonts/" />
 	<font file="normal.fnt" />
 	<font file="test.fnt" />
+	<font file="test_2.fnt" />
 </resources>
