@@ -24,6 +24,10 @@ static void registerGlobals(OS * os)
 	os->pushGlobals();
 	os->setFuncs(funcs);
 	os->setNumbers(nums);
+
+	os->pushString(LEVEL_BIN_DATA_PREFIX);
+	os->setProperty(-2, "LEVEL_BIN_DATA_PREFIX");
+
 	os->pop();
 }
 static bool __registerGlobals = addRegFunc(registerGlobals);
@@ -201,7 +205,7 @@ void BaseGame4X::posToTile(const Vector2& pos, int& x, int& y)
 }
 */
 
-void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, const OS::String& p_front, const OS::String& p_back, const OS::String& p_items)
+void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, const OS::String& p_data)
 {
 	struct Lib
 	{
@@ -214,11 +218,11 @@ void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, co
 	};
 
 	delete [] tiles;
+	OS_BYTE * data = (OS_BYTE*)p_data.toChar();
+	const char * dataPrefix = LEVEL_BIN_DATA_PREFIX;
+	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
 	int count = p_tiledmapWidth * p_tiledmapHeight;
-	OS_BYTE * front = (OS_BYTE*)p_front.toChar();
-	OS_BYTE * back = (OS_BYTE*)p_back.toChar();
-	OS_BYTE * items = (OS_BYTE*)p_items.toChar();
-	if(count*2 != p_front.getDataSize() || count*2 != p_back.getDataSize() || count*2 != p_items.getDataSize()){
+	if(count*2*3 + dataPrefixLen != p_data.getDataSize() || OS_STRNCMP((char*)data, dataPrefix, dataPrefixLen) != 0){
 		os->setException("error layer data size");
 		tiles = NULL;
 		tiledmapWidth = tiledmapHeight = 0;
@@ -227,6 +231,10 @@ void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, co
 	tiledmapWidth = p_tiledmapWidth;
 	tiledmapHeight = p_tiledmapHeight;
 	tiles = new Tile[count];
+
+	OS_BYTE * front = data + dataPrefixLen;
+	OS_BYTE * back = front + count*2;
+	OS_BYTE * items = back + count*2;
 
 	std::map<TileType, bool> usedTiles;
 	std::map<ItemType, bool> usedItems;

@@ -19,6 +19,7 @@ struct Tile
 };
 
 #define TILE_SIZE 128.0f
+#define LEVEL_BIN_DATA_PREFIX "level-layers:front:back:items."
 
 struct Tiledmap
 {
@@ -75,7 +76,7 @@ public:
 	// Vector2 tileToPos(int x, int y);
 	// void posToTile(const Vector2& pos, int& x, int& y);
 
-	void registerLevelInfo(int tiledmapWidth, int tiledmapHeight, const OS::String& front, const OS::String& back, const OS::String& items);
+	void registerLevelInfo(int tiledmapWidth, int tiledmapHeight, const OS::String& data);
 
 protected:
 

@@ -120,7 +120,7 @@ isPlayerExist || throw "player is not found"
 
 var layerNames = ["front", "back", "items"]
 
-map.layers = {}
+layers = {}
 var m = Regexp(`#<layer\s+([^>]+)>(.*?)</layer>#sg`).exec(contents)
 for(var i, v in m[1]){
 	var layer = fixNumbers(parseAttributes(v))
@@ -164,20 +164,21 @@ for(var i, v in m[1]){
 			offs += 4
 		}
 	}
-	layer.data = zlib.gzcompress(toString(data))
-	layer.data = url.encode(layer.data) // base64 bugged on android
-	map.encoder = "url"
+	layer.data = data
+	// layer.data = zlib.gzcompress(toString(data))
+	// layer.data = url.encode(layer.data) // base64 bugged on android
+	// map.encoder = "url"
 
 	if(layer.name in layerNames){
-		map.layers[layer.name] && throw "layer ${layer.name} is already exist"
-		map.layers[layer.name] = layer
+		layers[layer.name] && throw "layer ${layer.name} is already exist"
+		layers[layer.name] = layer
 	}else{
 		print "skip unknown layer: ${layer}"
 	}
 }
 
 for(var _, name in layerNames){
-	map.layers[name] || throw "${name} layer is not found in ${filename}"
+	layers[name] || throw "${name} layer is not found in ${filename}"
 }
 map.floor || throw "floor is not set in front layer"
 
@@ -185,12 +186,25 @@ map.floor || throw "floor is not set in front layer"
 
 var filename = "../data/levels/"..path.basename(filename).lower().replace(".tmx", ".json")
 File.writeContents(filename, json.encode(map))
-print "${filename} saved, layers: ${#map.layers}, tilesets: ${#map.tilesets}, entities: ${#map.groups.entities.objects}"
+
+var dataPrefix = "level-layers:front:back:items."
+var buf = Buffer()
+buf << dataPrefix
+buf << layers.front.data
+buf << layers.back.data
+buf << layers.items.data
+var data = zlib.gzcompress(buf)
+File.writeContents(filename.replace(".json", ".bin"), data)
+
+print "${filename} saved, layers: ${#layers}, tilesets: ${#map.tilesets}, entities: ${#map.groups.entities.objects}"
 
 var levels = {}
 for(var _, filename in fs.readdir("../data/levels")){
-	if(path.extname(filename) != ".json"){
-		print "found error level file: \"../data/levels/${filename}\""
+	var ext = path.extname(filename)
+	if(ext != ".json"){
+		if(ext != ".bin"){
+			print "found error level file: \"../data/levels/${filename}\""
+		}
 		continue
 	}
 	levels[filename.replace(".json", "")] = "levels/${filename}"
