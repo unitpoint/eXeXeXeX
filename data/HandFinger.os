@@ -31,20 +31,72 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-HudSlot = extends ItemSlot {
-	__construct = function(game, slotNum){
-		super(game, Backpack, slotNum)
-		@opacity = 0.75
+HandFinger = extends Actor {
+	__construct = function(){
+		super()
+		@touchEnabled = false
+		@touchChildrenEnabled = false
+		@finger = Sprite().attrs {
+			resAnim = res.get("hand-finger"),
+			pivot = vec2(0.618, 0.02),
+			priority = 1,
+			angle = -10,
+			parent = this,
+		}
+		@circle = Sprite().attrs {
+			resAnim = res.get("touch-circle"),
+			pivot = vec2(0.5, 0.5),
+			opacity = 0,
+			parent = this,
+		}
+		@timeoutHandle = null
 	},
 	
-	__set@type = function(type){
-		@clearItem()
-		for(var _, hudSlot in @game.hudSlots){
-			if(hudSlot.type == type){
-				hudSlot.clearItem()
-			}
+	animateUntouch = function(doneCallback){
+		@removeTimeout(@timeoutHandle); @timeoutHandle = null
+		@finger.replaceTweenAction {
+			name = "animation",
+			duration = 0.4,
+			scale = 1,
+			// angle = -10,
+			ease = Ease.QUAD_IN_OUT,
+			doneCallback = doneCallback,
 		}
-		super(type)
-		@count = @owner.pack.numItemsByType[type]
+	},
+	
+	animateTouch = function(doneCallback){
+		@circle.scale = 0.1
+		@circle.opacity = 0
+		@finger.replaceTweenAction {
+			name = "animation",
+			duration = 0.5,
+			scale = 0.93,
+			angle = -12,
+			ease = Ease.QUAD_IN_OUT,
+		}
+		@removeTimeout(@timeoutHandle)
+		@timeoutHandle = @addTimeout(0.25, function(){
+			@circle.replaceTweenAction {
+				name = "animation",
+				duration = 0.1,
+				opacity = 1,
+			}
+			@circle.addTweenAction {
+				name = "animation",
+				duration = 0.5,
+				scale = 0.7,
+				ease = Ease.QUAD_IN,
+				doneCallback = function(){
+					@circle.replaceTweenAction {
+						name = "animation",
+						duration = 0.5,
+						opacity = 0,
+						scale = 1,
+						ease = Ease.QUAD_OUT,
+						doneCallback = doneCallback,
+					}
+				}.bind(this),
+			}
+		}.bind(this))
 	},
 }

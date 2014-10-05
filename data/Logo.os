@@ -31,20 +31,59 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-HudSlot = extends ItemSlot {
-	__construct = function(game, slotNum){
-		super(game, Backpack, slotNum)
-		@opacity = 0.75
-	},
-	
-	__set@type = function(type){
-		@clearItem()
-		for(var _, hudSlot in @game.hudSlots){
-			if(hudSlot.type == type){
-				hudSlot.clearItem()
+Logo = extends ColorRectSprite {
+	__construct = function(){
+		@parent = stage
+		@size = stage.size
+		@color = Color.BLACK
+		
+		@res = Resources()
+		@res.loadXML("xmls/logo.xml", false)
+		
+		var spriteRes = @res.get("logo")
+		spriteRes.load()
+		
+		@sprite = Sprite().attrs {
+			resAnim = spriteRes,
+			pivot = vec2(0.5, 0.5),
+			pos = @size/2,
+			opacity = 0,
+			parent = this,
+		}
+		var scale = @size / @sprite.size
+		// @sprite.scale = math.max(scale.x, scale.y)
+		@sprite.scale = math.min(scale.x, scale.y)
+		
+		@addTimeout(0.6, function(){
+			@sprite.addTweenAction {
+				duration = 2.5,
+				opacity = 1,
+			}
+		}.bind(this))
+		
+		if(GAME_SETTINGS.sound || GAME_SETTINGS.music){
+			mplayer.play { 
+				sound = "logo",
+				volume = 0.5,
+				fadeIn = 0.5,
+				fadeOut = 0.6,
 			}
 		}
-		super(type)
-		@count = @owner.pack.numItemsByType[type]
-	},
+		
+		var startGame = function(){
+			spriteRes.unload()
+			@detach()
+			Game4X()
+		}.bind(this)
+		
+		@addEventListener(TouchEvent.CLICK, startGame)
+		
+		@addTimeout(3.5, function(){
+			@sprite.addTweenAction {
+				duration = 2,
+				opacity = 0,
+				doneCallback = startGame,
+			}
+		}.bind(this))
+	}
 }

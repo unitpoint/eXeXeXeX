@@ -1,3 +1,36 @@
+/******************************************************************************
+* Copyright (C) 2014 Evgeniy Golovin (evgeniy.golovin@unitpoint.ru)
+*
+* Please feel free to contact me at anytime, 
+* my email is evgeniy.golovin@unitpoint.ru, skype: egolovin
+*
+* eXeXeXeX is a 4X genre of strategy-based video game in which player 
+* "eXplore, eXpand, eXploit, and eXterminate" the world
+* 
+* Latest source code
+*	eXeXeXeX: https://github.com/unitpoint/eXeXeXeX
+* 	OS2D engine: https://github.com/unitpoint/os2d
+*
+* Permission is hereby granted, free of charge, to any person obtaining
+* a copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to
+* permit persons to whom the Software is furnished to do so, subject to
+* the following conditions:
+*
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+******************************************************************************/
+
 var enumCount = 0
 LAYER_TILES = enumCount++
 LAYER_DECALS = enumCount++
@@ -29,6 +62,7 @@ GAME_PRIORITY_HUD = 4
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
 GAME_PRIORITY_DRAGNDROP = 5
+GAME_PRIORITY_FADEIN = 10
 
 HUD_ICON_SIZE = 80
 HUD_ICON_INDENT = 10
@@ -70,81 +104,103 @@ TILES_INFO = {
 
 ITEM_TYPE_COAL = 7
 ITEM_TYPE_GOLD = 10
+ITEM_TYPE_SHOVEL = 11
+ITEM_TYPE_PICK_01 = 12
+ITEM_TYPE_PICK_02 = 13
+ITEM_TYPE_PICK_03 = 14
 ITEM_TYPE_BULLETS = 15
+ITEM_TYPE_LADDERS = 17
+
+ITEM_TYPE_CANDY = 102
 
 ITEMS_INFO = {
 	1 = {
 		hasTileSprite = true,
 		price = 50,
+		canBuy = false,
 	},
 	2 = {
 		hasTileSprite = true,
 		price = 75,
+		canBuy = false,
 	},
 	3 = {
 		hasTileSprite = true,
 		price = 100,
+		canBuy = false,
 	},
 	4 = {
 		hasTileSprite = true,
 		price = 60,
+		canBuy = false,
 	},
 	5 = {
 		hasTileSprite = true,
 		price = 65,
+		canBuy = false,
 	},
 	6 = {
 		hasTileSprite = true,
 		price = 55,
+		canBuy = false,
 	},
 	[ITEM_TYPE_COAL] = {
 		hasTileSprite = true,
 		strength = 1,
 		price = 15,
+		canBuy = false,
 	},
 	8 = {
 		hasTileSprite = true,
 		price = 25,
+		canBuy = false,
 	},
 	9 = {
 		hasTileSprite = true,
 		price = 150,
+		canBuy = false,
 	},
 	[ITEM_TYPE_GOLD] = {
 		hasTileSprite = true,
 		variants = 2,
 		strength = 3,
 		price = 40,
+		canBuy = false,
 	},
-	11 = {
+	[ITEM_TYPE_SHOVEL] = {
 		strength = 1,
 		price = 1,
+		pickDamage = 1,
 	},
-	12 = {
+	[ITEM_TYPE_PICK_01] = {
 		strength = 4,
 		price = 200,
+		pickDamage = 2,
 	},
-	13 = {
+	[ITEM_TYPE_PICK_02] = {
 		strength = 10,
 		price = 500,
+		pickDamage = 4,
 	},
-	14 = {
+	[ITEM_TYPE_PICK_03] = {
 		strength = 20,
 		price = 900,
+		pickDamage = 8,
 	},
-	15 = {
+	[ITEM_TYPE_BULLETS] = {
 		price = 1,
+		canBuy = false,
 	},
-	17 = {
+	[ITEM_TYPE_LADDERS] = {
 		price = 20,
 	},
 	101 = {
 		stamina = 100,
 		price = 100,
 	},
-	102 = {
+	[ITEM_TYPE_CANDY] = {
 		stamina = 25,
-		price = 30,
+		price = 20,
 	},
 	103 = {
 		stamina = 150,
@@ -163,6 +219,21 @@ ITEMS_INFO = {
 		price = 200,
 	},
 }
+
+SHOP_ITEMS_INFO = {}
+PICK_DAMAGE_ITEMS_INFO = {}
+
+@{
+	for(var type, item in ITEMS_INFO){
+		if(item.canBuy !== false){
+			SHOP_ITEMS_INFO[type] = item
+		}
+		if(item.pickDamage > 0){
+			PICK_DAMAGE_ITEMS_INFO[type] = item
+		}
+	}
+}
+
 
 ENTITIES_INFO = {
 	1 = {
@@ -204,6 +275,7 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosY = -1,
 		player = null,
 		playerMaxStamina = 100,
+		npcList = {},
 		lightMask = null,
 		following = null,
 		followTileX = -1,
@@ -212,6 +284,7 @@ Game4X = extends BaseGame4X {
 	
 	__construct = function(){
 		super()
+		@parent = stage
 		@size = stage.size
 		@centerViewPos = @size/2
 		
@@ -303,10 +376,10 @@ Game4X = extends BaseGame4X {
 		@shop = null
 		
 		var hudIcons = []
-		hudIcons[] = @playerIcon = HudIcon("ent-001").attrs {
+		/* hudIcons[] = @playerIcon = HudIcon("ent-001").attrs {
 			onClicked = @openPlayer.bind(this),
 			parent = @hud,
-		}
+		} */
 		hudIcons[] = @backpackIcon = HudIcon("backpack").attrs {
 			onClicked = @openBackpack.bind(this),
 			parent = @hud,
@@ -473,6 +546,13 @@ Game4X = extends BaseGame4X {
 				}
 				return
 			}
+			if(ev.target is NPC){
+				var npc = ev.target
+				if(npc.type == "trader"){
+					@openShop()
+				}
+				return
+			}
 			if(ev.target is Monster){
 				// print "monster clicked: ${ev.target.name}"
 				return
@@ -630,6 +710,18 @@ Game4X = extends BaseGame4X {
 		} // if(false)
 		
 		@initLevel(0)
+		
+		ColorRectSprite().attrs {
+			size = @size,
+			color = Color.BLACK,
+			priority = GAME_PRIORITY_FADEIN,
+			touchEnabled = false,
+			parent = this,
+		}.addTweenAction {
+			duration = 2.0,
+			opacity = 0,
+			detachTarget = true,
+		}
 	},
 	
 	cleanupActor = function(actor){
@@ -667,10 +759,11 @@ Game4X = extends BaseGame4X {
 		window.pos = (@size - window.size) / 2
 	},
 	
-	openPlayer = function(){
-		@playerIcon.touchEnabled = false
-		@openModal(@shop = Shop(this), function(){
-			@playerIcon.touchEnabled = true
+	openShop = function(){
+		// @playerIcon.touchEnabled = false
+		@shop = Shop(this)
+		@openModal(@shop, function(){
+			// @playerIcon.touchEnabled = true
 			@shop = null
 		}.bind(this))
 	},
@@ -687,34 +780,18 @@ Game4X = extends BaseGame4X {
 		var names = filenames.keys
 		var filename = filenames[names[@levelNum = num % #names]]
 		var level = json.decode(File.readContents(filename))
+		var data = zlib.gzuncompress(File.readContents(filename.replace(".json", ".bin")))
+		var dataPrefix = LEVEL_BIN_DATA_PREFIX
 		print "level: "..typeOf(level)
-		print "level.layers: ${#level.layers}"
+		print "data len: ${#data}, prefix: ${data.sub(0, #dataPrefix) == dataPrefix}"
+		data.sub(0, #dataPrefix) == dataPrefix || throw "level data corrupted"
+		// data = data.sub(#dataPrefix)
 		
 		@tiledmapWidth = level.width
 		@tiledmapHeight = level.height
 		@tiledmapFloor = level.floor
 		
-		var encoder = level.encoder == "base64" ? base64 
-			: level.encoder == "url" ? url
-			: throw "unknown encoder"
-		
-		var decode = function(data){
-			/* var d2 = encoder.decode(data)
-			var d3 = zlib.gzuncompress(d2)
-			print "decode data: ${#data}, ${#d2}, ${#d3}"
-			// print d2
-			return d3 */
-			return zlib.gzuncompress(encoder.decode(data))
-		}
-		var frontLayerData = decode(level.layers.front.data)
-		var backLayerData = decode(level.layers.back.data)
-		var itemsLayerData = decode(level.layers.items.data)
-		
-		// print "front: ${#frontLayerData}"
-		// print "back: ${#backLayerData}"
-		// print "items: ${#itemsLayerData}"
-		
-		@registerLevelInfo(@tiledmapWidth, @tiledmapHeight, frontLayerData, backLayerData, itemsLayerData)
+		@registerLevelInfo(@tiledmapWidth, @tiledmapHeight, data)
 		
 		for(var _, obj in level.groups.entities.objects){
 			@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
@@ -808,7 +885,9 @@ Game4X = extends BaseGame4X {
 			if(++crack.damage >= crack.strength-1){
 				delete @tileCracks[key]; crack.detach()
 				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
-				@setItemType(tx, ty, ITEM_TYPE_EMPTY)
+				if(tile.itemType != ITEM_TYPE_EMPTY){
+					@getTileItem(tile.itemType, tx, ty)
+				}
 				@removeTile(tx, ty)
 				@updateTile(tx, ty)
 				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
@@ -819,6 +898,29 @@ Game4X = extends BaseGame4X {
 		}
 		crack.resAnimFrameNum = crack.damage * crack.resAnim.totalFrames / (crack.strength-1)
 		return true
+	},
+	
+	getTileItem = function(type, tx, ty){
+		if(Backpack.addItem(type)){
+			@setItemType(tx, ty, ITEM_TYPE_EMPTY)
+			@backpackIcon.scale = 1
+			var action = EaseAction(TweenAction {
+				duration = 0.5,
+				scale = 1.2,
+				ease = Ease.PING_PONG
+			}, Ease.CUBIC_IN_OUT)
+			action.name = "note"
+			@backpackIcon.replaceAction(action)
+			return true
+		}else{
+			@backpackIcon.color = Color.WHITE
+			@backpackIcon.replaceTweenAction {
+				name = "note",
+				duration = 0.5,
+				color = Color(1, 0, 0),
+				ease = Ease.PING_PONG
+			}
+		}
 	},
 	
 	getTileRandom = function(x, y, a, b){
@@ -856,7 +958,7 @@ Game4X = extends BaseGame4X {
 	getTileItemResName = function(type, x, y){
 		var info = ITEMS_INFO[type] || throw "item ${type} not found"
 		if(info.hasTileSprite){
-			return @getTileResName("tile-item", x, y, info.variants)
+			return @getTileResName("tile-item", type, x, y, info.variants)
 		}
 		return @getSlotItemResName(type)
 	},
@@ -926,9 +1028,16 @@ Game4X = extends BaseGame4X {
 		if(obj.type == "player"){
 			@player && throw "player is already exist"
 			@player = Player(this, obj.gid)
-			@playerIcon.setResName(@player.name)
+			// @playerIcon.setResName(@player.name)
 			@initEntTilePos(@player, obj.x, obj.y)
 			@centerViewToTile(obj.x, obj.y)
+			return
+		}
+		if(obj.type == "trader"){
+			var npc = NPC(this, obj.gid, obj.type)
+			@npcList[npc] = npc
+			@initEntTilePos(npc, obj.x, obj.y)
+			npc.createPatrolAreaIfNecessary()
 			return
 		}
 		if(obj.gid > 0){

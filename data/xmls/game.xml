@@ -27,6 +27,8 @@
 		<image file="tile-fade-inner-left-top.png" />
 		<image file="tile-fade-left.png" />
 
+		<image file="hand-finger.png" />
+		<image file="touch-circle.png" />
 		<image file="panel.png" />
 		<image file="panel-title.png" />
 		<image file="slot.png" />
