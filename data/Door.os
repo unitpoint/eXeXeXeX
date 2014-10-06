@@ -86,7 +86,7 @@ Door = extends Tile {
 			ease = Ease.CUBIC_IN_OUT,
 			tickCallback = function(){
 				@handleShadow.angle = @handle.angle
-			}.bind(this),
+			},
 			doneCallback = function(){
 				@back.visible = true
 				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1)
@@ -99,10 +99,10 @@ Door = extends Tile {
 						@state = @STATE_OPENED
 						@timeoutHandle = @addTimeout(1.0, function(){
 							@close()
-						}.bind(this))
-					}.bind(this),
+						})
+					},
 				}
-			}.bind(this),
+			},
 		}
 	},
 	
@@ -120,7 +120,7 @@ Door = extends Tile {
 			if(ent){
 				@open()
 			}
-		}.bind(this))
+		})
 		
 		@handleAction = @front.addTweenAction {
 			duration = 1.0,
@@ -136,12 +136,12 @@ Door = extends Tile {
 					ease = Ease.CUBIC_IN_OUT,
 					tickCallback = function(){
 						@handleShadow.angle = @handle.angle
-					}.bind(this),
+					},
 					doneCallback = function(){
 						@handleAction = null
-					}.bind(this),
+					},
 				}
-			}.bind(this),
+			},
 		}
 	},
 	

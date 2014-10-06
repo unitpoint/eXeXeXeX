@@ -83,9 +83,9 @@ LightMask = extends Actor {
 				ease = Ease.CUBIC_IN_OUT,
 				doneCallback = function(){
 					anim(scale)
-				}.bind(this),
+				},
 			}
-		}.bind(this)
+		}
 		@removeUpdate(@animateLightAdjustHandle)
 		// this also support null
 		if(@animateLightScale == scale){
@@ -106,7 +106,7 @@ LightMask = extends Actor {
 			}else{
 				anim(start + delta * i)
 			}
-		}.bind(this))
+		})
 		@animateLightScale = scale
 	},
 	

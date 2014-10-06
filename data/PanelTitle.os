@@ -70,7 +70,7 @@ PanelTitle = extends Box9Sprite {
 				parent = this,
 			}
 			@textShadow[] = text
-		}.bind(this)
+		}
 		
 		var color = Color.fromInt(0xfce8ca)
 		for(var x = -1; x < 2; x+=2){

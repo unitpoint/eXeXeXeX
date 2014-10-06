@@ -89,6 +89,7 @@ TILES_INFO = {
 		strength = 0,
 	}, */
 	2 = {
+		strength = 50,
 		variants = 2,
 	},
 	[TILE_TYPE_DOOR_01] = {
@@ -116,82 +117,92 @@ ITEM_TYPE_CANDY = 102
 ITEMS_INFO = {
 	1 = {
 		hasTileSprite = true,
+		strengthScale = 1.1,
 		price = 50,
 		canBuy = false,
 	},
 	2 = {
 		hasTileSprite = true,
+		strengthScale = 1.15,
 		price = 75,
 		canBuy = false,
 	},
 	3 = {
 		hasTileSprite = true,
+		strengthScale = 1.2,
 		price = 100,
 		canBuy = false,
 	},
 	4 = {
 		hasTileSprite = true,
+		strengthScale = 1.1,
 		price = 60,
 		canBuy = false,
 	},
 	5 = {
 		hasTileSprite = true,
+		strengthScale = 1.1,
 		price = 65,
 		canBuy = false,
 	},
 	6 = {
 		hasTileSprite = true,
+		strengthScale = 1.1,
 		price = 55,
 		canBuy = false,
 	},
 	[ITEM_TYPE_COAL] = {
 		hasTileSprite = true,
-		strength = 1,
+		strengthScale = 1.5,
 		price = 15,
 		canBuy = false,
 	},
 	8 = {
 		hasTileSprite = true,
+		strengthScale = 1.1,
 		price = 25,
 		canBuy = false,
 	},
 	9 = {
 		hasTileSprite = true,
+		strengthScale = 1.5,
 		price = 150,
 		canBuy = false,
 	},
 	[ITEM_TYPE_GOLD] = {
 		hasTileSprite = true,
 		variants = 2,
-		strength = 3,
-		price = 40,
+		strengthScale = 2,
+		price = 95,
 		canBuy = false,
 	},
 	[ITEM_TYPE_SHOVEL] = {
-		strength = 1,
+		strengthScale = 1.1,
 		price = 1,
 		pickDamage = 1,
 	},
 	[ITEM_TYPE_PICK_01] = {
-		strength = 4,
+		strengthScale = 2,
 		price = 200,
 		pickDamage = 2,
 	},
 	[ITEM_TYPE_PICK_02] = {
-		strength = 10,
+		strengthScale = 3,
 		price = 500,
 		pickDamage = 4,
 	},
 	[ITEM_TYPE_PICK_03] = {
-		strength = 20,
+		strengthScale = 4,
 		price = 900,
 		pickDamage = 8,
 	},
 	[ITEM_TYPE_BULLETS] = {
+		strengthScale = 1.1,
 		price = 1,
 		canBuy = false,
 	},
 	[ITEM_TYPE_LADDERS] = {
+		strengthScale = 1.1,
 		price = 20,
 	},
 	101 = {
@@ -199,10 +210,12 @@ ITEMS_INFO = {
 		price = 100,
 	},
 	[ITEM_TYPE_CANDY] = {
+		strengthScale = 1.1,
 		stamina = 25,
 		price = 20,
 	},
 	103 = {
+		strengthScale = 1.1,
 		stamina = 150,
 		price = 120,
 	},
@@ -215,7 +228,8 @@ ITEMS_INFO = {
 		price = 100,
 	},
 	401 = {
-		powerScale = 1.1,
+		strengthScale = 1.1,
+		meleeAttackScale = 1.1,
 		price = 200,
 	},
 }
@@ -329,8 +343,8 @@ Game4X = extends BaseGame4X {
 			@lightMask.animateLight(2.5, 2, function(){
 				@lightMask.animateLight(0.5, 20, function(){
 					print "ligth off"			
-				}.bind(this))
-			}.bind(this))
+				})
+			})
 		else if(false)
 			@lightMask.animateLight(2.5)
 		else @lightMask.animateLight(2.5)
@@ -354,7 +368,7 @@ Game4X = extends BaseGame4X {
 		}
 		@modalView.addEventListener(TouchEvent.CLICK, function(ev){
 			ev.target == @modalView && @closeModal()
-		}.bind(this))
+		})
 		
 		@hudStamina = HealthBar("stamina-border").attrs {
 			name = "stamina",
@@ -417,18 +431,6 @@ Game4X = extends BaseGame4X {
 				@hudSlots[] = hudSlot
 				hudSlotY = hudSlotY + hudSlot.height + SLOT_INDENT
 			}
-		}
-		
-		@inventary = Sprite().attrs {
-			// resAnim = res.get("shovel-01"),
-			pivot = vec2(0.5, 1.25),
-			angle = -45,
-			pos = @size,
-			opacity = 0.5,
-			// priority = GAME_PRIORITY_INVENTARY,
-			parent = @hud,
-			mode = "pick",
-			// mode = "", 
 		}
 		
 		/*
@@ -501,7 +503,7 @@ Game4X = extends BaseGame4X {
 					}
 					@moveJoystick.touchEnabled = true
 				}
-			}.bind(this)
+			}
 			stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
 			stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
 		}
@@ -529,21 +531,7 @@ Game4X = extends BaseGame4X {
 		
 		@addEventListener(TouchEvent.CLICK, function(ev){
 			if(ev.target is BaseTile){
-				switch(@inventary.mode){
-				case "pick":
-					@pickTile(ev.target.tileX, ev.target.tileY, true)
-					break
-					
-				default:
-				case "move":
-					break
-					
-				case "ladders":
-					break
-					
-				case "attack":
-					break
-				}
+				@pickTile(ev.target.tileX, ev.target.tileY, true)
 				return
 			}
 			if(ev.target is NPC){
@@ -565,13 +553,13 @@ Game4X = extends BaseGame4X {
 			
 			// var pos = @toLocalPos(@player)
 			// var touch = ev.localPosition
-		}.bind(this))
+		})
 		
 		if(false){
 			var draging = null
 			@addEventListener(TouchEvent.START, function(ev){
 				draging = ev.localPosition
-			}.bind(this))
+			})
 			
 			@addEventListener(TouchEvent.MOVE, function(ev){
 				if(draging){
@@ -579,11 +567,11 @@ Game4X = extends BaseGame4X {
 					@view.pos += offs
 					draging = ev.localPosition
 				}
-			}.bind(this))
+			})
 			
 			@addEventListener(TouchEvent.END, function(ev){
 				draging = null
-			}.bind(this))
+			})
 		}
 		
 		if(false){
@@ -618,9 +606,9 @@ Game4X = extends BaseGame4X {
 					ease = Ease.QUINT_IN,
 					doneCallback = function(){
 						lightMask.animateLight(scale)
-					}.bind(this)
+					}
 				}
-			}.bind(this)) */
+			}) */
 			/* lightMask.addAction(RepeatForeverAction(SequenceAction(
 				TweenAction {
 					duration = 2.0,
@@ -738,7 +726,8 @@ Game4X = extends BaseGame4X {
 			@modalView.touchEnabled = false
 			@cleanupActor(@modalView)
 			@modalView.removeChildren()
-			@modalView.closeCallback()
+			var closeCallback = @modalView.closeCallback
+			closeCallback() // use callback's this instead of @modalView
 			@modalView.closeCallback = null
 		}
 	},
@@ -753,7 +742,7 @@ Game4X = extends BaseGame4X {
 		@modalView.closeCallback = function(){
 			@moveJoystick.visible = true
 			closeCallback()
-		}.bind(this)
+		}
 		
 		window.parent = @modalView
 		window.pos = (@size - window.size) / 2
@@ -765,14 +754,14 @@ Game4X = extends BaseGame4X {
 		@openModal(@shop, function(){
 			// @playerIcon.touchEnabled = true
 			@shop = null
-		}.bind(this))
+		})
 	},
 	
 	openBackpack = function(){
 		@backpackIcon.touchEnabled = false
 		@openModal(Backpack(this), function(){
 			@backpackIcon.touchEnabled = true
-		}.bind(this))
+		})
 	},
 	
 	initLevel = function(num){
@@ -843,12 +832,20 @@ Game4X = extends BaseGame4X {
 		}
 		var tile = @getTile(tx, ty)
 		var type = @getAutoFrontType(tx, ty)
-		var info = TILES_INFO[type]
-		if(!info.strength){
+		var tileInfo = TILES_INFO[type]
+		if(!tileInfo.strength){
 			tile.pickByEnt(@player)
 			return
 		}
+		Player.pickItemType || return;
 		var itemInfo = ITEMS_INFO[tile.itemType]
+		var damage = ITEMS_INFO[Player.pickItemType].tileDamage || 1
+		var strength = ((tileInfo.strength || 3) + math.abs(ty - @tiledmapFloor) / 15) 
+				* (itemInfo.strengthScale || 1) / damage
+		if(strength > 15){
+			tile.pickByEnt(@player)
+			return
+		}
 		var key = "${tx}-${ty}"
 		var crack = @tileCracks[key] || @{
 			var pos = @tileToCenterPos(tx, ty)
@@ -863,8 +860,8 @@ Game4X = extends BaseGame4X {
 				// tileType = type,
 				touchEnabled = false,
 				parent = @layers[LAYER_DECALS],
-				damageDelay = info.damageDelay || 0.3,
-				strength = (info.strength || 3) + (itemInfo.strength || 0),
+				damageDelay = tileInfo.damageDelay || 0.3,
+				strength = strength, 
 				damage = -1,				
 				nextDamageTime = 0,
 			}
@@ -1088,7 +1085,7 @@ Game4X = extends BaseGame4X {
 					pos = pos,
 					doneCallback = function(){
 						@following = false
-					}.bind(this),
+					},
 				}
 			}
 		// }else{

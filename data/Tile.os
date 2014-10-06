@@ -135,7 +135,7 @@ Tile = extends BaseTile {
 					var tile = @game.getTile(tx, ty)
 					tile.falling(true)
 				}
-			}.bind(this),
+			},
 		}
 	},
 	
@@ -153,7 +153,7 @@ Tile = extends BaseTile {
 				@priority = @savePriority
 				@back.visible = @saveBackVisible
 				@falling()
-			}.bind(this))
+			})
 		}
 		@fallingAction && return;
 		@fallingAction = @front.replaceTweenAction {
@@ -163,7 +163,7 @@ Tile = extends BaseTile {
 			doneCallback = function(){
 				@fallingAction = null
 				@startFalling()
-			}.bind(this)
+			}
 		}
 		@savePriority = @priority
 		@priority = TILE_PRIORITY_FALLING

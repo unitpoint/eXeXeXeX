@@ -127,7 +127,7 @@ Backpack = extends Actor {
 				parent = this,
 			}
 			@bulletsCount[] = text
-		}.bind(this)
+		}
 		
 		var color = Color.fromInt(0x391a05)
 		for(var x = -1; x < 2; x+=2){
@@ -177,7 +177,7 @@ Backpack = extends Actor {
 				var t = Ease.run(accum / time, Ease.CUBIC_OUT)
 				@bullets = math.round(startBullets + delta * t)
 			}
-		}.bind(this))
+		})
 	},
 	
 	updateItems = function(){
@@ -202,7 +202,7 @@ Backpack = extends Actor {
 		@cols, @rows = 3, 2
 		@pack = ItemsPack(@cols * @rows)
 		
-		for(var i, type in [1, 3]){
+		for(var i, type in [1, 3, 11, 13]){
 			@pack.items[i] = {type = type, count = 1}
 		}
 		

@@ -80,7 +80,7 @@ DragndropItems = extends Actor {
 				
 				@touchPos = stage.localToGlobal(ev.localPos)
 			}
-		}.bind(this))
+		})
 
 		@moveEventId = stage.addEventListener(TouchEvent.MOVE, function(ev){
 			if(@itemSelected){ // ev.target.name == "backpackSlot"){
@@ -105,7 +105,7 @@ DragndropItems = extends Actor {
 					}
 				}
 			}
-		}.bind(this))
+		})
 		
 		@endEventId = stage.addEventListener(TouchEvent.END, function(ev){
 			if(@itemSelected){ // ev.target.name == "backpackSlot"){
@@ -124,7 +124,7 @@ DragndropItems = extends Actor {
 				@itemSelected = @itemSlot = @targetSlot = null
 				// @extendedClickArea = 0
 			}
-		}.bind(this))
+		})
 	},
 	
 	findBackpackTargetSlot = function(slot){
@@ -154,6 +154,22 @@ DragndropItems = extends Actor {
 			@itemSelected.pos = @itemSlot.size/2
 			@itemSelected.parent = @itemSlot
 			@itemSelected.color = Color.WHITE
+			if(itemInfo.type in PICK_DAMAGE_ITEMS_INFO){
+				for(var _, slot in @game.hudSlots){
+					if(slot !== @targetSlot && slot.type in PICK_DAMAGE_ITEMS_INFO){
+						slot.clearItem()
+					}
+				}
+				Player.pickItemType = itemInfo.type
+			}else{
+				Player.pickItemType = null
+				for(var _, slot in @game.hudSlots){
+					if(slot.type in PICK_DAMAGE_ITEMS_INFO){
+						Player.pickItemType = slot.type
+						break
+					}
+				}
+			}
 		}else{
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
 			var targetItemInfo = owner.pack.items[@targetSlot.slotNum]

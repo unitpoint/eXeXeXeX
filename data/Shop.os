@@ -40,6 +40,7 @@ Shop = extends Actor {
 		super()
 		@name = name || "ent-043"
 		@game = game
+		@touchEnabled = false
 		
 		if(true || #@pack.items == 0 || @game.time > @nextItemsUpdateTime){
 			@nextItemsUpdateTime = @game.time + math.random(1, 3) * 60
@@ -205,7 +206,7 @@ Shop = extends Actor {
 							// finger.removeUpdate(checkUpdateHandle)
 							// finger.removeActions()
 						}
-					}.bind(this))
+					})
 					var startPos, startAngle = finger.pos, 10
 					var endPos = @targetSlot.pos + vec2(SLOT_SIZE/2, SLOT_SIZE/2)
 					var endAngle = 0
@@ -234,14 +235,14 @@ Shop = extends Actor {
 														opacity = 0,
 														doneCallback = function(){
 															finger.addTimeout(1, animateTutorial)
-														}.bind(this),
+														},
 													}
-												}.bind(this))
+												})
 											})
-										}.bind(this),
+										},
 									}
 								})
-							}.bind(this),
+							},
 						}
 					}
 					animateTutorial()

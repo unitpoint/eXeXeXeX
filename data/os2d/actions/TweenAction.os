@@ -132,10 +132,11 @@ TweenAction = extends IntervalAction {
 	},
 	
     update = function(t){
+		var tickCallback = @tickCallback
 		for(var prop, values in @_props){
 			var time = values.ease ? Ease.run(t, values.ease) : t
 			@_target[prop] = values.to - values.delta * (1 - time)
-			@tickCallback()
+			tickCallback() // use function's this instead of current object
 		}
 	},
 }

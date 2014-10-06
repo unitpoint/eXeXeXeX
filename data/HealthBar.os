@@ -91,11 +91,11 @@ HealthBar = extends Actor {
 		t = t < 0 ? 0 : t > 1 ? 1 : t
 		t == @_value && return;
 		if(t >= 0.6){
-			var color = Color(0, 0.78, 0)
+			var color = Color.fromInt(0x87d422) // (0, 0.78, 0)
 		}else if(t >= 0.3){
-			var color = Color(0.78, 0.78, 0)
+			var color = Color.fromInt(0xebd628) // (0.78, 0.78, 0)
 		}else{
-			var color = Color(0.78, 0, 0)
+			var color = Color.fromInt(0xe3361a) // (0.78, 0, 0)
 		}
 		@_value = t
 		@filler.color = color
@@ -103,7 +103,7 @@ HealthBar = extends Actor {
 		if(t < 0.25){
 			@blinkUpdateHandle || @blinkUpdateHandle = @addUpdate(0.3, function(){
 				@filler.visible = !@filler.visible
-			}.bind(this))
+			})
 		}else if(@blinkUpdateHandle){
 			@filler.visible = true
 			@removeUpdate(@blinkUpdateHandle)

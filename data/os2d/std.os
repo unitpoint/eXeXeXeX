@@ -468,7 +468,8 @@ function Actor.__get@_internalActions(){
 			if(action.isDone){
 				action.detachTarget && action.target.detach()
 				self.removeAction(action)
-				action.doneCallback()
+				var doneCallback = action.doneCallback
+				doneCallback() // use function's this instead of current object
 			}
 		}
 	})

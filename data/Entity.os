@@ -274,18 +274,18 @@ Entity = extends Actor {
 							duration = time * 1.7,
 							x = pos.x,
 							// ease = Ease.QUAD_IN,
-							doneCallback = function(){ @moveAnimatedX = false }.bind(this),
+							doneCallback = function(){ @moveAnimatedX = false },
 						}
 						@moveAnimatedY = @addTweenAction {
 							// name = "jumping",
 							duration = time * 1.5,
 							y = pos.y,
 							ease = Ease.BACK_IN_OUT,
-							doneCallback = function(){ @moveAnimatedY = false }.bind(this),
+							doneCallback = function(){ @moveAnimatedY = false },
 						}
 						return true
 					}
-				}.bind(this)
+				}
 				
 				if(@isTileEmptyToMove(tileX + dx, tileY)){
 					// print "side move: ${tileX + dx}, ${tileY}"
@@ -318,22 +318,8 @@ Entity = extends Actor {
 				{
 					return
 				}
-				if(@game.player === this)
-				switch(@game.inventary.mode){
-				case "pick":
+				if(@game.player === this){
 					@pickTileX = tileX + dx
-					// @game.pickTile(tileX + dx, tileY)
-					break
-					
-				default:
-				case "move":
-					break
-					
-				case "ladders":
-					break
-					
-				case "attack":
-					break
 				}
 			} }while(false)
 			if(!@moveAnimatedY && dy != 0){
@@ -367,7 +353,7 @@ Entity = extends Actor {
 								duration = time * 1.5,
 								y = pos.y,
 								ease = Ease.BACK_IN_OUT,
-								doneCallback = function(){ @moveAnimatedY = false }.bind(this),
+								doneCallback = function(){ @moveAnimatedY = false },
 							}
 							return
 						}
@@ -382,22 +368,8 @@ Entity = extends Actor {
 					// @onTileChanged()
 					break
 				}
-				if(@game.player === this)
-				switch(@game.inventary.mode){
-				case "pick":
+				if(@game.player === this){
 					@pickTileY = tileY + dy
-					// @game.pickTile(tileX, tileY + dy)
-					break
-					
-				default:
-				case "move":
-					break
-					
-				case "ladders":
-					break
-					
-				case "attack":
-					break
 				}
 			}
 		}while(false)
@@ -501,7 +473,7 @@ Entity = extends Actor {
 			action.doneCallback = anim
 			@sprite.replaceAction(action)
 			@breathingAction = action
-		}.bind(this)
+		}
 		anim()
 	},
 	
@@ -533,10 +505,11 @@ Entity = extends Actor {
 						ease = Ease.CIRC_IN_OUT,
 						doneCallback = callback // anim
 					}
-					@attackCallback()
-				}.bind(this)
+					var attackCallback = @attackCallback
+					attackCallback() // use function's this instead of current this
+				}
 			}
-		}.bind(this)
+		}
 		anim()
 	},
 }

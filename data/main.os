@@ -45,8 +45,9 @@ scale = math.min(scale.x, scale.y)
 stage.size = displaySize / scale
 stage.scale = scale
 
+logoEnabled = false
 lang = "ru"
-langStrings = require("langs/${lang}/strings.os")
+langStrings = require("langs/${lang}/strings.os", false)
 
 function _T(text){
 	return langStrings[text] || text

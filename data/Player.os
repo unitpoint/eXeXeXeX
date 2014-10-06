@@ -33,7 +33,8 @@
 
 Player = extends Entity {
 	bullets = 0,
-	pickItemType = 0,
+	pickItemType = null,
+	pickItemUsage = {},
 
 	__construct = function(game, name){
 		super(game, name)
@@ -115,7 +116,7 @@ Player = extends Entity {
 		}else if(!@staminaUpdateHandle){
 			@staminaUpdateHandle = @game.addUpdate(function(ev){
 				@stamina += (@game.playerMaxStamina / 10) * ev.dt
-			}.bind(this))
+			})
 		}
 		var type = @game.getFrontType(tx, ty - 1)
 		if(type == TILE_TYPE_ROCK){

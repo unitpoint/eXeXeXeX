@@ -50,19 +50,19 @@ HudIcon = extends Box9Sprite {
 		@addEventListener(TouchEvent.START, function(ev){
 			@clicked = false
 			@animSelectIcon()
-		}.bind(this))
+		})
 
 		var timeoutHandle = null
 		@addEventListener(TouchEvent.END, function(ev){
 			timeoutHandle = @addTimeout(0.01, @animUnselectIcon.bind(this))
-		}.bind(this))
+		})
 		
 		@addEventListener(TouchEvent.CLICK, function(ev){
 			@removeTimeout(timeoutHandle)
 			@state == @STATE_SELECTED && @animUnselectIcon()
 			@clicked = true
 			@onClicked(ev)
-		}.bind(this))		
+		})		
 	},
 	
 	setResName = function(name){
@@ -82,7 +82,7 @@ HudIcon = extends Box9Sprite {
 				doneCallback = function(){
 					@state = @STATE_SELECTED
 					@clicked && @animUnselectIcon()
-				}.bind(this),
+				},
 			}
 		}
 	},
@@ -99,7 +99,7 @@ HudIcon = extends Box9Sprite {
 				doneCallback = function(){
 					@state = @STATE_UNSELECTED
 					@clicked = false
-				}.bind(this),
+				},
 			}
 		}
 	},

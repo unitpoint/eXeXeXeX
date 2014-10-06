@@ -95,8 +95,8 @@ HandFinger = extends Actor {
 						ease = Ease.QUAD_OUT,
 						doneCallback = doneCallback,
 					}
-				}.bind(this),
+				},
 			}
-		}.bind(this))
+		})
 	},
 }

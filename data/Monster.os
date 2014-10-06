@@ -81,7 +81,7 @@ Monster = extends Entity {
 				return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS
 			}
 			 return type == TILE_TYPE_EMPTY
-		}.bind(this)
+		}
 		for(var i = 1;; i++){
 			@patrolArea.end.x - @patrolArea.start.x + 1 >= maxAreaWidth && break
 			sideLocked[0] && sideLocked[1] && break
@@ -224,14 +224,14 @@ Monster = extends Entity {
 					@nextMoveDir = null
 					@moveTimeoutHandle = null
 					@updateMoveDir()
-				}.bind(this)
+				}
 				if(@warnOnMove){
 					var breathingSpeed = @breathingSpeed
 					@startBreathing(breathingSpeed * 16)
 					@moveTimeoutHandle = @addTimeout(0.35, function(){
 						@startBreathing(breathingSpeed)
 						@moveTimeoutHandle = @addTimeout(0.65, setMoveDir)
-					}.bind(this))
+					})
 				}else{
 					setMoveDir()
 				}

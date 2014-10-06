@@ -37,6 +37,17 @@ Logo = extends ColorRectSprite {
 		@size = stage.size
 		@color = Color.BLACK
 		
+		var startGame = function(){
+			spriteRes.unload()
+			@detach()
+			Game4X()
+		}
+		
+		if(!logoEnabled){
+			startGame()
+			return
+		}
+		
 		@res = Resources()
 		@res.loadXML("xmls/logo.xml", false)
 		
@@ -59,7 +70,7 @@ Logo = extends ColorRectSprite {
 				duration = 2.5,
 				opacity = 1,
 			}
-		}.bind(this))
+		})
 		
 		if(GAME_SETTINGS.sound || GAME_SETTINGS.music){
 			mplayer.play { 
@@ -70,12 +81,6 @@ Logo = extends ColorRectSprite {
 			}
 		}
 		
-		var startGame = function(){
-			spriteRes.unload()
-			@detach()
-			Game4X()
-		}.bind(this)
-		
 		@addEventListener(TouchEvent.CLICK, startGame)
 		
 		@addTimeout(3.5, function(){
@@ -84,6 +89,6 @@ Logo = extends ColorRectSprite {
 				opacity = 0,
 				doneCallback = startGame,
 			}
-		}.bind(this))
+		})
 	}
 }
