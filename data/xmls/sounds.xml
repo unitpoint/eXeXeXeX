@@ -3,5 +3,28 @@
 	<set path = "sounds/" />
 	<sound file="logo.ogg" />
 	<sound file="awesome.ogg" />
+	<sound file="foot-01-01.ogg" />
+	<sound file="foot-01-02.ogg" />
+	<sound file="foot-01-03.ogg" />
+	<sound file="foot-01-04.ogg" />
+	<sound file="foot-01-05.ogg" />
+	<sound file="foot-01-06.ogg" />
+	<sound file="foot-02-01.ogg" />
+	<sound file="foot-02-02.ogg" />
+	<sound file="foot-02-03.ogg" />
+	<sound file="foot-02-04.ogg" />
+	<sound file="foot-02-05.ogg" />
+	<sound file="foot-02-06.ogg" />
+	<sound file="foot-02-07.ogg" />
+	<sound file="player-pain-01.ogg" />
+	<sound file="player-pain-02.ogg" />
+	<sound file="player-pain-03.ogg" />
+	<sound file="player-pain-04.ogg" />
+	<sound file="player-pain-05.ogg" />
+	<sound file="player-pain-06.ogg" />
+	<sound file="player-pain-07.ogg" />
+	<sound file="player-pain-08.ogg" />
+	<sound file="player-death-01.ogg" />
+	<sound file="player-death-02.ogg" />
     <sound file="music.ogg" streaming="true" />
 </resources>

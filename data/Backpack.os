@@ -40,6 +40,7 @@ Backpack = extends Actor {
 		super()
 		@game = game
 		@name  = "backpack"
+		@tutorial = null
 		
 		/* @pack.items = {
 			{type = 101, count = 7}, 
@@ -160,8 +161,10 @@ Backpack = extends Actor {
 		@bulletsSprite.replaceAction(scaleAction)
 		
 		var startBullets = @_bullets
-		var delta = Player.bullets-1 - startBullets
-		var time = math.max(3.0, math.min(0.1, math.abs(delta / 500)))
+		var delta = Player.bullets - startBullets
+		if(delta > 0) --delta else if(delta < 0) ++delta
+		
+		var time = math.max(3.0, math.min(0.05, math.abs(delta / 500)))
 		var accum = 0
 		
 		@removeUpdate(@countBulletsUpdateHandle)
@@ -182,6 +185,7 @@ Backpack = extends Actor {
 	
 	updateItems = function(){
 		@pack.updateActorItems(this)
+		@game.updateHudItems()
 	},
 	
 	addItem = function(type, count){
@@ -202,7 +206,8 @@ Backpack = extends Actor {
 		@cols, @rows = 3, 2
 		@pack = ItemsPack(@cols * @rows)
 		
-		for(var i, type in [1, 3, 11, 13]){
+		for(var i, type in [1, 3]){
+		// for(var i, type in [1, 3, 11, 13]){
 			@pack.items[i] = {type = type, count = 1}
 		}
 		
@@ -211,6 +216,65 @@ Backpack = extends Actor {
 				
 			}
 		} */
+	},
+	
+	cleanup = function(){
+		@tutorial.detach()
+		@tutorial = null
+	},
+	
+	runTutorial = function(target){
+		@addTimeout(1.5, function(){
+			@checkTutorial(target)
+		})
+	},
+	
+	checkTutorial = function(target){
+		target || target = stage
+		var allDone = true
+		if(!GAME_SETTINGS.doneTutorials.setPickItem){
+			if(Player.pickItemType){
+				GAME_SETTINGS.doneTutorials.setPickItem = true
+				saveGameSettings()
+				@addTimeout(1.5, function(){
+					@checkTutorial(target)
+				})
+			}else if(Backpack.hasPickItem()){
+				for(var _, destSlot in @game.hudSlots){
+					if(destSlot.isEmpty){
+						for(var _, srcSlot in @slots){
+							if(srcSlot.type in PICK_DAMAGE_ITEMS_INFO){
+								@tutorial = Tutorial.animateDragFinger {
+									target = target,
+									startPos = srcSlot.localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+									endPos = destSlot.localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+									startAngle = 0,
+									endAngle = 10,
+									updateCallback = function(){
+										if(Player.pickItemType){
+											GAME_SETTINGS.doneTutorials.setPickItem = true
+											saveGameSettings()
+											@tutorial.detach()
+											@tutorial = null
+											@runTutorial(target)
+										}
+									},
+								}
+								return
+							}
+						}
+					}
+				}
+			}
+			allDone = false
+		}
+		if(!allDone){
+			@runTutorial(target)
+		}else{
+			/* @addTimeout(1.5, function(){
+				@backpack.checkTutorial()
+			}) */
+		}
 	},
 }
 

@@ -31,10 +31,33 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
+PLAYER_FOOT_SOUNDS = {
+	block = [
+		"foot-01-01", "foot-01-02", "foot-01-03", "foot-01-04", "foot-01-05", "foot-01-06",
+	],
+	
+	chernozem = [
+		"foot-02-01", "foot-02-02", "foot-02-03", "foot-02-04", "foot-02-05", "foot-02-06", "foot-02-07",
+	],
+}
+
+PLAYER_PAIN_SOUNDS = [
+	"player-pain-01", "player-pain-02", "player-pain-03", "player-pain-04", "player-pain-05", 
+	"player-pain-06", "player-pain-07", "player-pain-08",
+]
+
+PLAYER_DEATH_SOUNDS = [
+	"player-death-01", "player-death-02",
+]
+
 Player = extends Entity {
 	bullets = 0,
 	pickItemType = null,
 	pickItemUsage = {},
+	
+	saveTileX = null,
+	saveTileY = null,
+	saveName = null,
 
 	__construct = function(game, name){
 		super(game, name)
@@ -43,7 +66,53 @@ Player = extends Entity {
 		@_stamina = game.playerMaxStamina
 		@staminaUpdateHandle = null
 		@startBreathing()
+		@footSound = null
+		@painSound = null
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
+	},
+	
+	reset = function(){
+		@isPlayer = true
+		@isDead = false
+		@_stamina = @game.playerMaxStamina
+		@game.hudStamina.value = 1
+		@sprite.attrs {
+			pos = @idealPos,
+			scale = @idealScale,
+			angle = 0,
+			opacity = 1,
+			color = Color.WHITE,
+		}
+	},
+	
+	playFootSound = function(type){
+		if(!@footSound){
+			var name = randItem(PLAYER_FOOT_SOUNDS[type])
+			@footSound = splayer.play {
+				sound = name,
+			}
+			@footSound.doneCallback = function(){
+				@footSound = null
+			}
+		}
+	},
+	
+	playPainSound = function(){
+		if(!@painSound){
+			var name = randItem(PLAYER_PAIN_SOUNDS)
+			@painSound = splayer.play {
+				sound = name,
+			}
+			@painSound.doneCallback = function(){
+				@painSound = null
+			}
+		}
+	},
+	
+	playDeathSound = function(){
+		splayer.play {
+			sound = randItem(PLAYER_DEATH_SOUNDS),
+		}
 	},
 	
 	__get@stamina = function(){
@@ -62,15 +131,24 @@ Player = extends Entity {
 			@startBreathing(2.0)
 		}else if(t > 0.25){
 			@startBreathing(4.0)
-		}else{
+		}else if(t > 0){
 			@startBreathing(8.0)
+		}else{
+			@die(function(){
+				@game.playerDead()
+			})
 		}
 		@game.hudStamina.value = t
 		// @game.hudStaminaNumber.text = math.round(@_stamina, 1)
 	},
 	
 	useStamina = function(value){
-		@stamina -= value || 1
+		value || value = 1
+		if(value > @game.playerMaxStamina * 0.2){
+			@game.createBlood(value)
+			@playPainSound()
+		}
+		@stamina -= value
 	},
 	
 	useStaminaByCrack = function(){
@@ -136,11 +214,17 @@ Player = extends Entity {
 				@game.getTileItem(type, tx, ty)
 			}
 		}
+		var type = @game.getFrontType(tx, ty + 1)
+		if(type == TILE_TYPE_ROCK || type == TILE_TYPE_BLOCK){
+			@playFootSound('block')
+		}else if(type != TILE_TYPE_EMPTY){
+			@playFootSound('chernozem')
+		}
 		// @game.followPlayer()
 	},
 	
 	update = function(){
-		if(@game.moveJoystick.active){
+		if(@game.moveJoystick.active && !@isDead){
 			@moveDir = @game.moveJoystick.dir
 			@updateMoveDir()
 		}else{

@@ -73,6 +73,7 @@ ItemSlot = extends Box9Sprite {
 			touchEnabled = false, // it will be detached while drgging
 			// opacity = @spriteOpacity,
 		}
+		@countText && @countText.parent = @sprite
 	},
 	
 	__get@count = function(){
@@ -80,17 +81,34 @@ ItemSlot = extends Box9Sprite {
 	},
 	
 	__set@count = function(value){
-		@_count === value && return;
+		@_count === value || !@sprite && return;
 		@_count = value
-		@countText.detach(); @countText = null
-		value && @countText = TextField().attrs {
-			resFont = res.get("test"),
-			vAlign = TEXT_VALIGN_BOTTOM,
-			hAlign = TEXT_HALIGN_RIGHT,
-			text = value,
-			pos = @size - vec2(4, 5),
-			priority = 2,
-			parent = this,
+		if(value){
+			if(@countText){
+				@countText.text = value
+			}else{
+				@countText = TextField().attrs {
+					resFont = res.get("test"),
+					vAlign = TEXT_VALIGN_BOTTOM,
+					hAlign = TEXT_HALIGN_LEFT,
+					text = value,
+					pos = vec2(4, 20),
+					// priority = 2,
+					parent = @sprite,
+				}
+				/* @countText = TextField().attrs {
+					resFont = res.get("test"),
+					vAlign = TEXT_VALIGN_BOTTOM,
+					hAlign = TEXT_HALIGN_RIGHT,
+					text = value,
+					pos = @size - vec2(4, 5),
+					priority = 2,
+					parent = this,
+				} */
+			}
+		}else{
+			@countText.detach()
+			@countText = null
 		}
 	},
 	

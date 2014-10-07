@@ -31,29 +31,55 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-HudSlot = extends ItemSlot {
-	__construct = function(game, slotNum){
-		super(game, Backpack, slotNum)
-		@opacity = 0.75
-	},
-	
-	__set@type = function(type){
-		@clearItem()
-		for(var _, hudSlot in @game.hudSlots){
-			if(hudSlot.type == type){
-				hudSlot.clearItem()
+Tutorial = extends Object {
+	animateDragFinger = function(params){
+		var finger = params.finger || @{
+			var finger = HandFinger().attrs {
+				parent = params.target,
 			}
+			var updateCallback = params.updateCallback
+			updateCallback && finger.addUpdate(0.3, function(){
+				updateCallback(finger)
+			})
+			params.finger = finger
 		}
-		super(type)
-		@count = @owner.pack.numItemsByType[type]
-	},
-	
-	updateItem = function(){
-		var count = @owner.pack.numItemsByType[@type]
-		if(count > 0){
-			@count = count
-		}else{
-			@clearItem()
+		finger.pos = params.startPos
+		finger.angle = params.startAngle
+		finger.opacity = 0
+		finger.replaceTweenAction {
+			name = "tutorial",
+			duration = 0.4,
+			opacity = 1,
+			doneCallback = function(){
+				finger.addTimeout(0.4, function(){
+					finger.animateTouch(function(){
+						finger.replaceTweenAction {
+							name = "tutorial",
+							duration = 2,
+							pos = params.endPos,
+							angle = params.endAngle,
+							ease = Ease.CUBIC_IN_OUT,
+							doneCallback = function(){
+								finger.animateUntouch(function(){
+									finger.addTimeout(0.8, function(){
+										finger.replaceTweenAction {
+											name = "tutorial",
+											duration = 0.3,
+											opacity = 0,
+											doneCallback = function(){
+												finger.addTimeout(3, function(){
+													@animateDragFinger(params)
+												})
+											},
+										}
+									})
+								})
+							},
+						}
+					})
+				})
+			},
 		}
+		return finger
 	},
 }

@@ -110,6 +110,7 @@ ITEM_TYPE_PICK_01 = 12
 ITEM_TYPE_PICK_02 = 13
 ITEM_TYPE_PICK_03 = 14
 ITEM_TYPE_BULLETS = 15
+ITEM_TYPE_STAMINA = 16
 ITEM_TYPE_LADDERS = 17
 
 ITEM_TYPE_CANDY = 102
@@ -178,7 +179,7 @@ ITEMS_INFO = {
 	},
 	[ITEM_TYPE_SHOVEL] = {
 		strengthScale = 1.1,
-		price = 1,
+		price = 100,
 		pickDamage = 1,
 	},
 	[ITEM_TYPE_PICK_01] = {
@@ -187,12 +188,12 @@ ITEMS_INFO = {
 		pickDamage = 2,
 	},
 	[ITEM_TYPE_PICK_02] = {
-		strengthScale = 3,
+		strengthScale = 4,
 		price = 500,
 		pickDamage = 4,
 	},
 	[ITEM_TYPE_PICK_03] = {
-		strengthScale = 4,
+		strengthScale = 6,
 		price = 900,
 		pickDamage = 8,
 	},
@@ -200,6 +201,11 @@ ITEMS_INFO = {
 		strengthScale = 1.1,
 		price = 1,
 		canBuy = false,
+	},
+	[ITEM_TYPE_STAMINA] = {
+		strengthScale = 4,
+		incStamina = 25,
+		price = 1000,
 	},
 	[ITEM_TYPE_LADDERS] = {
 		strengthScale = 1.1,
@@ -699,6 +705,38 @@ Game4X = extends BaseGame4X {
 		
 		@initLevel(0)
 		
+		var screenBlood_01 = Sprite().attrs {
+			resAnim = res.get("screen-blood-scratch"),
+			priority = 1000,
+			// parent = this,
+			pivot = vec2(0.5, 0.5),
+			pos = @size / 2,
+			touchEnabled = false,
+		}
+		screenBlood_01.scale = @width / screenBlood_01.width
+		
+		var screenBlood_02 = Sprite().attrs {
+			resAnim = res.get("screen-blood-breaks-01"),
+			priority = 1000,
+			// parent = this,
+			pivot = vec2(0, 0),
+			pos = vec2(0, 0),
+			touchEnabled = false,
+		}
+		screenBlood_02.scale = @height / screenBlood_02.height
+		
+		var screenBlood_03 = Sprite().attrs {
+			resAnim = res.get("screen-blood-breaks-02"),
+			priority = 1000,
+			// parent = this,
+			pivot = vec2(0, 0),
+			pos = vec2(0, 0),
+			touchEnabled = false,
+		}
+		screenBlood_03.scale = @height / screenBlood_03.height
+		
+		@screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03]
+		
 		ColorRectSprite().attrs {
 			size = @size,
 			color = Color.BLACK,
@@ -710,6 +748,28 @@ Game4X = extends BaseGame4X {
 			opacity = 0,
 			detachTarget = true,
 		}
+	},
+	
+	createBlood = function(value){
+		var allowBloods = []
+		for(var i = 0; i < #@screenBloods; i++){
+			if(!@screenBloods[i].parent){
+				allowBloods[] = @screenBloods[i]
+			}
+		}
+		if(#allowBloods == 0){
+			return
+		}
+		var b = randItem(allowBloods)
+		b.parent = this
+		b.opacity = 1
+		b.addTimeout(math.random(1, 3), function(){
+			b.addTweenAction {
+				duration = math.random(2, 4),
+				opacity = 0,
+				detachTarget = true,
+			}
+		})
 	},
 	
 	cleanupActor = function(actor){
@@ -746,6 +806,7 @@ Game4X = extends BaseGame4X {
 		
 		window.parent = @modalView
 		window.pos = (@size - window.size) / 2
+		window.runTutorial()
 	},
 	
 	openShop = function(){
@@ -762,6 +823,12 @@ Game4X = extends BaseGame4X {
 		@openModal(Backpack(this), function(){
 			@backpackIcon.touchEnabled = true
 		})
+	},
+	
+	updateHudItems = function(){
+		for(var _, slot in @hudSlots){
+			slot.updateItem()
+		}
 	},
 	
 	initLevel = function(num){
@@ -791,7 +858,7 @@ Game4X = extends BaseGame4X {
 		return child.localToGlobal(pos || vec2(0, 0), this)
 	},
 	
-	initEntTilePos = function(ent, tx, ty){
+	initEntTile = function(ent, tx, ty){
 		DEBUG && assert(!@tileEnt["${tx}-${ty}"])
 		ent.tileX, ent.tileY = tx, ty
 		ent.pos = @tileToCenterPos(tx, ty)
@@ -839,10 +906,12 @@ Game4X = extends BaseGame4X {
 		}
 		Player.pickItemType || return;
 		var itemInfo = ITEMS_INFO[tile.itemType]
-		var damage = ITEMS_INFO[Player.pickItemType].tileDamage || 1
-		var strength = ((tileInfo.strength || 3) + math.abs(ty - @tiledmapFloor) / 15) 
-				* (itemInfo.strengthScale || 1) / damage
+		var damage = ITEMS_INFO[Player.pickItemType].pickDamage || 1
+		var deepStrength = math.abs(ty - @tiledmapFloor) / 15
+		var strength = math.round(((tileInfo.strength || 3) + deepStrength) 
+				* (itemInfo.strengthScale || 1) / damage)
 		if(strength > 15){
+			print "tile ${tx}x${ty} too strength: ${strength}, deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
 			tile.pickByEnt(@player)
 			return
 		}
@@ -878,6 +947,7 @@ Game4X = extends BaseGame4X {
 			@tileCracks[key] = crack
 			return crack
 		}
+		// print "tile ${tx}x${ty} strength: ${crack.damage+1}/${strength} , deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
 				delete @tileCracks[key]; crack.detach()
@@ -893,7 +963,7 @@ Game4X = extends BaseGame4X {
 			crack.nextDamageTime = @time + crack.damageDelay
 			@player.useStaminaByCrack()
 		}
-		crack.resAnimFrameNum = crack.damage * crack.resAnim.totalFrames / (crack.strength-1)
+		crack.resAnimFrameNum = (crack.damage+1) * crack.resAnim.totalFrames / crack.strength
 		return true
 	},
 	
@@ -1021,25 +1091,44 @@ Game4X = extends BaseGame4X {
 		@updateTiledmapShadowViewport(ax, ay, bx, by)
 	},
 	
+	playerDead = function(){
+		Player.pickItemType = null
+		Backpack.pack.items = {}
+		Backpack.pack.updateNumItems()
+		@updateHudItems()
+		
+		@player.reset()
+		
+		// @cleanupActor(@player)
+		// @player.detach()
+		// @player = Player(this, Player.saveName)
+		@unsetEntTile(@player)
+		@initEntTile(@player, Player.saveTileX, Player.saveTileY)
+		@centerViewToTile(Player.saveTileX, Player.saveTileY)
+	},
+	
 	addTiledmapEntity = function(obj){ // x, y, type, isPlayer){
 		if(obj.type == "player"){
 			@player && throw "player is already exist"
 			@player = Player(this, obj.gid)
-			// @playerIcon.setResName(@player.name)
-			@initEntTilePos(@player, obj.x, obj.y)
+			@initEntTile(@player, obj.x, obj.y)
 			@centerViewToTile(obj.x, obj.y)
+			
+			Player.saveName = obj.gid
+			Player.saveTileX = obj.x
+			Player.saveTileY = obj.y
 			return
 		}
 		if(obj.type == "trader"){
 			var npc = NPC(this, obj.gid, obj.type)
 			@npcList[npc] = npc
-			@initEntTilePos(npc, obj.x, obj.y)
+			@initEntTile(npc, obj.x, obj.y)
 			npc.createPatrolAreaIfNecessary()
 			return
 		}
 		if(obj.gid > 0){
 			var monster = Monster(this, obj.gid)
-			@initEntTilePos(monster, obj.x, obj.y)
+			@initEntTile(monster, obj.x, obj.y)
 			monster.createPatrolAreaIfNecessary()
 			return
 		}

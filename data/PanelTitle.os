@@ -31,17 +31,22 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-PanelTitle = extends Box9Sprite {
-	__construct = function(parent, title){
+PanelTitle = extends Actor {
+	__construct = function(parent, title, color){
 		super()
-		@resAnim = res.get("panel-title")
 		@pivot = vec2(0, 1)
 		@pos = vec2(0, 4)
 		@parent = parent
 		
-		var guide = math.floor(@height/2)
-		@setGuides(guide, guide, guide, guide)
-		@height = 44
+		@bg = Box9Sprite().attrs {
+			resAnim = res.get("panel-title"),
+			color = color || Color.WHITE,
+			parent = this,
+		}
+		
+		var guide = math.floor(@bg.height/2)
+		@bg.setGuides(guide, guide, guide, guide)
+		@height = @bg.height = 44
 		
 		var side, vertSide = 10, 13
 		@text = TextField().attrs {
@@ -55,7 +60,7 @@ PanelTitle = extends Box9Sprite {
 			parent = this,
 		}
 		var textPos, textSize = @text.textPos, @text.textSize
-		@width = @text.x + textPos.x + textSize.x + side*1.5
+		@width = @bg.width = @text.x + textPos.x + textSize.x + side*1.5
 		
 		@textShadow = []
 		var cloneText = function(delta, color){

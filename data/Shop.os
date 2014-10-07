@@ -41,6 +41,7 @@ Shop = extends Actor {
 		@name = name || "ent-043"
 		@game = game
 		@touchEnabled = false
+		@tutorial = null
 		
 		if(true || #@pack.items == 0 || @game.time > @nextItemsUpdateTime){
 			@nextItemsUpdateTime = @game.time + math.random(1, 3) * 60
@@ -88,18 +89,22 @@ Shop = extends Actor {
 			{type = 4}, 
 		} */
 		
+		var borderSize, paddingSize = 10, 4
+		
+		@backpack = Backpack(@game).attrs {
+			// pivot = vec2(0, 0),
+			// x = @width + borderSize,
+			parent = this,
+		}
+		
 		var bg = Box9Sprite().attrs {
 			resAnim = res.get("panel"),
 			// priority = 1,
 			color = (Color.fromInt(0x77595a) * 2).clamp(),
+			x = @backpack.x + @backpack.width + borderSize,
 			parent = this
 		}
 		bg.setGuides(20, 20, 20, 20)
-		
-		@title = PanelTitle(this, _T("Trader"))
-		
-		var borderSize = 10
-		var paddingSize = 4
 		
 		@slots = []
 		for(var x = 0; x < @cols; x++){
@@ -107,50 +112,55 @@ Shop = extends Actor {
 				var slot = ItemSlot(@game, this, #@slots).attrs {
 					x = borderSize + (SLOT_SIZE + paddingSize) * x,
 					y = borderSize + (SLOT_SIZE + paddingSize) * (y + 1),
-					parent = this,
+					parent = bg,
 				}
 				@slots[] = slot
 			}
 		}
-		@width = slot.x + slot.width + borderSize
-		@height = slot.y + slot.height + borderSize
-		bg.size = @size
+		bg.width = slot.x + slot.width + borderSize
+		bg.height = slot.y + slot.height + borderSize
+		
+		@title = PanelTitle(bg, _T("Trader"), bg.color) // Color(0.99, 0.99, 0.7))
+		@title.x = bg.width - @title.width
+		
+		@width = bg.x + bg.width
+		@height = math.max(bg.height, @backpack.height)
 		
 		var trader = Box9Sprite().attrs {
 			resAnim = res.get(@name),
-			pivot = vec2(0, 0),
-			pos = vec2(borderSize, borderSize),
+			x = borderSize + (SLOT_SIZE + paddingSize) * 3,
+			y = borderSize + (SLOT_SIZE + paddingSize) * 0,
 			size = vec2(SLOT_SIZE, SLOT_SIZE),
 			// scaleX = -1,
-			parent = this,
+			parent = bg,
 		}
 		
 		@targetSlot = TargetSlot(@game, this).attrs {
-			x = borderSize + (SLOT_SIZE + paddingSize) * 1,
+			x = borderSize + (SLOT_SIZE + paddingSize) * 2,
 			y = borderSize + (SLOT_SIZE + paddingSize) * 0,
-			parent = this,
+			parent = bg,
 			touchChildrenEnabled = false,
 			touchEnabled = false,
 		}
 		// @targetSlot.type = 101
 		
 		Sprite().attrs {
-			resAnim = res.get("slot-arrow-right"),
-			x = borderSize + (SLOT_SIZE + paddingSize) * 2 + SLOT_SIZE/2,
+			resAnim = res.get("slot-arrow-left"),
+			x = borderSize + (SLOT_SIZE + paddingSize) * 1 + SLOT_SIZE/2,
 			y = borderSize + (SLOT_SIZE + paddingSize) * 0 + SLOT_SIZE/2,
 			pivot = vec2(0.5, 0.5),
-			parent = this,
+			parent = bg,
 			touchEnabled = false,
 		}
 		
 		@buletsResAnim = res.get(@game.getSlotItemResName(ITEM_TYPE_BULLETS))
 		@dest = Sprite().attrs {
 			resAnim = @buletsResAnim,
-			x = borderSize + (SLOT_SIZE + paddingSize) * 3 + SLOT_SIZE/2,
+			x = borderSize + (SLOT_SIZE + paddingSize) * 0 + SLOT_SIZE/2,
 			y = borderSize + (SLOT_SIZE + paddingSize) * 0 + SLOT_SIZE/2,
 			size = vec2(SLOT_SIZE, SLOT_SIZE),
 			pivot = vec2(0.5, 0.5),
-			parent = this,
+			parent = bg,
 			opacity = 0.5,
 			touchEnabled = false,
 		}
@@ -161,96 +171,92 @@ Shop = extends Actor {
 			// text = "abc",
 			pos = @dest.pos + @dest.size/2 - vec2(4, 5),
 			// priority = 2,
-			parent = this,
+			parent = bg,
 		}
-		
-		@backpack = Backpack(@game).attrs {
-			// pivot = vec2(0, 0),
-			x = @width + borderSize,
-			parent = this,
-		}
-		@width = @backpack.x + @backpack.width
-		@height = math.max(@height, @backpack.height)
-		/*
-		var backpack = Backpack(@game).attrs {
-			pivot = vec2(0, 1),
-			pos = @size + vec2(borderSize, 0),
-			parent = this,
-		}
-		@width = backpack.x + backpack.width
-		*/
 		
 		@updateItems()
-		
-		@addTimeout(1.5, @startTutorial.bind(this))
 	},
 	
-	startTutorial = function(){
+	cleanup = function(){
+		@tutorial.detach()
+		@tutorial = null
+	},
+	
+	runTutorial = function(target){
+		@addTimeout(1.5, function(){
+			@checkTutorial(target)
+		})
+	},
+	
+	checkTutorial = function(target){
+		target || target = stage
+		var allDone = true
 		if(!GAME_SETTINGS.doneTutorials.sellItem){
-			var sellItems = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-			for(var slotNum, item in @backpack.pack.items.reverseIter()){
-				if(item.type in sellItems){
-					// GAME_SETTINGS.doneTutorials.sellItem = true
-					var startBullets = Player.bullets
-					var pos = @backpack.slots[slotNum].pos + vec2(SLOT_SIZE/2, SLOT_SIZE/2)
-					var finger = HandFinger().attrs {
-						pos = @backpack.slots[slotNum].parent.localToLocal(pos, this),
-						parent = this,
-					}
-					var checkUpdateHandle = finger.addUpdate(0.2, function(){
-						if(startBullets != Player.bullets){
-							GAME_SETTINGS.doneTutorials.sellItem = true
-							saveGameSettings()
-							
-							finger.detach()
-							// finger.removeUpdate(checkUpdateHandle)
-							// finger.removeActions()
-						}
-					})
-					var startPos, startAngle = finger.pos, 10
-					var endPos = @targetSlot.pos + vec2(SLOT_SIZE/2, SLOT_SIZE/2)
-					var endAngle = 0
-					var animateTutorial = function(){
-						finger.pos = startPos
-						finger.angle = startAngle
-						finger.opacity = 0
-						finger.replaceTweenAction {
-							name = "tutorial",
-							duration = 0.4,
-							opacity = 1,
-							doneCallback = function(){
-								finger.animateTouch(function(){
-									finger.replaceTweenAction {
-										name = "tutorial",
-										duration = 2,
-										pos = endPos,
-										angle = endAngle,
-										ease = Ease.CUBIC_IN_OUT,
-										doneCallback = function(){
-											finger.animateUntouch(function(){
-												finger.addTimeout(0.5, function(){
-													finger.replaceTweenAction {
-														name = "tutorial",
-														duration = 0.3,
-														opacity = 0,
-														doneCallback = function(){
-															finger.addTimeout(1, animateTutorial)
-														},
-													}
-												})
-											})
-										},
-									}
-								})
+			// if(Player.bullets < ITEMS_INFO[ITEM_TYPE_SHOVEL].price){
+				var sellItems = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+				for(var slotNum, item in @backpack.pack.items){
+					if(item.type in sellItems && ITEMS_INFO[item.type].price >= ITEMS_INFO[ITEM_TYPE_SHOVEL].price){
+						@tutorial = Tutorial.animateDragFinger {
+							target = target,
+							startPos = @backpack.slots[slotNum].localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+							endPos = @targetSlot.localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+							startAngle = 0,
+							endAngle = 10,
+							updateCallback = function(){
+								if(Player.bullets >= ITEMS_INFO[ITEM_TYPE_SHOVEL].price){
+									GAME_SETTINGS.doneTutorials.sellItem = true
+									saveGameSettings()
+									@tutorial.detach()
+									@tutorial = null
+									@runTutorial(target)
+								}
 							},
 						}
+						return
 					}
-					animateTutorial()
+				}
+			// }
+			allDone = false
+		}
+		if(!GAME_SETTINGS.doneTutorials.buyItem){
+			if(!Backpack.hasPickItem() && @slots[0].type == ITEM_TYPE_SHOVEL 
+				&& Player.bullets >= ITEMS_INFO[ITEM_TYPE_SHOVEL].price)
+			{
+				var emptySlotNum
+				for(var i = 0; i < Backpack.pack.numSlots; i++){
+					if(!Backpack.pack.items[i]){
+						emptySlotNum = i
+						break
+					}
+				}
+				if(emptySlotNum){
+					// var startBullets = Player.bullets
+					@tutorial = Tutorial.animateDragFinger {
+						target = target,
+						startPos = @slots[0].localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+						endPos = @backpack.slots[emptySlotNum].localToLocal(vec2(SLOT_SIZE/2, SLOT_SIZE/2), target),
+						startAngle = 10,
+						endAngle = 0,
+						updateCallback = function(){
+							if(Backpack.hasPickItem()){
+								GAME_SETTINGS.doneTutorials.buyItem = true
+								saveGameSettings()
+								@tutorial.detach()
+								@tutorial = null
+								@runTutorial(target)
+							}
+						},
+					}
 					return
 				}
 			}
+			allDone = false
 		}
-	
+		if(!allDone){
+			@runTutorial(target)
+		}else{
+			@backpack.runTutorial(target)
+		}
 	},
 	
 	updateItems = function(){
@@ -276,6 +282,7 @@ Shop = extends Actor {
 		@targetSlot.isTarget = true
 		@targetSlot.type = slot.type
 		@targetSlot.count = slot.count
+		@targetSlot.countText.color = Color.WHITE
 		@targetSlot.sprite.opacity = 0.5
 		@dest.resAnim = @buletsResAnim
 		@dest.opacity = 0.5
@@ -286,14 +293,21 @@ Shop = extends Actor {
 		@targetSlot.sprite.opacity = 1
 	},
 	
-	showBuy = function(slot){
+	showBuy = function(slot, count, color){
 		slot.type || return;
 		@targetSlot.isTarget = false
 		@targetSlot.type = ITEM_TYPE_BULLETS
-		@targetSlot.count = ITEMS_INFO[slot.type].price
-		@targetSlot.sprite.opacity = 0.5
+		@targetSlot.count = ITEMS_INFO[slot.type].price * (count || 1)
+		color && @targetSlot.countText.color = color // Color.WHITE
+		@targetSlot.sprite.opacity = 1
 		@dest.resAnim = res.get(@game.getSlotItemResName(slot.type))
 		@dest.opacity = 1
 		@destCountText.text = ""
 	},
+	
+	/* updateBuyText = function(slot, count, color){
+		slot.type || throw "empty slot type"
+		@targetSlot.count = ITEMS_INFO[slot.type].price * count
+		color && @targetSlot.countText.color = color
+	}, */
 }
