@@ -3,7 +3,7 @@ eXeXeXeX
 
 eXeXeXeX is a 4X genre of strategy-based video game in which player "eXplore, eXpand, eXploit, and eXterminate" the world
 
-[![Opensource eXeXeXeX example made with OS2D](https://raw.githubusercontent.com/unitpoint/eXeXeXeX-bin-win/master/eXeXeXeX-youtube.jpg)](http://www.youtube.com/watch?v=W6j5zfvas70)
+[![Opensource eXeXeXeX example made with OS2D](https://raw.githubusercontent.com/unitpoint/eXeXeXeX-bin-win/master/eXeXeXeX-youtube.jpg)](http://www.youtube.com/watch?v=0QbhYCXpaVU)
 
 ## Resources
 
