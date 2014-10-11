@@ -189,7 +189,7 @@ Shop = extends Actor {
 	},
 	
 	checkTutorial = function(target){
-		target || target = stage
+		target || target = @game
 		var allDone = true
 		if(!GAME_SETTINGS.doneTutorials.sellItem){
 			// if(Player.bullets < ITEMS_INFO[ITEM_TYPE_SHOVEL].price){

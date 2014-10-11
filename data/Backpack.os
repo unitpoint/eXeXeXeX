@@ -230,7 +230,7 @@ Backpack = extends Actor {
 	},
 	
 	checkTutorial = function(target){
-		target || target = stage
+		target || target = @game
 		var allDone = true
 		if(!GAME_SETTINGS.doneTutorials.setPickItem){
 			if(Player.pickItemType){
