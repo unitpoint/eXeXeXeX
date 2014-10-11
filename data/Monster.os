@@ -233,6 +233,7 @@ Monster = extends Entity {
 						@moveTimeoutHandle = @addTimeout(0.65, setMoveDir)
 					})
 				}else{
+					@startBreathing()
 					setMoveDir()
 				}
 			}else{
