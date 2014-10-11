@@ -42,8 +42,8 @@ var displaySize = stage.size
 var scale = displaySize / GAME_SIZE
 // scale = math.max(scale.x, scale.y)
 scale = math.min(scale.x, scale.y)
-stage.size = displaySize / scale
-stage.scale = scale
+stage.size = (displaySize / scale).round()
+stage.scale = displaySize / stage.size // scale
 
 logoEnabled = false
 lang = "ru"
