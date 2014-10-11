@@ -291,10 +291,11 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
 #if 1
+	float tileRadiusScale = 1.5f;
 	std::vector<LightInfo> lights;
 	lights.push_back(LightInfo(
 			vec2(playerPos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
-			TILE_SIZE * 2 * 1.4f * os->getRand(0.97f, 1.03f),
+			TILE_SIZE * 2 * tileRadiusScale * os->getRand(0.97f, 1.03f),
 			vec3(0.8f, 1.0f, 1.0f)
 		));
 
@@ -357,7 +358,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 				break;
 			}
 			vec2 pos = tileToCenterPos(x, y);
-			float radius = TILE_SIZE * 0.9f * 1.4f * os->getRand(0.96f, 1.04f);
+			float radius = TILE_SIZE * 0.9f * tileRadiusScale * os->getRand(0.96f, 1.04f);
 			lights.push_back(LightInfo(
 					vec2(pos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
 					radius,
@@ -495,7 +496,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		AffineTransform t; t.identity();
 		r.setMask(shadowMaskTexture, shadowSrc, shadowDest, t, true);
 
-		ResAnim * resAnim = resources->getResAnim("light-01");
+		ResAnim * resAnim = resources->getResAnim("light-02");
 		AnimationFrame frame = resAnim->getFrame(0, 0);
 		r.setDiffuse(frame.getDiffuse());
 		r.setPrimaryColor(lights[i].color);
