@@ -35,6 +35,7 @@ Tutorial = extends Object {
 	animateDragFinger = function(params){
 		var finger = params.finger || @{
 			var finger = HandFinger().attrs {
+				priority = 9999999,
 				parent = params.target,
 			}
 			var updateCallback = params.updateCallback
