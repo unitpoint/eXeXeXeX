@@ -110,8 +110,11 @@
 		<image file="slot-item-401.png" />
 		<image file="tile-000.png" />
 		<image file="tile-001.png" />
+		<image file="tile-002-01-glow.png" />
 		<image file="tile-002-01.png" />
+		<image file="tile-002-02-glow.png" />
 		<image file="tile-002-02.png" />
+		<image file="tile-003-glow.png" />
 		<image file="tile-003.png" />
 		<image file="tile-008-01.png" />
 		<image file="tile-008-02.png" />
@@ -124,16 +127,27 @@
 		<image file="tile-024-02.png" />
 		<image file="tile-024-03.png" />
 		<image file="tile-024-04.png" />
+		<image file="tile-item-001-glow.png" />
 		<image file="tile-item-001.png" />
+		<image file="tile-item-002-glow.png" />
 		<image file="tile-item-002.png" />
+		<image file="tile-item-003-glow.png" />
 		<image file="tile-item-003.png" />
+		<image file="tile-item-004-glow.png" />
 		<image file="tile-item-004.png" />
+		<image file="tile-item-005-glow.png" />
 		<image file="tile-item-005.png" />
+		<image file="tile-item-006-glow.png" />
 		<image file="tile-item-006.png" />
+		<image file="tile-item-007-glow.png" />
 		<image file="tile-item-007.png" />
+		<image file="tile-item-008-glow.png" />
 		<image file="tile-item-008.png" />
+		<image file="tile-item-009-glow.png" />
 		<image file="tile-item-009.png" />
+		<image file="tile-item-010-01-glow.png" />
 		<image file="tile-item-010-01.png" />
+		<image file="tile-item-010-02-glow.png" />
 		<image file="tile-item-010-02.png" />
 		<!-- end auto generated assets -->
 	</atlas>

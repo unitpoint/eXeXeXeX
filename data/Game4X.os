@@ -58,10 +58,11 @@ TILE_PRIORITY_FALLING = 4
 GAME_PRIORITY_BG = 1
 GAME_PRIORITY_VIEW = 2
 GAME_PRIORITY_LIGHTMASK = 3
-GAME_PRIORITY_HUD = 4
+GAME_PRIORITY_GLOWING = 4
+GAME_PRIORITY_HUD = 5
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
-GAME_PRIORITY_DRAGNDROP = 5
+GAME_PRIORITY_DRAGNDROP = 6
 GAME_PRIORITY_FADEIN = 10
 
 HUD_ICON_SIZE = 80
@@ -91,6 +92,11 @@ TILES_INFO = {
 	2 = {
 		strength = 50,
 		variants = 2,
+		glowing = true,
+	},
+	3 = {
+		strength = 30,
+		glowing = true,
 	},
 	[TILE_TYPE_DOOR_01] = {
 		class = "Door",
@@ -121,54 +127,63 @@ ITEMS_INFO = {
 		strengthScale = 1.1,
 		price = 50,
 		canBuy = false,
+		glowing = true,
 	},
 	2 = {
 		hasTileSprite = true,
 		strengthScale = 1.15,
 		price = 75,
 		canBuy = false,
+		glowing = true,
 	},
 	3 = {
 		hasTileSprite = true,
 		strengthScale = 1.2,
 		price = 100,
 		canBuy = false,
+		glowing = true,
 	},
 	4 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
 		price = 60,
 		canBuy = false,
+		glowing = true,
 	},
 	5 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
 		price = 65,
 		canBuy = false,
+		glowing = true,
 	},
 	6 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
 		price = 55,
 		canBuy = false,
+		glowing = true,
 	},
 	[ITEM_TYPE_COAL] = {
 		hasTileSprite = true,
 		strengthScale = 1.5,
 		price = 15,
 		canBuy = false,
+		glowing = true,
 	},
 	8 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
 		price = 25,
 		canBuy = false,
+		glowing = true,
 	},
 	9 = {
 		hasTileSprite = true,
 		strengthScale = 1.5,
 		price = 150,
 		canBuy = false,
+		glowing = true,
 	},
 	[ITEM_TYPE_GOLD] = {
 		hasTileSprite = true,
@@ -176,6 +191,7 @@ ITEMS_INFO = {
 		strengthScale = 2,
 		price = 95,
 		canBuy = false,
+		glowing = true,
 	},
 	[ITEM_TYPE_SHOVEL] = {
 		strengthScale = 1.1,
@@ -317,6 +333,14 @@ Game4X = extends BaseGame4X {
 		}
 		@bg.scale = @width / @bg.width
 		
+		@glowingTiles = Actor().attrs {
+			priority = GAME_PRIORITY_GLOWING,
+			touchEnabled = false,
+			touchChildrenEnabled = false,
+			parent = this,
+		}
+		
+		// var game = this
 		@view = Actor().attrs {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
@@ -581,6 +605,7 @@ Game4X = extends BaseGame4X {
 				if(draging){
 					var offs = ev.localPosition - draging
 					@view.pos += offs
+					@glowingTiles.pos = @view.pos
 					draging = ev.localPosition
 				}
 			})
@@ -965,7 +990,7 @@ Game4X = extends BaseGame4X {
 				if(tile.itemType != ITEM_TYPE_EMPTY){
 					@getTileItem(tile.itemType, tx, ty)
 				}
-				@removeTile(tx, ty)
+				@removeTile(tx, ty, true)
 				@updateTile(tx, ty)
 				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
 				return true
@@ -1145,12 +1170,13 @@ Game4X = extends BaseGame4X {
 		throw "unknown entity tiledmap type: ${obj.gid}"
 	},
 	
-	removeTile = function(tx, ty){
+	removeTile = function(tx, ty, cleanup){
 		var key = "${tx}-${ty}"
 		var tile = @tiles[key]
 		if(tile){
 			delete @tiles[key]
 			tile.detach()
+			cleanup && tile.cleanup()
 		}
 	},
 	
@@ -1159,6 +1185,7 @@ Game4X = extends BaseGame4X {
 			// print "DELETE tile ${tile.tileX}x${tile.tileY}, type: ${tile.tileType}, name: ${tile.resAnim.name}"
 			delete @tiles["${tile.tileX}-${tile.tileY}"]
 			tile.detach()
+			tile.cleanup()
 		}
 	},
 	
@@ -1169,6 +1196,7 @@ Game4X = extends BaseGame4X {
 	centerViewToTile = function(tx, ty){
 		var pos = @tileToCenterPos(tx, ty) - @centerViewPos / @view.scale
 		@view.pos = -pos * @view.scale
+		@glowingTiles.pos = @view.pos
 		@updateView()
 	},
 	
@@ -1182,6 +1210,9 @@ Game4X = extends BaseGame4X {
 					name = "following",
 					duration = 0.6,
 					pos = pos,
+					tickCallback = function(){
+						@glowingTiles.pos = @view.pos
+					},
 					doneCallback = function(){
 						@following = false
 					},
@@ -1252,6 +1283,14 @@ Game4X = extends BaseGame4X {
 				"update" in obj && obj.update()
 			}
 		} */
+		for(var _, sprite in @glowingTiles){
+			if("glowPhase" in sprite == false){
+				sprite.glowPhase = math.random() * 100
+				sprite.glowTimeScale = math.random(0.7, 1.5)
+			}
+			var t = (math.sin(sprite.glowPhase + @time * 2 * sprite.glowTimeScale) + 1) / 2
+			sprite.opacity = 0.4 + 0.6 * t
+		}
 		@followPlayer()
 		@updateLightLayer(@lightLayer)
 	},

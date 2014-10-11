@@ -80,19 +80,50 @@ Tile = extends BaseTile {
 			@back.visible = false
 		}
 		
+		@glowing = null
+		if(TILES_INFO[frontType].glowing){
+			@glowing = Sprite().attrs {
+				resAnim = res.get(frontResName.."-glow"),
+				pivot = vec2(0, 0),
+				pos = @pos,
+				// priority = @PRIORITY_FRONT,
+				parent = @game.glowingTiles,
+			}
+			@glowing.scale = @size / @glowing.size
+		}
+		
+		@item = null
+		@itemGlowing = null
 		@itemType = @game.getItemType(x, y)
 		if(@itemType != ITEM_TYPE_EMPTY){
 			if(@frontType != TILE_TYPE_EMPTY){
 				var itemResName = @game.getTileItemResName(@itemType, x, y)
+				@item = Sprite().attrs {
+					resAnim = res.get(itemResName),
+					pivot = vec2(0.5, 0.5),
+					pos = @size/2,
+					priority = @PRIORITY_ITEM,
+					parent = this,
+				}
+				if(ITEMS_INFO[@itemType].glowing){
+					@itemGlowing = Sprite().attrs {
+						resAnim = res.get(itemResName.."-glow"),
+						pivot = vec2(0, 0),
+						pos = @pos,
+						// priority = @PRIORITY_FRONT,
+						parent = @game.glowingTiles,
+					}
+					// @itemGlowing.scale = @size / @glowing.size
+				}
 			}else{
 				var itemResName = @game.getSlotItemResName(@itemType)
-			}
-			@item = Sprite().attrs {
-				resAnim = res.get(itemResName),
-				pivot = vec2(0.5, 0.5),
-				pos = @size/2,
-				priority = @PRIORITY_ITEM,
-				parent = this,
+				@item = Sprite().attrs {
+					resAnim = res.get(itemResName),
+					pivot = vec2(0.5, 0.5),
+					pos = @pos + @size/2,
+					// priority = @PRIORITY_ITEM,
+					parent = @game.glowingTiles,
+				}
 			}
 			// @item.scale = @size / math.max(@item.width, @item.height)
 		}
@@ -106,6 +137,16 @@ Tile = extends BaseTile {
 		@fallingAction = null
 		@fallingTimeout = null
 		@fallingInProgress = null
+	},
+	
+	cleanup = function(){
+		@glowing.detach()
+		@itemGlowing.detach()
+		@front.detach()
+		@back.detach()
+		@item.detach()
+		@shadow.detach()
+		@detach()
 	},
 	
 	falling = function(continues){
@@ -130,7 +171,7 @@ Tile = extends BaseTile {
 				ty = ty + 1
 				@game.setFrontType(tx, ty, frontType)
 				@game.setItemType(tx, ty, itemType)
-				@game.removeTile(tx, ty)
+				@game.removeTile(tx, ty, true)
 				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
 				frontType = @game.getFrontType(tx, ty + 1)
 				if(frontType == TILE_TYPE_EMPTY){
