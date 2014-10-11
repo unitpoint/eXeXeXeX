@@ -112,6 +112,7 @@
     <ClCompile Include="..\..\..\objectscript\src\ox-binder.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ox-sound-binder.cpp" />
     <ClCompile Include="..\src\BaseGame4X.cpp" />
+    <ClCompile Include="..\src\MathLib.cpp" />
     <ClCompile Include="..\src\RandomValue.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -120,6 +121,7 @@
     <ClInclude Include="..\..\..\objectscript\src\ox-binder.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h" />
     <ClInclude Include="..\src\BaseGame4X.h" />
+    <ClInclude Include="..\src\MathLib.h" />
     <ClInclude Include="..\src\RandomValue.h" />
   </ItemGroup>
   <ItemGroup>

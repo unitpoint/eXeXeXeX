@@ -126,6 +126,9 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-url\os-url.cpp">
       <Filter>ext-url</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\MathLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
@@ -145,6 +148,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h">
       <Filter>ext-url</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MathLib.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

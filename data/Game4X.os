@@ -294,7 +294,7 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
-		playerMaxStamina = 100,
+		playerMaxStamina = 300,
 		npcList = {},
 		lightMask = null,
 		following = null,
@@ -338,10 +338,19 @@ Game4X = extends BaseGame4X {
 				parent = @view,
 			}
 		}
+		
+		@lightLayer = BaseLightLayer().attrs {
+			size = @size,
+			priority = GAME_PRIORITY_LIGHTMASK,
+			parent = this,
+		}
+		
+		/*
 		@lightMask = LightMask().attrs {
 			pos = @centerViewPos,
 			scale = 10.0,
 			priority = GAME_PRIORITY_LIGHTMASK,
+			visible = false,
 			parent = this,
 		}
 		@lightMask.updateDark()
@@ -354,6 +363,7 @@ Game4X = extends BaseGame4X {
 		else if(false)
 			@lightMask.animateLight(2.5)
 		else @lightMask.animateLight(2.5)
+		*/
 			
 		@hud = Actor().attrs {
 			name = "hud",
@@ -1182,8 +1192,9 @@ Game4X = extends BaseGame4X {
 			@updateView()
 		}
 		var pos = @toLocalPos(@player, @player.size/2)
-		@lightMask.pos = pos
-		@lightMask.updateDark()
+		
+		// @lightMask.pos = pos
+		// @lightMask.updateDark()
 	},
 	
 	tileToCenterPos = function(x, y){
@@ -1242,6 +1253,7 @@ Game4X = extends BaseGame4X {
 			}
 		} */
 		@followPlayer()
+		@updateLightLayer(@lightLayer)
 	},
 	
 	/* checkFalling = function(){

@@ -84,7 +84,7 @@ function saveGameSettings(){
 loadGameSettings()
 // print "GAME_SETTINGS: ${GAME_SETTINGS}"
 
-if(false)
+// if(false)
 mplayer.play { 
 	sound = "music",
 	looping = true,

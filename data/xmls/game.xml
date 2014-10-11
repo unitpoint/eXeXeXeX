@@ -20,6 +20,8 @@
 		<image file="joystick.png" />
 		<image file="finger.png" />
 		
+		<image file="light-01.png" />
+		<image file="light-02.png" />
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />
 		

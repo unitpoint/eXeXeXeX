@@ -66,10 +66,12 @@ Tile = extends BaseTile {
 			priority = @PRIORITY_BACK,
 			parent = this
 		}
-		if(backType < 16)
-			@back.color = Color(0.2, 0.2, 0.2)
-		else
-			@back.color = Color(0.7, 0.7, 0.7)
+		if(backType < 16){
+			// @back.color = Color(0.2, 0.2, 0.2)
+			@back.color = Color(0.5, 0.5, 0.5)
+		}else{
+			// @back.color = Color(0.7, 0.7, 0.7)
+		}
 		@back.scale = @size / @back.size
 		
 		if(@frontType == TILE_TYPE_EMPTY){

@@ -110,7 +110,9 @@ void run()
 	DebugActor::initialize();
 
 	//create and add new DebugActor to root actor as child
+#if 1
 	getStage()->addChild(new DebugActor());
+#endif
 
 	viewport = Rect(0, 0, size.x, size.y);
 

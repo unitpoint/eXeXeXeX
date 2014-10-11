@@ -12,10 +12,10 @@ tools/src
 data/ext
 data-ram
 
-proj.android/obj
 proj.android/bin
 proj.android/gen
 proj.android/libs
+proj.android/obj
 proj.win32/ipch
 proj.win32/Debug*
 proj.win32/Release*
