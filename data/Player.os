@@ -211,7 +211,10 @@ Player = extends Entity {
 		if(type == TILE_TYPE_EMPTY){
 			var type = @game.getItemType(tx, ty)
 			if(type != ITEM_TYPE_EMPTY){
-				@game.getTileItem(type, tx, ty)
+				if(@game.getTileItem(type, tx, ty)){
+					@game.removeTile(tx, ty, true)
+					@game.updateTile(tx, ty)
+				}
 			}
 		}
 		var type = @game.getFrontType(tx, ty + 1)
