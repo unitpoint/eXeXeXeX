@@ -38,6 +38,7 @@ Tile = extends BaseTile {
 	PRIORITY_FRONT_FALLING = 35,
 	PRIORITY_FRONT_DOOR = 35,
 	PRIORITY_ITEM 	= 40,
+	PRIORITY_TOUCH 	= 50,
 	
 	__construct = function(game, x, y){
 		super(game, x, y)
@@ -134,6 +135,9 @@ Tile = extends BaseTile {
 			parent = this,
 		}
 		
+		@touchSprite = null
+		@touchSpriteSaveColor = null
+		
 		@fallingAction = null
 		@fallingTimeout = null
 		@fallingInProgress = null
@@ -147,6 +151,72 @@ Tile = extends BaseTile {
 		@item.detach()
 		@shadow.detach()
 		@detach()
+	},
+	
+	touch = function(){
+		if(!@touchSprite){
+			if(@front.visible){
+				@touchSprite = @front
+			}else{
+				@touchSprite = @back
+			}
+			@touchSpriteSaveColor = @touchSprite.color
+		}
+		@touchSprite.replaceAction("touch", TweenAction{
+			duration = 0.5,
+			color = Color(1, 0.4, 0.4),
+			ease = Ease.PING_PONG,
+			doneCallback = function(){
+				@touchSprite.color = @touchSpriteSaveColor
+				@touchSprite = @touchSpriteSaveColor = null
+			},
+		})
+		/*
+		if(!@touchSprite){
+			@touchSprite = Box9Sprite().attrs {
+				resAnim = res.get("white"),
+				size = @size,
+				color = Color(1, 0.4, 0.4),
+				opacity = 0,
+				priority = @PRIORITY_TOUCH,
+				parent = this,
+			}
+		}
+		@touchSprite.replaceAction("bump", TweenAction{
+			duration = 0.5,
+			opacity = 0.5,
+			ease = Ease.PING_PONG,
+			detachTarget = true,
+			doneCallback = function(){
+				@touchSprite = null
+			},
+		})
+		*/
+	},
+	
+	canFalling = function(){
+		var tx, ty = @tileX, @tileY
+		if(@frontType == TILE_TYPE_ROCK){
+			for(var dx = -1; dx < 2; dx++){
+				for(var dy = -1; dy < 2; dy++){
+					dx == 0 && dy == 0 && continue
+					var type = @game.getFrontType(tx + dx, ty + dy)
+					if(type == TILE_TYPE_DOOR_01){
+						return false
+					}
+					var type = @game.getBackType(tx + dx, ty + dy)
+					if(type == TILE_TYPE_TRADE_STOCK){
+						return false
+					}
+				}
+			}
+			var type = @game.getFrontType(tx, ty + 1)
+			return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS
+		}
+	},
+	
+	checkStartFalling = function(){
+		!@fallingInProgress && @canFalling() && @startFalling()
 	},
 	
 	falling = function(continues){
@@ -173,11 +243,20 @@ Tile = extends BaseTile {
 				@game.setItemType(tx, ty, itemType)
 				@game.removeTile(tx, ty, true)
 				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
-				frontType = @game.getFrontType(tx, ty + 1)
-				if(frontType == TILE_TYPE_EMPTY){
+				
+				var ent = @game.getTileEnt(tx, ty)
+				ent.die()
+				
+				var tile = @game.getTile(tx, ty)
+				tile.canFalling() && tile.falling(true)
+				
+				/* frontType = @game.getFrontType(tx, ty + 1)
+				if((frontType == TILE_TYPE_EMPTY || frontType == TILE_TYPE_LADDERS)
+					&& @game.getBackType(tx, ty + 1) != TILE_TYPE_TRADE_STOCK)
+				{
 					var tile = @game.getTile(tx, ty)
 					tile.falling(true)
-				}
+				} */
 			},
 		}
 	},
