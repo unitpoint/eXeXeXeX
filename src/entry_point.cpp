@@ -90,8 +90,10 @@ void run()
 	desc.h = 640;
 	// desc.fullscreen = true;
 	// desc.fulldesktop = true;
-#ifndef OS_DEBUG
-	// desc.maximized = true;
+#ifdef OS_DEBUG
+	desc.maximized = true;
+#else
+	desc.maximized = true;
 #endif
 	//marmalade settings could be changed from emulator's menu
 #endif
@@ -110,7 +112,7 @@ void run()
 	DebugActor::initialize();
 
 	//create and add new DebugActor to root actor as child
-#if 1
+#if defined OS_DEBUG || 1
 	getStage()->addChild(new DebugActor());
 #endif
 

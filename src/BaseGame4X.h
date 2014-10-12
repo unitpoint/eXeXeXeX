@@ -54,13 +54,28 @@ struct Tiledmap
 // OS2D * getOS();
 Actor * getOSChild(Actor*, const char * name);
 
+struct LightFormInfo
+{
+	OS::String form; // "light-02"
+	vec3 shadowColor;
+	float tileRadiusScale;
+
+	LightFormInfo(const OS::String& _form, const vec3& _shadowColor, float _tileRadiusScale):
+		form(_form), shadowColor(_shadowColor)
+	{
+		tileRadiusScale = _tileRadiusScale;
+	}
+};
+
 struct LightInfo
 {
 	vec2 pos;
-	float radius;
+	float tileRadius;
 	vec3 color;
+	LightFormInfo lightForm;
 
-	LightInfo(const vec2& _pos, float _radius, const vec3& _color): pos(_pos), radius(_radius), color(_color)
+	LightInfo(const vec2& _pos, float _tileRadius, const vec3& _color, const LightFormInfo& _lightForm): 
+		pos(_pos), tileRadius(_tileRadius), color(_color), lightForm(_lightForm)
 	{
 	}
 };
@@ -130,6 +145,7 @@ protected:
 	spNativeTexture lightTexture;
 	ShaderProgramGL * lightProg;
 	
+	float lightScale;
 	int lightTextureWidth;
 	int lightTextureHeight;
 	
@@ -138,6 +154,7 @@ protected:
 	std::vector<OS_BYTE> lightVolume;
 
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);
+	void setUniformColor(const char * name, const vec3& color);
 
 	std::vector<Vector2> vertices;
 

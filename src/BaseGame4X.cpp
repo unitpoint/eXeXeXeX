@@ -181,21 +181,36 @@ vec3 colorFromInt(int color)
 	return vec3(r / 255.0f, g / 255.0f, b / 255.0f);
 }
 
+void BaseGame4X::setUniformColor(const char * name, const vec3& color)
+{
+	Vector4 c(color.x, color.y, color.z, 1.0f);
+	IVideoDriver::instance->setUniform(name, &c, 1);
+}
+
 void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 {
 	vec2 size = getSize();
-	float lightScale = 1.0f / 2.0f;
-	// int w = (int)size.x, h = (int)size.y;
-	
-	if(!lightTexture){
+	if(!lightProg){
+// #ifdef _WIN32
+		Point displaySize = core::getDisplaySize();
+		float displayWidthScale = (float)displaySize.x / getWidth();
+		float displayHeightScale = (float)displaySize.y / getHeight();
+		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
+// #else
+//		lightScale = 1.0f / 2.0f;
+// #endif
+
 		lightTextureWidth = (int)(size.x * lightScale);
 		lightTextureHeight = (int)(size.y * lightScale);
 		
+		// TextureFormat lightTextureFormat = TF_R8G8B8A8;
+		TextureFormat lightTextureFormat = TF_R5G6B5;
 		lightTexture = IVideoDriver::instance->createTexture();
-		lightTexture->init(lightTextureWidth, lightTextureHeight, TF_R8G8B8A8, true);
+		lightTexture->init(lightTextureWidth, lightTextureHeight, lightTextureFormat, true);
 
+		TextureFormat shadowMaskTextureFormat = TF_R5G6B5;
 		shadowMaskTexture = IVideoDriver::instance->createTexture();
-		shadowMaskTexture->init(lightTextureWidth, lightTextureHeight, TF_R5G6B5, true);
+		shadowMaskTexture->init(lightTextureWidth, lightTextureHeight, shadowMaskTextureFormat, true);
 
 		const char* shadowMaskVS = "\
 			uniform mediump mat4 projection;\
@@ -291,21 +306,18 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
 #if 1
-	float tileRadiusScale = 1.5f;
 	std::vector<LightInfo> lights;
+	
+	// LightFormInfo lightFormInfo(OS::String(os, "light-02"), (0.2f, 0.2f, 0.2f), 1.5f);
+	LightFormInfo lightFormInfo(OS::String(os, "light-01"), (0.1f, 0.1f, 0.1f), 1.5f);
+
 	lights.push_back(LightInfo(
 			vec2(playerPos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
-			TILE_SIZE * 2 * tileRadiusScale * os->getRand(0.97f, 1.03f),
-			vec3(0.8f, 1.0f, 1.0f)
+			2.5f * os->getRand(0.97f, 1.03f), vec3(0.8f, 1.0f, 1.0f), lightFormInfo
 		));
 
-	/* LightInfo lights[] = {
-		// { vec2(size.x * 0.2f, size.y * 0.2f), size.x * 0.19f, Color(255, 100, 100) },
-		// { vec2(size.x * 0.7f, size.y * 0.7f), size.x * 0.29f, Color(100, 255, 100) },
-		// { vec2(size.x * 0.5f, size.y * 0.5f), size.x * 0.3f, vec3(1.0f, 1.0f, 0.78f) },
-		{ playerPos - offs + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f)), size.x * 0.35f * os->getRand(0.97f, 1.03f), vec3(0.8f, 1.0f, 1.0f) },
-	}; */
-
+	bool lightItems = false;
+	if(lightItems)
 	for(int y = startY; y <= endY; y++){
 		for(int x = startX; x <= endX; x++){
 			ItemType type = getItemType(x, y);
@@ -358,11 +370,9 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 				break;
 			}
 			vec2 pos = tileToCenterPos(x, y);
-			float radius = TILE_SIZE * 0.9f * tileRadiusScale * os->getRand(0.96f, 1.04f);
 			lights.push_back(LightInfo(
 					vec2(pos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
-					radius,
-					color
+					0.9f * os->getRand(0.97f, 1.03f), color, lightFormInfo
 				));
 		}
 	}
@@ -373,7 +383,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	lightVolume.resize(tileAreaCount);
 
 	for(int i = 0; i < lights.size(); i++){
-		float radius = lights[i].radius;
+		float radius = lights[i].tileRadius * lights[i].lightForm.tileRadiusScale * TILE_SIZE;
 		vec2 lightViewPos = lights[i].pos - offs;
 
 		/*
@@ -382,8 +392,6 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 			*it = 0;
 		}
 		
-		int tx, ty;
-		posToTile(lightViewPos + offs, tx, ty);
 		OX_ASSERT(tx >= startX && tx <= endX && ty >= startY && ty <= endY);
 		lightVolume[(tx - startX) + (ty - startY) * tileAreaWidth] = 1;
 		for(int y = ty; y <= endY; y++){
@@ -404,21 +412,41 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 
 		IVideoDriver::instance->setUniform("projection", &viewProj);
 		
-		Vector4 color(0.1f, 0.1f, 0.1f, 1.0f);
-		IVideoDriver::instance->setUniform("color", &color, 1);
+		setUniformColor("color", lights[i].lightForm.shadowColor);
 
+		int tx, ty;
+		posToTile(lights[i].pos, tx, ty);
+		TileType type = getFrontType(tx, ty);
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01)
 		for(int y = startY; y <= endY; y++){
 			for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 					continue;
+				}
+				bool isDoor = false;
+				float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
+				if(type == TILE_TYPE_DOOR_01){
+					pushCtypeValue(os, this);
+					os->getProperty(-1, "getTile");
+					OX_ASSERT(os->isFunction());
+					pushCtypeValue(os, x);
+					pushCtypeValue(os, y);
+					os->callTF(2, 1);
+					os->getProperty("openState");
+					float openState = os->popFloat();
+					if(openState > 0.999f){
+						continue;
+					}
+					tileHeight *= 1.0f - openState;
+					isDoor = true;
 				}
 				vec2 pos = tileToPos(x, y) - offs;
 				vec2 points[] = {
 					pos,
-					pos + vec2(TILE_SIZE, 0),
-					pos + vec2(TILE_SIZE, TILE_SIZE),
-					pos + vec2(0, TILE_SIZE)
+					pos + vec2(tileWidth, 0),
+					pos + vec2(tileWidth, tileHeight),
+					pos + vec2(0, tileHeight)
 				};
 				static Point tileSideOffs[] = {
 					Point(0, -1),
@@ -431,27 +459,30 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 					const vec2& p1 = points[i];
 					const vec2& p2 = points[(i+1) % count];
 					vec2 edge = p2 - p1;
-					vec2 normal = vec2(edge.y, -edge.x);
+					vec2 normal = vec2(edge.y, -edge.x).norm();
+					float dist = normal.dot(p1) - normal.dot(lightViewPos);
+					if(dist <= 0 || dist > radius){
+						continue;
+					}
+
 					vec2 lightToCurrent = p1 - lightViewPos;
-					if(normal.dot(lightToCurrent) > 0){
-						type = getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-						if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
-							vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-							vec2 p2_target = p2 + (p2 - lightViewPos) * (radius * 100);
+					OX_ASSERT(normal.dot(lightToCurrent) > 0);
+					type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+						vec2 p1_target = p1 + lightToCurrent * (radius * 100);
+						vec2 p2_target = p2 + (p2 - lightViewPos) * (radius * 100);
 						
-							r.drawPoly(p1 * lightScale, 
-									p1_target * lightScale, 
-									p2_target * lightScale, 
-									p2 * lightScale);
-						}
+						r.drawPoly(p1 * lightScale, 
+								p1_target * lightScale, 
+								p2_target * lightScale, 
+								p2 * lightScale);
 					}
 				}
 			}
 		}
 		r.drawBatch();
 
-		color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-		IVideoDriver::instance->setUniform("color", &color, 1);
+		setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
 		for(int y = startY; y <= endY; y++){
 			for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
@@ -496,7 +527,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		AffineTransform t; t.identity();
 		r.setMask(shadowMaskTexture, shadowSrc, shadowDest, t, true);
 
-		ResAnim * resAnim = resources->getResAnim("light-02");
+		ResAnim * resAnim = resources->getResAnim(lights[i].lightForm.form.toChar());
 		AnimationFrame frame = resAnim->getFrame(0, 0);
 		r.setDiffuse(frame.getDiffuse());
 		r.setPrimaryColor(lights[i].color);
@@ -524,13 +555,12 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	// Matrix viewProj = r.getViewProjection();
 	IVideoDriver::instance->setUniform("projection", &viewProj);
 		
-	Vector4 color(0.7f, 0.7f, 0.7f, 1.0f);
-	IVideoDriver::instance->setUniform("color", &color, 1);
-
+	vec3 color, prevColor(0, 0, 0);
 	for(int y = startY; y <= endY; y++){
 		for(int x = startX; x <= endX; x++){
 			TileType type = getBackType(x, y);
 			if(type != TILE_TYPE_TRADE_STOCK){
+				// continue;
 				bool found = false;
 				for(int dx = -1; dx <= 1 && !found; dx++){
 					for(int dy = -1; dy <= 1; dy++){
@@ -547,6 +577,14 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 				if(!found){
 					continue;
 				}
+				color = vec3(0.25f, 0.25f, 0.25f);
+			}else{
+				color = vec3(0.5f, 0.5f, 0.5f);
+			}
+			if(color != prevColor){
+				prevColor = color;
+				r.drawBatch();
+				setUniformColor("color", color);
 			}
 			vec2 pos = tileToPos(x, y) - offs;
 			vec2 points[] = {
@@ -1068,6 +1106,9 @@ BaseGame4X::BaseGame4X()
 	tiledmapHeight = 0;
 	shadowMaskProg = NULL;
 	lightProg = NULL;
+	lightTextureWidth = 0;
+	lightTextureHeight = 0;
+	lightScale = 0.0f;
 }
 
 BaseGame4X::~BaseGame4X()

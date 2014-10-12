@@ -10,12 +10,13 @@
 #include <objectscript.h>
 #include <math/vector2.h>
 #include <math/Color.h>
+#include <float.h>
 
 #define IS_FLOAT_SIGN_BIT_SET(f) ((*(const unsigned int*)&(f)) & (1U << 31U))
 #define FLOAT_ZERO 0.000000001f
 
 // from std lib float.h
-#ifndef DBL_DIG
+#ifndef FLT_EPSILON
 
 #define DBL_DIG         15                      /* # of decimal digits of precision */
 #define DBL_EPSILON     2.2204460492503131e-016 /* smallest such that 1.0+DBL_EPSILON != 1.0 */
@@ -202,6 +203,15 @@ struct vec2
 		(&x)[i] = f;
 	}
 
+	bool operator==(const vec2& b) const
+	{
+		return x == b.x && y == b.y;
+	}
+	bool operator!=(const vec2& b) const
+	{
+		return x != b.x || y != b.y;
+	}
+
 	vec2 operator+(const vec2& b) const
 	{
 		return vec2(x+b.x, y+b.y);
@@ -384,6 +394,15 @@ struct vec3
 	}
 
 	bool fixDegenerateNormal();
+
+	bool operator==(const vec3& b) const
+	{
+		return x == b.x && y == b.y && z == b.z;
+	}
+	bool operator!=(const vec3& b) const
+	{
+		return x != b.x || y != b.y || z != b.z;
+	}
 
 	vec3 operator+(const vec3& b) const
 	{
