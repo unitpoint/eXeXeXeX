@@ -39,13 +39,45 @@ HudSlot = extends ItemSlot {
 	
 	__set@type = function(type){
 		@clearItem()
+		var pickDamage = type in PICK_DAMAGE_ITEMS_INFO
+		// var ladders = type in LADDERS_ITEMS_INFO
 		for(var _, hudSlot in @game.hudSlots){
 			if(hudSlot.type == type){
 				hudSlot.clearItem()
+			}else if(pickDamage && hudSlot.type in PICK_DAMAGE_ITEMS_INFO){
+				hudSlot.clearItem()
+			//}else if(ladders && hudSlot.type in LADDERS_ITEMS_INFO){
+			//	hudSlot.clearItem()
 			}
 		}
 		super(type)
+		if(pickDamage){
+			Player.pickItemType = type
+			print "Player.pickItemType: ${Player.pickItemType}, damage: ${PICK_DAMAGE_ITEMS_INFO[Player.pickItemType].pickDamage}"
+		}
+		/* if(ladders){
+			Player.laddersItemType = type
+			print "Player.laddersItemType: ${Player.laddersItemType}"
+		} */
 		@count = @owner.pack.numItemsByType[type]
+	},
+	
+	clearItem = function(){
+		switch(@type){
+		case null:
+			break
+			
+		case Player.pickItemType:
+			Player.pickItemType = null
+			print "clear Player.pickItemType"
+			break
+			
+		/* case Player.laddersItemType:
+			Player.laddersItemType = null
+			print "clear Player.laddersItemType"
+			break */
+		}
+		super()
 	},
 	
 	updateItem = function(){
@@ -54,6 +86,16 @@ HudSlot = extends ItemSlot {
 			@count = count
 		}else{
 			@clearItem()
+		}
+	},
+	
+	useItem = function(){
+		var type = @type
+		type || return;
+		if(type == Player.pickItemType){
+			
+		}else{ // if(ITEMS_INFO[type].useDistance > 0){
+			@game.player.useItem(type)
 		}
 	},
 }
