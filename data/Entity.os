@@ -367,7 +367,10 @@ Entity = extends Actor {
 								duration = time * 1.5,
 								y = pos.y,
 								ease = Ease.BACK_IN_OUT,
-								doneCallback = function(){ @moveAnimatedY = false },
+								doneCallback = function(){ 
+									@moveAnimatedY = false
+									@blockFalling(true)
+								},
 							}
 							return
 						}
@@ -390,11 +393,15 @@ Entity = extends Actor {
 		curTileY == @tileY && @_checkFalling()
 	},
 	
+	blockFalling = function(afterJump){
+	},
+	
 	_checkFalling = function(){
 		var tileX, tileY = @tileX, @tileY
 		if((!@fly || @isDead) && !@moveAnimatedY
 			&& @isTileEmptyToFall(tileX, tileY + 1)
-			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDERS)
+			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDERS
+			&& !@blockFalling())
 		{
 			// print "falling move: ${tileX}, ${tileY + 1}"
 			@setTile(tileX, tileY + 1)
@@ -455,19 +462,29 @@ Entity = extends Actor {
 	playDeathSound = function(){
 	},
 	
-	die = function(doneCallback){
+	die = function(){
+		@isDead && return;
 		@stopBreathing()
 		@isPlayer = false
 		@isDead = true
 		@sprite.addTweenAction {
-			duration = 2,
-			angle = math.random(-100, 100), // 360 * 10,
-			scale = 0.5,
+			duration = 1.5,
+			// angle = math.random(-100, 100), // 360 * 10,
+			// scale = 0.5,
+			scaleY = -0.9,
 			opacity = 0,
 			color = Color(0.5, 0, 0),
-			ease = Ease.CUBIC_IN,
+			ease = Ease.CUBIC_IN_OUT,
 			doneCallback = function(){
-				@addTimeout(1, doneCallback)
+				@addTimeout(1.5, function(){
+					@game.unsetEntTile(this)
+					@game.cleanupActor(this)
+					@detach()
+					if(this is Player){
+						@game.playerDead()
+					}
+					// doneCallback()
+				})
 			},
 		}
 		@playDeathSound()
@@ -513,12 +530,12 @@ Entity = extends Actor {
 		anim()
 	},
 	
-	useStamina = function(){
+	damage = function(value, attacker){
 	},
 	
 	attack = function(enemy, side, speed, doneCallback){
 		@isDead && return;
-		enemy.useStamina(60 * math.random(0.9, 1.1))
+		enemy.damage(60 * math.random(0.9, 1.1), this)
 		@stopBreathing()
 		@setViewSide(side < 0 ? 1 : -1)
 		// print "attack:${@classname}#${@__id}, side: ${side}"
