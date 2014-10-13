@@ -189,6 +189,10 @@ Backpack = extends Actor {
 	},
 	
 	addItem = function(type, count){
+		if(type == ITEM_TYPE_BULLETS){
+			Player.bullets += (count || 1) * 200
+			return true
+		}
 		return @pack.addItem(type, count)
 	},
 	
@@ -206,7 +210,7 @@ Backpack = extends Actor {
 		@cols, @rows = 3, 2
 		@pack = ItemsPack(@cols * @rows)
 		
-		for(var i, type in [1, 3]){
+		for(var i, type in [1, 3, 6]){
 		// for(var i, type in [1, 3, 11, 13]){
 			@pack.items[i] = {type = type, count = 1}
 		}

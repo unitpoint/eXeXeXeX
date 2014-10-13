@@ -3,6 +3,7 @@
 	<set path = "sounds/" />
 	<sound file="logo.ogg" />
 	<sound file="awesome.ogg" />
+	<sound file="bomb-countdown.ogg" />
 	<sound file="foot-01-01.ogg" />
 	<sound file="foot-01-02.ogg" />
 	<sound file="foot-01-03.ogg" />
