@@ -115,6 +115,9 @@ Tile = extends BaseTile {
 						parent = @game.glowingTiles,
 					}
 					// @itemGlowing.scale = @size / @glowing.size
+				}else{
+					@item.pos = @pos + @size/2
+					@item.parent = @game.glowingTiles
 				}
 			}else{
 				var itemResName = @game.getSlotItemResName(@itemType)
@@ -192,6 +195,37 @@ Tile = extends BaseTile {
 			},
 		})
 		*/
+	},
+	
+	explodeItem = function(){
+		@itemType != ITEM_TYPE_EMPTY || return;
+		var sound = splayer.play {
+			sound = "bomb-countdown",
+			looping = true,
+		}
+		var wait = ITEMS_INFO[@itemType].explodeWait || 1
+		@addTimeout(wait, function(){
+			sound.stop()
+			@itemType != ITEM_TYPE_EMPTY || return;
+			var radius = ITEMS_INFO[@itemType].explodeRadius || 1
+			var damage = ITEMS_INFO[@itemType].damage || 1
+			var tx, ty = @tileX, @tileY
+			@game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
+			var areaRadius = math.ceil(radius)
+			var ax, ay = tx - areaRadius, ty - areaRadius
+			var bx, by = tx + areaRadius, ty + areaRadius
+			for(var y = ay; y <= by; y++){
+				for(var x = ax; x <= bx; x++){
+					var r = math.sqrt((x-tx)**2 + (y-ty)**2)
+					if(r <= radius){
+						@game.setFrontType(x, y, TILE_TYPE_EMPTY)
+						@game.removeTile(x, y, true)
+						@game.getTileEnt(x, y).damage(damage)
+					}
+				}
+			}
+			@game.updateTiledmapViewport(ax-1, ay-1, bx+1, by+1)
+		})
 	},
 	
 	canFalling = function(){
