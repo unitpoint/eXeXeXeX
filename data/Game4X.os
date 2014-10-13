@@ -111,15 +111,20 @@ TILES_INFO = {
 
 ITEM_TYPE_COAL = 7
 ITEM_TYPE_GOLD = 10
-ITEM_TYPE_SHOVEL = 11
-ITEM_TYPE_PICK_01 = 12
-ITEM_TYPE_PICK_02 = 13
-ITEM_TYPE_PICK_03 = 14
-ITEM_TYPE_BULLETS = 15
-ITEM_TYPE_STAMINA = 16
-ITEM_TYPE_LADDERS = 17
-
-ITEM_TYPE_CANDY = 102
+ITEM_TYPE_SHOVEL = 16
+ITEM_TYPE_PICK_01 = 17
+ITEM_TYPE_PICK_02 = 18
+ITEM_TYPE_PICK_03 = 19
+ITEM_TYPE_BULLETS = 21
+ITEM_TYPE_LADDERS = 23
+ITEM_TYPE_STAMINA = 24
+ITEM_TYPE_FOOD_01 = 25
+ITEM_TYPE_FOOD_02 = 26
+ITEM_TYPE_FOOD_03 = 27
+ITEM_TYPE_BOMB_01 = 32
+ITEM_TYPE_BOMB_02 = 33
+ITEM_TYPE_BOMB_03 = 34
+ITEM_TYPE_BOMB_04 = 35
 
 ITEMS_INFO = {
 	1 = {
@@ -139,7 +144,7 @@ ITEMS_INFO = {
 	3 = {
 		hasTileSprite = true,
 		strengthScale = 1.2,
-		price = 100,
+		price = 85,
 		canBuy = false,
 		glowing = true,
 	},
@@ -153,35 +158,35 @@ ITEMS_INFO = {
 	5 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
-		price = 65,
+		price = 95,
 		canBuy = false,
 		glowing = true,
 	},
 	6 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
-		price = 55,
+		price = 155,
 		canBuy = false,
 		glowing = true,
 	},
 	[ITEM_TYPE_COAL] = {
 		hasTileSprite = true,
 		strengthScale = 1.5,
-		price = 15,
+		price = 35,
 		canBuy = false,
 		glowing = true,
 	},
 	8 = {
 		hasTileSprite = true,
 		strengthScale = 1.1,
-		price = 25,
+		price = 45,
 		canBuy = false,
 		glowing = true,
 	},
 	9 = {
 		hasTileSprite = true,
 		strengthScale = 1.5,
-		price = 150,
+		price = 190,
 		canBuy = false,
 		glowing = true,
 	},
@@ -189,7 +194,7 @@ ITEMS_INFO = {
 		hasTileSprite = true,
 		variants = 2,
 		strengthScale = 2,
-		price = 95,
+		price = 100,
 		canBuy = false,
 		glowing = true,
 	},
@@ -200,66 +205,105 @@ ITEMS_INFO = {
 	},
 	[ITEM_TYPE_PICK_01] = {
 		strengthScale = 2,
-		price = 200,
-		pickDamage = 2,
+		price = 1500,
+		pickDamage = 3,
 	},
 	[ITEM_TYPE_PICK_02] = {
 		strengthScale = 4,
-		price = 500,
-		pickDamage = 4,
+		price = 5000,
+		pickDamage = 6,
 	},
 	[ITEM_TYPE_PICK_03] = {
 		strengthScale = 6,
-		price = 900,
-		pickDamage = 8,
+		price = 10000,
+		pickDamage = 12,
 	},
 	[ITEM_TYPE_BULLETS] = {
 		strengthScale = 1.1,
 		price = 1,
 		canBuy = false,
 	},
-	[ITEM_TYPE_STAMINA] = {
-		strengthScale = 4,
-		incStamina = 25,
-		price = 1000,
-	},
 	[ITEM_TYPE_LADDERS] = {
 		strengthScale = 1.1,
 		price = 20,
+		useDistance = 1,
 	},
-	101 = {
-		stamina = 100,
-		price = 100,
+	[ITEM_TYPE_STAMINA] = {
+		addMaxStamina = 25,
+		strengthScale = 4,
+		price = 1000,
 	},
-	[ITEM_TYPE_CANDY] = {
+	[ITEM_TYPE_FOOD_01] = {
 		strengthScale = 1.1,
 		stamina = 25,
 		price = 20,
 	},
-	103 = {
-		strengthScale = 1.1,
+	[ITEM_TYPE_FOOD_02] = {
+		strengthScale = 1.2,
+		stamina = 100,
+		price = 100,
+	},
+	[ITEM_TYPE_FOOD_03] = {
+		strengthScale = 1.3,
 		stamina = 150,
 		price = 120,
 	},
-	201 = {
-		staminaScale = 1.2,
-		price = 1000,
+	[ITEM_TYPE_BOMB_01] = {
+		strengthScale = 1.5,
+		price = 100,
+		bomb = true,
+		explodeRadius = 1.0,
+		explodeWait = 2.0,
+		damage = 100,
+		useDistance = 1,
 	},
+	[ITEM_TYPE_BOMB_02] = {
+		strengthScale = 1.5,
+		price = 200,
+		bomb = true,
+		explodeRadius = 1.5,
+		explodeWait = 2.0,
+		damage = 300,
+		useDistance = 2,
+	},
+	[ITEM_TYPE_BOMB_03] = {
+		strengthScale = 2.0,
+		price = 300,
+		bomb = true,
+		explodeRadius = 2.0,
+		explodeWait = 3.0,
+		damage = 1000,
+		useDistance = 3,
+	},
+	[ITEM_TYPE_BOMB_04] = {
+		strengthScale = 2.5,
+		price = 500,
+		bomb = true,
+		explodeRadius = 2.9,
+		explodeWait = 3.0,
+		damage = 2000,
+		useDistance = 3,
+	},
+	/*
 	301 = {
 		staminaScale = 1.1,
 		price = 100,
 	},
-	401 = {
-		strengthScale = 1.1,
-		meleeAttackScale = 1.1,
+	[ITEM_TYPE_WEAPON_01] = {
+		strengthScale = 1.5,
+		meleeAttack = 20,
 		price = 200,
 	},
+	*/
 }
 
 SHOP_ITEMS_INFO = {}
 PICK_DAMAGE_ITEMS_INFO = {}
+// LADDERS_ITEMS_INFO = {}
 
 @{
+	// LADDERS_ITEMS_INFO[ITEM_TYPE_LADDERS] = ITEMS_INFO[ITEM_TYPE_LADDERS]
+	
 	for(var type, item in ITEMS_INFO){
 		if(item.canBuy !== false){
 			SHOP_ITEMS_INFO[type] = item
@@ -397,9 +441,8 @@ Game4X = extends BaseGame4X {
 			touchEnabled = false,
 		}
 		
-		@modalView = ColorRectSprite().attrs {
+		@modalView = ModalView().attrs {
 			size = @size,
-			color = Color(0.2, 0.23, 0.23, 0.6),
 			parent = @hud,
 			// touchEnabled = false,
 			visible = false,
@@ -866,6 +909,12 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
+	hasHudItem = function(type){
+		for(var _, slot in @hudSlots){
+			slot.type == type && return true
+		}
+	},
+	
 	initLevel = function(num){
 		var filenames = require("levels")
 		var names = filenames.keys
@@ -928,6 +977,10 @@ Game4X = extends BaseGame4X {
 		return @getFrontType(tx, ty)
 	},
 	
+	explodeTileItem = function(tx, ty, radius, wait){
+		@getTile(tx, ty).explodeItem()
+	},
+	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			return
@@ -988,7 +1041,7 @@ Game4X = extends BaseGame4X {
 				delete @tileCracks[key]; crack.detach()
 				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
 				if(tile.itemType != ITEM_TYPE_EMPTY){
-					@getTileItem(tile.itemType, tx, ty)
+					@takeTileItem(tile.itemType, tx, ty)
 				}
 				@removeTile(tx, ty, true)
 				@updateTile(tx, ty)
@@ -1002,7 +1055,7 @@ Game4X = extends BaseGame4X {
 		return true
 	},
 	
-	getTileItem = function(type, tx, ty){
+	takeTileItem = function(type, tx, ty){
 		if(Backpack.addItem(type)){
 			@setItemType(tx, ty, ITEM_TYPE_EMPTY)
 			@backpackIcon.scale = 1
@@ -1011,8 +1064,7 @@ Game4X = extends BaseGame4X {
 				scale = 1.2,
 				ease = Ease.PING_PONG
 			}, Ease.CUBIC_IN_OUT)
-			action.name = "note"
-			@backpackIcon.replaceAction(action)
+			@backpackIcon.replaceAction("note", action)
 			return true
 		}else{
 			@backpackIcon.color = Color.WHITE
@@ -1071,7 +1123,8 @@ Game4X = extends BaseGame4X {
 	
 	touchGroupRes = function(group, type){
 		var variants = null
-		if(group == "tile-item" && ITEMS_INFO[type].hasTileSprite){
+		if(group == "tile-item"){
+			ITEMS_INFO[type].hasTileSprite || return;
 			variants = ITEMS_INFO[type].variants
 		}else if(group == "tile"){
 			variants = TILES_INFO[type].variants
@@ -1128,17 +1181,18 @@ Game4X = extends BaseGame4X {
 	
 	playerDead = function(){
 		Player.pickItemType = null
+		// Player.laddersItemType = null
 		Backpack.pack.items = {}
 		Backpack.pack.updateNumItems()
 		@updateHudItems()
 		
-		@player.reset()
+		// @player.reset()
+		// @unsetEntTile(@player)
+		// @initEntTile(@player, Player.saveTileX, Player.saveTileY)
 		
-		// @cleanupActor(@player)
-		// @player.detach()
-		// @player = Player(this, Player.saveName)
-		@unsetEntTile(@player)
+		@player = Player(this, Player.saveName)
 		@initEntTile(@player, Player.saveTileX, Player.saveTileY)
+		
 		@centerViewToTile(Player.saveTileX, Player.saveTileY)
 	},
 	
@@ -1289,7 +1343,7 @@ Game4X = extends BaseGame4X {
 				sprite.glowTimeScale = math.random(0.7, 1.5)
 			}
 			var t = (math.sin(sprite.glowPhase + @time * 2 * sprite.glowTimeScale) + 1) / 2
-			sprite.opacity = 0.4 + 0.6 * t
+			sprite.opacity = 0.3 + 0.7 * t
 		}
 		@followPlayer()
 		@updateLightLayer(@lightLayer)
