@@ -40,7 +40,7 @@ DragndropItems = extends Actor {
 		var startDragndrop, findTargetFunc, handleDragndrop, breakDragndrop
 		
 		@mode = null
-		@itemSelected = @itemSlot = @touchPos = @targetSlot = null
+		@itemSelected = @itemSlot = @startTouchPos = @prevTouchPos = @targetSlot = @moved = null
 		
 		@shopSlotSelected = null
 		@shopSkipBreakAction = true
@@ -74,6 +74,7 @@ DragndropItems = extends Actor {
 				@itemSlot = ev.target
 				@itemSelected = @itemSlot.sprite
 				@targetSlot = null
+				@moved = false
 				
 				// itemSelected.touchEnabled = false
 				@itemSelected.color = Color(0.9, 0.9, 0.99)
@@ -88,7 +89,7 @@ DragndropItems = extends Actor {
 					// @game.shop.showBuy(@itemSlot)
 				}
 				
-				@touchPos = stage.localToGlobal(ev.localPos)
+				@startTouchPos = @prevTouchPos = stage.localToGlobal(ev.localPos)
 				startDragndrop()
 			}
 		})
@@ -97,22 +98,32 @@ DragndropItems = extends Actor {
 			if(@itemSelected){ // ev.target.name == "backpackSlot"){
 				// print "move: "..ev.localPos
 				var curTouchPos = stage.localToGlobal(ev.localPos)
-				var delta = curTouchPos - @touchPos
-				@touchPos = curTouchPos
+				var delta = curTouchPos - @prevTouchPos
+				@prevTouchPos = curTouchPos
 				
 				@itemSelected.pos += delta
 				
-				var slot = stage.findActorByPos(curTouchPos, findTargetSlot)
-				if(slot !== @targetSlot){
-					@targetSlot = slot
-					if(slot){
-						slot.color = Color.WHITE
-						var action = EaseAction(TweenAction {
-							duration = 0.5,
-							color = Color(1, 0.4, 0.4),
-						}, Ease.PING_PONG)
-						action.name = "selectTargetSlot"
-						slot.replaceAction(action)
+				var minOffs = SLOT_SIZE / 4
+				var offs = @itemSelected.pos - @startTouchPos
+				if(math.abs(offs.x) > minOffs || math.abs(offs.y) > minOffs){	
+					@moved = true
+					var slot = stage.findActorByPos(curTouchPos, function(actor){
+						return actor is ModalView && actor.visible ? true : findTargetSlot(actor)
+					})
+					slot is ModalView && slot = null
+					if(slot !== @targetSlot){
+						@targetSlot = slot
+						if(slot is Tile){
+							slot.touch()
+						}else if(slot){
+							slot.color = Color.WHITE
+							var action = EaseAction(TweenAction {
+								duration = 0.5,
+								color = Color(1, 0.4, 0.4),
+							}, Ease.PING_PONG)
+							action.name = "selectTargetSlot"
+							slot.replaceAction(action)
+						}
 					}
 				}
 			}
@@ -125,11 +136,10 @@ DragndropItems = extends Actor {
 					@game.shop.endShowSell()
 				}
 				if(!@targetSlot || @targetSlot == @itemSlot){
-					breakDragndrop()
 					@itemSelected.pos = @itemSlot.size/2
 					@itemSelected.parent = @itemSlot
 					@itemSelected.color = Color.WHITE
-					@itemSelected = null
+					breakDragndrop()
 				}else{
 					handleDragndrop()
 				}
@@ -163,6 +173,7 @@ DragndropItems = extends Actor {
 			delete owner.pack.items[@itemSlot.slotNum]
 			@itemSelected.detach()
 			owner.updateItems()
+			@game.updateHudItems()
 			shop.resetTargetSlot()
 		}else if(@targetSlot is HudSlot){
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
@@ -170,24 +181,6 @@ DragndropItems = extends Actor {
 			@itemSelected.pos = @itemSlot.size/2
 			@itemSelected.parent = @itemSlot
 			@itemSelected.color = Color.WHITE
-			if(itemInfo.type in PICK_DAMAGE_ITEMS_INFO){
-				for(var _, slot in @game.hudSlots){
-					if(slot !== @targetSlot && slot.type in PICK_DAMAGE_ITEMS_INFO){
-						slot.clearItem()
-					}
-				}
-				Player.pickItemType = itemInfo.type
-				print "Player.pickItemType: ${Player.pickItemType}, damage: ${PICK_DAMAGE_ITEMS_INFO[Player.pickItemType].pickDamage}"
-			}else{
-				Player.pickItemType = null
-				for(var _, slot in @game.hudSlots){
-					if(slot.type in PICK_DAMAGE_ITEMS_INFO){
-						Player.pickItemType = slot.type
-						print "Player.pickItemType: ${Player.pickItemType}, damage: ${PICK_DAMAGE_ITEMS_INFO[Player.pickItemType].pickDamage}"
-						break
-					}
-				}
-			}
 		}else{
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
 			var targetItemInfo = owner.pack.items[@targetSlot.slotNum]
@@ -302,12 +295,15 @@ DragndropItems = extends Actor {
 	},
 	
 	findShopTargetSlot = function(slot){
-		@removeTimeout(@shopTimeoutHandle); @shopTimeoutHandle = null
-		@shopSkipBreakAction = true
-		return slot is ItemSlot
+		var r = slot is ItemSlot
 			&& (slot.isEmpty || slot.type == @itemSlot.type)
 			&& slot.owner is Backpack 
 			&& slot is HudSlot == false
+		// if(r){
+			@removeTimeout(@shopTimeoutHandle); @shopTimeoutHandle = null
+			@shopSkipBreakAction = true
+		// }
+		return r
 	},
 	
 	handleShopDragndrop = function(){
@@ -340,6 +336,23 @@ DragndropItems = extends Actor {
 			Player.bullets = Player.bullets - sumPrice
 			backpack.updateBullets()
 			backpack.updateItems()
+			
+			if(!Player.pickItemType && @itemSlot.type in PICK_DAMAGE_ITEMS_INFO){
+				for(var _, slot in @game.hudSlots){
+					if(!slot.type){
+						slot.type = @itemSlot.type
+						break
+					}
+				}
+			}
+			if(@itemSlot.type == ITEM_TYPE_LADDERS && !@game.hasHudItem(@itemSlot.type)){
+				for(var _, slot in @game.hudSlots){
+					if(!slot.type){
+						slot.type = @itemSlot.type
+						break
+					}
+				}
+			}
 		}
 		shop.resetTargetSlot()
 	
@@ -351,19 +364,45 @@ DragndropItems = extends Actor {
 	},
 	
 	startHudDragndrop = function(){
+		@itemSlot.count = null
+	},
+	
+	breakHudDragndrop = function(){
+		@itemSlot.updateItem()
+		if(!@moved){ // @targetSlot == @itemSlot){
+			@itemSlot.useItem()
+		}
 	},
 	
 	findHudTargetSlot = function(actor){
-		return (actor is ItemSlot && actor.owner is Backpack) || actor is HudSlot
+		if((actor is ItemSlot && actor.owner is Backpack) || actor is HudSlot){
+			return true
+		}
+		if(actor is Tile){
+			var type = @itemSlot.type
+			/* if(type == ITEM_TYPE_LADDERS){
+				return @game.player.canUseLaddersAt(actor.tileX, actor.tileY)
+			} */
+			return @game.player.canUseItemAt(type, actor.tileX, actor.tileY)
+		}
 	},
 	
 	handleHudDragndrop = function(){
 		@itemSelected.pos = @itemSlot.size/2
 		@itemSelected.parent = @itemSlot
 		@itemSelected.color = Color.WHITE
-	},
-	
-	breakHudDragndrop = function(){
+		if(@targetSlot is HudSlot){
+			var srcType = @itemSlot.type
+			// var destType = @targetSlot.type
+			@itemSlot.type = @targetSlot.type
+			@targetSlot.type = srcType
+		}else if(@targetSlot is Tile){
+			var tx, ty = @targetSlot.tileX, @targetSlot.tileY
+			@game.player.useItemAt(@itemSlot.type, tx, ty)
+		}else{
+			assert(@targetSlot is ItemSlot && @targetSlot.owner is Backpack)
+			@itemSlot.type = null
+		}
 	},
 	
 	cleanup = function(){
