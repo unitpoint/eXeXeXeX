@@ -236,7 +236,7 @@ ITEMS_INFO = {
 	[ITEM_TYPE_FOOD_01] = {
 		strengthScale = 1.1,
 		stamina = 25,
-		price = 20,
+		price = 25,
 	},
 	[ITEM_TYPE_FOOD_02] = {
 		strengthScale = 1.2,
@@ -245,15 +245,15 @@ ITEMS_INFO = {
 	},
 	[ITEM_TYPE_FOOD_03] = {
 		strengthScale = 1.3,
-		stamina = 150,
-		price = 120,
+		stamina = 200,
+		price = 150,
 	},
 	[ITEM_TYPE_BOMB_01] = {
 		strengthScale = 1.5,
 		price = 100,
 		bomb = true,
 		explodeRadius = 1.0,
-		explodeWait = 2.0,
+		explodeWait = 3.0,
 		damage = 100,
 		useDistance = 1,
 	},
@@ -262,8 +262,8 @@ ITEMS_INFO = {
 		price = 200,
 		bomb = true,
 		explodeRadius = 1.5,
-		explodeWait = 2.0,
-		damage = 300,
+		explodeWait = 3.0,
+		damage = 200,
 		useDistance = 2,
 	},
 	[ITEM_TYPE_BOMB_03] = {
@@ -281,7 +281,7 @@ ITEMS_INFO = {
 		bomb = true,
 		explodeRadius = 2.9,
 		explodeWait = 3.0,
-		damage = 2000,
+		damage = 5000,
 		useDistance = 3,
 	},
 	/*
