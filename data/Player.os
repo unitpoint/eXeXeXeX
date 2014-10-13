@@ -52,8 +52,11 @@ PLAYER_DEATH_SOUNDS = [
 
 Player = extends Entity {
 	bullets = 0,
+	
 	pickItemType = null,
 	pickItemUsage = {},
+	
+	// laddersItemType = null,
 	
 	saveTileX = null,
 	saveTileY = null,
@@ -66,6 +69,7 @@ Player = extends Entity {
 		@_stamina = game.playerMaxStamina
 		@staminaUpdateHandle = null
 		@startBreathing()
+		// @jumpTileX = @jumpTileY = null
 		@footSound = null
 		@painSound = null
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
@@ -134,9 +138,7 @@ Player = extends Entity {
 		}else if(t > 0){
 			@startBreathing(8.0)
 		}else{
-			@die(function(){
-				@game.playerDead()
-			})
+			@die()
 		}
 		@game.hudStamina.value = t
 		// @game.hudStaminaNumber.text = math.round(@_stamina, 1)
@@ -144,11 +146,15 @@ Player = extends Entity {
 	
 	useStamina = function(value){
 		value || value = 1
-		if(value > @game.playerMaxStamina * 0.2){
-			@game.createBlood(value)
-			@playPainSound()
-		}
 		@stamina -= value
+	},
+	
+	damage = function(value, attacker){
+		if(value > @game.playerMaxStamina * 0.1){
+			@game.createBlood(value)
+		}
+		@playPainSound()
+		@useStamina(value)
 	},
 	
 	useStaminaByCrack = function(){
@@ -175,6 +181,96 @@ Player = extends Entity {
 		super()
 	},
 	
+	canUseLaddersAt = function(tx, ty){
+		var useDistance = ITEMS_INFO[ITEM_TYPE_LADDERS].useDistance || 1
+		if(/*Player.laddersItemType &&*/ !@isDead
+			&& @game.getBackType(tx, ty) != TILE_TYPE_TRADE_STOCK
+			&& math.abs(tx - @tileX) <= useDistance && math.abs(ty - @tileY) <= useDistance)
+		{
+			var curTileType = @game.getFrontType(tx, ty)
+			var upTileType = @game.getFrontType(tx, ty - 1)
+			var downTileType = @game.getFrontType(tx, ty + 1)
+			var leftTileType = @game.getFrontType(tx - 1, ty)
+			var rightTileType = @game.getFrontType(tx + 1, ty)
+			if(curTileType == TILE_TYPE_EMPTY
+				&& (upTileType != TILE_TYPE_EMPTY
+					|| downTileType != TILE_TYPE_EMPTY
+					|| leftTileType != TILE_TYPE_EMPTY
+					|| rightTileType != TILE_TYPE_EMPTY
+					)
+				&& leftTileType != TILE_TYPE_LADDERS
+				&& rightTileType != TILE_TYPE_LADDERS
+				/* && (upTileType != TILE_TYPE_EMPTY
+					|| downTileType != TILE_TYPE_EMPTY
+					|| (leftTileType != TILE_TYPE_LADDERS && leftTileType != TILE_TYPE_EMPTY)
+					|| (rightTileType != TILE_TYPE_LADDERS && rightTileType != TILE_TYPE_EMPTY)
+					) */
+				// && (upTileType != TILE_TYPE_LADDERS && upTileType != TILE_TYPE_EMPTY)
+				// 	!= (downTileType != TILE_TYPE_LADDERS && downTileType != TILE_TYPE_EMPTY)
+				)
+			{
+				return true
+			}
+		}
+	},
+	
+	canUseItemAt = function(type, tx, ty){
+		type == ITEM_TYPE_LADDERS && return @canUseLaddersAt(tx, ty)
+		var useDistance = ITEMS_INFO[type].useDistance || 1
+		if(!@isDead
+			// && @game.getBackType(tx, ty) != TILE_TYPE_TRADE_STOCK
+			&& math.abs(tx - @tileX) <= useDistance && math.abs(ty - @tileY) <= useDistance
+			&& @game.getTile(tx, ty).isEmpty
+			)
+		{
+			var type = @game.getFrontType(tx, ty)
+			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+				return @game.getItemType(tx, ty) == ITEM_TYPE_EMPTY
+			}
+		}
+	},
+	
+	useLaddersAt = function(tx, ty){
+		if(@canUseLaddersAt(tx, ty) && Backpack.pack.subItem(ITEM_TYPE_LADDERS)){
+			@game.updateHudItems()
+			@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
+			@game.removeTile(tx, ty, true)
+			@game.updateTile(tx, ty)
+			@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
+			return true
+		}
+	},
+	
+	useItem = function(type){
+		return @useItemAt(type, @tileX, @tileY)
+	},
+	
+	useItemAt = function(type, tx, ty){
+		type == ITEM_TYPE_LADDERS && return @useLaddersAt(tx, ty)
+		if(@canUseItemAt(type, tx, ty) && Backpack.pack.subItem(type)){
+			@game.updateHudItems()
+			@game.setItemType(tx, ty, type)
+			@game.removeTile(tx, ty, true)
+			@game.updateTile(tx, ty)
+			@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
+			if(ITEMS_INFO[type].explodeRadius){
+				@game.explodeTileItem(tx, ty)
+				return true
+			}
+			return true
+		}
+	},
+	
+	blockFalling = function(afterJump){
+		/* if(afterJump){
+			@jumpTileX, @jumpTileY = @tileX, @tileY
+			return // @useLaddersAt(@tileX, @tileY)
+		}
+		if(@jumpTileX !== @tileX && @jumpTileY !== @tileY && @isTileEmptyToFall(@tileX, @tileY + 2)){
+			return // @useLaddersAt(@tileX, @tileY)
+		} */
+	},
+	
 	onTileChanged = function(){
 		/* if(@prevTileY > @tileY){
 			@useStamina(0.5)
@@ -183,6 +279,7 @@ Player = extends Entity {
 		}else{
 			@useStamina(0.5)
 		} */
+		// @jumpTileX = @jumpTileY = null
 		var tx, ty = @tileX, @tileY
 		var type = @game.getBackType(tx, ty)
 		if(type != TILE_TYPE_TRADE_STOCK){
@@ -196,24 +293,17 @@ Player = extends Entity {
 				@stamina += (@game.playerMaxStamina / 10) * ev.dt
 			})
 		}
-		var type = @game.getFrontType(tx, ty - 1)
-		if(type == TILE_TYPE_ROCK){
-			var tile = @game.getTile(tx, ty)
-			if(!(tile is Door)){
-				type = @game.getFrontType(tx, ty + 1)
-				if(type != TILE_TYPE_EMPTY){
-					var tile = @game.getTile(tx, ty - 1)
-					tile.startFalling()
-				}
-			}
-		}
+		var tile = @game.getTile(tx, ty - 1)
+		tile.checkStartFalling()
+		
 		var type = @game.getFrontType(tx, ty)
-		if(type == TILE_TYPE_EMPTY){
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 			var type = @game.getItemType(tx, ty)
 			if(type != ITEM_TYPE_EMPTY){
-				if(@game.getTileItem(type, tx, ty)){
+				if(@game.takeTileItem(type, tx, ty)){
 					@game.removeTile(tx, ty, true)
 					@game.updateTile(tx, ty)
+					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
 				}
 			}
 		}
