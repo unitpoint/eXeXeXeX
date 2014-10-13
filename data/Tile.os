@@ -218,9 +218,22 @@ Tile = extends BaseTile {
 				for(var x = ax; x <= bx; x++){
 					var r = math.sqrt((x-tx)**2 + (y-ty)**2)
 					if(r <= radius){
-						@game.setFrontType(x, y, TILE_TYPE_EMPTY)
-						@game.removeTile(x, y, true)
-						@game.getTileEnt(x, y).damage(damage)
+						var canExplode = true
+						for(var dx = -1; dx < 2 && canExplode; dx++){
+							for(var dy = -1; dy < 2; dy++){
+								dx == 0 && dy == 0 && continue
+								var type = @game.getBackType(x + dx, y + dy)
+								if(type == TILE_TYPE_TRADE_STOCK){
+									canExplode = false
+									break
+								}
+							}
+						}
+						if(canExplode){
+							@game.setFrontType(x, y, TILE_TYPE_EMPTY)
+							@game.removeTile(x, y, true)
+							@game.getTileEnt(x, y).damage(damage)
+						}
 					}
 				}
 			}
