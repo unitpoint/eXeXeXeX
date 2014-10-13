@@ -69,6 +69,31 @@ ItemsPack = extends Object {
 		return false
 	},
 	
+	subItem = function(type, count){
+		count || count = 1
+		var itemCount = @numItemsByType[type] || 0
+		if(count > itemCount){
+			return
+		} 
+		for(var slotNum, item in @items){
+			if(item.type == type){
+				item.count || throw "error item count: ${item}"
+				if(item.count > count){
+					item.count = item.count - count
+					count = 0
+				}else{
+					count = count - item.count
+					delete @items[slotNum]
+				}
+				if(count == 0){
+					@updateNumItems()
+					return true
+				}
+			}
+		}
+		throw "error items count"
+	},
+	
 	removeSlotItems = function(slotNum){
 		delete @items[slotNum]
 		@updateNumItems()
