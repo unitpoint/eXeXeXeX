@@ -167,6 +167,7 @@ Player = extends Entity {
 	},
 	
 	damage = function(value, attacker){
+		print "player damaged: ${value}"
 		if(value > @game.playerMaxStamina * 0.1){
 			@game.createBlood(value)
 		}
@@ -335,7 +336,6 @@ Player = extends Entity {
 		}else if(type != TILE_TYPE_EMPTY){
 			@playFootSound('chernozem')
 		}
-		// @game.followPlayer()
 	},
 	
 	update = function(){

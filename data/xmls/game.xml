@@ -16,6 +16,8 @@
 		<image file="pick-03.png" />
 		<image file="axe-02.png" />
 		
+		<image file="monster-attack-icon.png" />
+		
 		<image file="door-handle.png" />
 		<image file="door-handle-shadow.png" />
 		
@@ -41,6 +43,7 @@
 		<image file="slot-arrow-left.png" />
 		<image file="backpack.png" />
 		<image file="stamina-border.png" />
+		<image file="stamina-monster.png" />
 		<image file="white.png" />
 		
 		<!-- begin auto generated assets -->
