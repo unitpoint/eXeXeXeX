@@ -256,7 +256,7 @@ ITEMS_INFO = {
 		bomb = true,
 		explodeRadius = 1.0,
 		explodeWait = 3.0,
-		damage = 100,
+		damage = 200,
 		useDistance = 1,
 	},
 	[ITEM_TYPE_BOMB_02] = {
@@ -265,7 +265,7 @@ ITEMS_INFO = {
 		bomb = true,
 		explodeRadius = 1.5,
 		explodeWait = 3.0,
-		damage = 200,
+		damage = 500,
 		useDistance = 2,
 	},
 	[ITEM_TYPE_BOMB_03] = {
@@ -274,7 +274,7 @@ ITEMS_INFO = {
 		bomb = true,
 		explodeRadius = 2.0,
 		explodeWait = 3.0,
-		damage = 1000,
+		damage = 1500,
 		useDistance = 3,
 	},
 	[ITEM_TYPE_BOMB_04] = {
@@ -337,17 +337,102 @@ ENTITIES_INFO = {
 	},
 	7 = {
 	},
+	8 = {
+		attack = 170,
+	},
+	9 = {
+		attack = 150,
+	},
+	10 = {
+		attack = 50,
+	},
 	11 = {
+		attack = 3000,
 		fly = true,
 	},
 	12 = {
+		attack = 5000,
 		fly = true,
+	},
+	13 = {
+		attack = 30,
+	},
+	14 = {
+		attack = 100,
+	},
+	15 = {
+		attack = 400,
+	},
+	16 = {
+		attack = 700,
+	},
+	17 = {
+		attack = 200,
+	},
+	18 = {
+		attack = 2000,
+	},
+	19 = {
+		attack = 100,
+	},
+	20 = {
+		attack = 150,
+	},
+	21 = {
+		attack = 50,
+	},
+	22 = {
+		attack = 500,
+	},
+	23 = {
+		attack = 90,
+	},
+	24 = {
+		attack = 110,
+	},
+	25 = {
+		attack = 120,
+	},
+	26 = {
+		attack = 300,
+	},
+	27 = {
+		attack = 1000,
+		spyder = true,
 	},
 	28 = {
+		attack = 2000,
 		fly = true,
 	},
+	29 = {
+		attack = 2500,
+		spyder = true,
+	},
 	30 = {
+		attack = 5000,
 		fly = true,
+	},
+	31 = {
+		attack = 500,
+		spyder = true,
+	},
+	32 = {
+		attack = 80,
+	},
+	33 = {
+		attack = 60,
+	},
+	34 = {
+		attack = 110,
+	},
+	35 = {
+		attack = 210,
+	},
+	36 = {
+		attack = 450,
+	},
+	37 = {
+		attack = 190,
 	},
 }
 
@@ -465,6 +550,8 @@ Game4X = extends BaseGame4X {
 		@hudStamina = HealthBar("stamina-border").attrs {
 			name = "stamina",
 			pos = vec2(1, 1),
+			// width = @playerMaxStamina * 1.0,
+			// height = 14,
 			parent = @hud,
 			value = 1,
 		}
@@ -1368,12 +1455,21 @@ Game4X = extends BaseGame4X {
 	
 	centerViewToTile = function(tx, ty){
 		var pos = @tileToCenterPos(tx, ty) - @centerViewPos / @view.scale
-		@view.pos = -pos * @view.scale
-		@glowingTiles.pos = @view.pos
-		@updateView()
+		@viewPos = -pos * @view.scale
+		// @view.pos = -pos * @view.scale
+		// @glowingTiles.pos = @view.pos
+		// @updateView()
 	},
 	
-	followPlayer = function(){
+	__get@viewPos = function(){
+		return @view.pos
+	},
+	__set@viewPos = function(value){
+		@view.pos = value
+		@glowingTiles.pos = value
+	},
+	
+	/* followPlayer = function(){
 		var viewScale = @view.scale
 		var idealPos = (@size / 2 / viewScale - @player.pos) * viewScale
 		var pos = @view.pos
@@ -1391,23 +1487,6 @@ Game4X = extends BaseGame4X {
 			pos.y = idealPos.y + maxOffs.y
 		}
 		
-		/* if(@view.width <= @width){
-			pos.x = (@width - @view.width) / 2
-		}else
-		if(pos.x > -@view.startContentOffs.x){
-			pos.x = -@view.startContentOffs.x
-		}else if(pos.x + @view.width < @width){
-			pos.x = @width - @view.width
-		}
-		if(@view.height <= @height){
-			pos.y = (@height - @view.height) / 2
-		}else 
-		if(pos.y > -@view.startContentOffs.y){
-			pos.y = -@view.startContentOffs.y
-		}else if(pos.y + @view.height < @height){
-			pos.y = @height - @view.height
-		} */
-
 		// pos.x = math.round(pos.x) // * @view.scaleX)
 		// pos.y = math.round(pos.y) // * @view.scaleY)
 		
@@ -1415,35 +1494,7 @@ Game4X = extends BaseGame4X {
 		@glowingTiles.pos = pos
 		
 		@updateView()
-	
-		/*
-		// if(!@following){
-			var tx, ty = @posToTile(@player.pos) // @player.tileX, @player.tileY
-			if(@followTileX != tx || @followTileY != ty){
-				@followTileX, @followTileY = tx, ty
-				var pos = -(@tileToCenterPos(tx, ty) - @centerViewPos / @view.scale) * @view.scale
-				@following = @view.replaceTweenAction {
-					name = "following",
-					duration = 0.6,
-					pos = pos,
-					tickCallback = function(){
-						@glowingTiles.pos = @view.pos
-					},
-					doneCallback = function(){
-						@following = false
-					},
-				}
-			}
-		// }else{
-		if(@following){
-			@updateView()
-		}
-		var pos = @toLocalPos(@player, @player.size/2)
-		
-		// @lightMask.pos = pos
-		// @lightMask.updateDark()
-		*/
-	},
+	}, */
 	
 	tileToCenterPos = function(x, y){
 		return vec2((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
@@ -1465,17 +1516,24 @@ Game4X = extends BaseGame4X {
 		return math.round(pos.x / TILE_SIZE), math.round(pos.y / TILE_SIZE)
 	},
 	
+	updateViewport = function(startX, startY, endX, endY){
+		@updateTiledmapViewport(startX, startY, endX, endY)
+		for(var _, tile in @layers[LAYER_TILES]){
+			@markTileVisibility(tile, tile.time == @time)
+		}
+	},
+	
 	updateView = function(){
 		var offs = -@view.pos / @view.scale
 		var startX, startY = @posToTile(offs)
-		var edge = 2
-		startX, startY = startX - edge-1, startY - edge-1
+		var edge = 0
+		startX, startY = startX - edge-1, startY - edge
 		if(startX != @oldViewTilePosX || startY != @oldViewTilePosY){
 			@oldViewTilePosX, @oldViewTilePosY = startX, startY
 			
 			var endOffs = offs + @size / @view.scale
 			var endX, endY = @posToCeilTile(endOffs)
-			endX, endY = endX + edge, endY + edge
+			endX, endY = endX + edge+1, endY + edge
 			
 			@updateTiledmapViewport(startX, startY, endX, endY)
 			
@@ -1518,16 +1576,17 @@ Game4X = extends BaseGame4X {
 			var t = (math.sin(sprite.glowPhase + @time * 2 * sprite.glowTimeScale) + 1) / 2
 			sprite.opacity = 0.3 + 0.7 * t
 		}
-		for(var i = @numLights-1; i >= 0; i--){
+		/* for(var i = @numLights-1; i >= 0; i--){
 			var light = @getLight(i)
 			if("updateCallback" in light){
 				var updateCallback = light.updateCallback
 				updateCallback()
 			}
-		}
+		} */
 		
-		@followPlayer()
-		@updateLightLayer(@lightLayer)
+		// @followPlayer()
+		// @updateLightLayer(@lightLayer)
+		@updateCamera(@lightLayer)
 	},
 	
 	/* checkFalling = function(){

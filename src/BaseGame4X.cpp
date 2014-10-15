@@ -140,7 +140,7 @@ static void registerBaseGame4X(OS * os)
 		def("getLight", &BaseGame4X::getLight),
 		def("addLight", &BaseGame4X::addLight),
 		def("removeLight", &BaseGame4X::removeLight),
-		def("updateLightLayer", &BaseGame4X::updateLightLayer),
+		def("updateCamera", &BaseGame4X::updateCamera),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getFrontType", &BaseGame4X::getFrontType),
 		def("setFrontType", &BaseGame4X::setFrontType),
@@ -246,7 +246,7 @@ void BaseGame4X::removeLight(spBaseLight light)
 	lights.erase(it);
 }
 
-void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
+void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 {
 	vec2 size = getSize();
 	if(!lightProg){
@@ -350,6 +350,31 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	vec2 viewPos = view->getPosition();
 	vec2 viewScale = view->getScale();
 
+	// followPlayer
+	vec2 idealPos = (vec2(getSize()) / 2.0f / viewScale - playerPos) * viewScale;
+	idealPos.x = floorf(idealPos.x + 0.5f); // (float)OS::Utils::round(idealPos.x);
+	idealPos.y = floorf(idealPos.y + 0.5f); // (float)OS::Utils::round(idealPos.y);
+	if(idealPos != viewPos){
+		float dt = (pushCtypeValue(os, this), os->getProperty("dt"), os->popFloat());
+		viewPos = viewPos + (idealPos - viewPos) * MathLib::min(1, 3.0f * dt);
+
+		vec2 maxOffs = vec2(getSize()) * 0.3f / viewScale;
+		if(idealPos.x - viewPos.x > maxOffs.x){
+			viewPos.x = idealPos.x - maxOffs.x;
+		}else if(idealPos.x - viewPos.x < -maxOffs.x){
+			viewPos.x = idealPos.x + maxOffs.x;
+		}
+		if(idealPos.y - viewPos.y > maxOffs.y){
+			viewPos.y = idealPos.y - maxOffs.y;
+		}else if(idealPos.y - viewPos.y < -maxOffs.y){
+			viewPos.y = idealPos.y + maxOffs.y;
+		}
+
+		pushCtypeValue(os, this);
+		pushCtypeValue(os, viewPos);
+		os->setProperty("viewPos");
+	}
+
 	int startX, startY;
 	vec2 offs = -viewPos / viewScale;
 	posToTile(offs, startX, startY);
@@ -357,6 +382,26 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	int endX, endY;
 	vec2 endOffs = offs + size / viewScale;
 	posToCeilTile(endOffs, endX, endY);
+
+#if defined _WIN32 && 1
+	startX -= 2; startY -= 1;
+	endX += 1; endY += 1;
+#endif
+
+	if(startX != startViewX || startY != startViewY || endX != endViewX || endY != endViewY){
+		startViewX = startX;
+		startViewY = startY;
+		endViewX = endX;
+		endViewY = endY;
+
+		pushCtypeValue(os, this);
+		os->getProperty(-1, "updateViewport");
+		pushCtypeValue(os, startX);
+		pushCtypeValue(os, startY);
+		pushCtypeValue(os, endX);
+		pushCtypeValue(os, endY);
+		os->callTF(4);
+	}
 
 	vec2 lightTextureSize((float)lightTextureWidth, (float)lightTextureHeight);
 
@@ -467,25 +512,6 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 			continue;
 		}
 		vec2 lightScreenPos = light->pos - offs;
-
-		/*
-		std::vector<OS_BYTE>::iterator it = lightVolume.begin();
-		for(; it != lightVolume.end(); ++it){
-			*it = 0;
-		}
-		
-		OX_ASSERT(tx >= startX && tx <= endX && ty >= startY && ty <= endY);
-		lightVolume[(tx - startX) + (ty - startY) * tileAreaWidth] = 1;
-		for(int y = ty; y <= endY; y++){
-			for(int x = tx; x <= endX; x++){
-				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
-					lightVolume[(x - startX) + (y - startY) * tileAreaWidth] = 1;
-					continue;
-				}
-			}
-		}
-		*/
 
 		r.begin(shadowMaskTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1204,6 +1230,10 @@ BaseGame4X::BaseGame4X()
 	lightTextureWidth = 0;
 	lightTextureHeight = 0;
 	lightScale = 0.0f;
+	startViewX = 0;
+	startViewY = 0;
+	endViewX = 0;
+	endViewY = 0;
 }
 
 BaseGame4X::~BaseGame4X()

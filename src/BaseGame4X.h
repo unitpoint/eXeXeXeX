@@ -186,7 +186,7 @@ public:
 	void addLight(spBaseLight light);
 	void removeLight(spBaseLight light);
 
-	void updateLightLayer(BaseLightLayer*);
+	void updateCamera(BaseLightLayer*);
 
 protected:
 
@@ -208,6 +208,9 @@ protected:
 
 	std::vector<spBaseLight> lights;
 	std::vector<Point> activeTilesXY;
+
+	int startViewX, startViewY;
+	int endViewX, endViewY;
 
 	// std::vector<OS_BYTE> lightVolume;
 
