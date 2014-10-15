@@ -103,18 +103,18 @@ Backpack = extends Actor {
 			opacity = 0.5,
 			touchEnabled = false,
 		}
-		@bulletsCount = []
-		@bulletsCount[] = TextField().attrs {
+		@bulletsText = BorderedText().attrs {
 			resFont = res.get("test_2"),
 			vAlign = TEXT_VALIGN_BOTTOM,
 			hAlign = TEXT_HALIGN_RIGHT,
 			text = @_bullets = Player.bullets,
 			pos = @bulletsSprite.pos + @bulletsSprite.size/2 - vec2(4, 5),
 			color = Color.fromInt(0xf9a288),
+			borderColor = Color.fromInt(0x391a05),
 			priority = 1,
 			parent = this,
 		}
-		var cloneText = function(delta, color){
+		/* var cloneText = function(delta, color){
 			var originText = @bulletsCount.first
 			var text = TextField().attrs {
 				resFont = originText.resFont,
@@ -135,7 +135,7 @@ Backpack = extends Actor {
 			for(var y = -1; y < 2; y+=2){
 				cloneText(vec2(x, y), color)
 			}
-		}
+		} */
 		
 		@countBulletsUpdateHandle = null
 		
@@ -145,9 +145,10 @@ Backpack = extends Actor {
 	__set@bullets = function(value){
 		@_bullets == value && return;
 		@_bullets = value
-		for(var _, item in @bulletsCount){
+		@bulletsText.text = value
+		/* for(var _, item in @bulletsCount){
 			item.text = value
-		}
+		} */
 	},
 	
 	updateBullets = function(){

@@ -49,7 +49,7 @@ PanelTitle = extends Actor {
 		@height = @bg.height = 44
 		
 		var side, vertSide = 10, 13
-		@text = TextField().attrs {
+		@text = BorderedText().attrs {
 			resFont = res.get("test_2"),
 			vAlign = TEXT_VALIGN_BOTTOM,
 			hAlign = TEXT_HALIGN_LEFT,
@@ -57,12 +57,13 @@ PanelTitle = extends Actor {
 			pos = vec2(side, @height - vertSide),
 			priority = 10,
 			color = Color.fromInt(0x391a05),
+			borderColor = Color.fromInt(0xfce8ca),
 			parent = this,
 		}
 		var textPos, textSize = @text.textPos, @text.textSize
 		@width = @bg.width = @text.x + textPos.x + textSize.x + side*1.5
 		
-		@textShadow = []
+		/* @textShadow = []
 		var cloneText = function(delta, color){
 			var text = TextField().attrs {
 				resFont = @text.resFont,
@@ -82,7 +83,7 @@ PanelTitle = extends Actor {
 			for(var y = -1; y < 2; y+=2){
 				cloneText(vec2(x, y), color)
 			}
-		}
+		} */
 		// print "text pos: ${@text.textPos}, size: ${@text.textSize}"
 	},
 }
