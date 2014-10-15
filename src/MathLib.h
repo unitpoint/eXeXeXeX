@@ -166,16 +166,18 @@ struct vec3;
 
 struct vec2
 {
-	float x; ///< x position
-	float y; ///< y position
+	typedef float type;
+
+	type x; ///< x position
+	type y; ///< y position
 
 	vec2(){ x = y = 0; }
-	vec2(float ax, float ay)
+	vec2(type ax, type ay)
 	{
 		x = ax;
 		y = ay;
 	}
-	vec2(float a)
+	vec2(type a)
 	{
 		x = a;
 		y = a;
@@ -183,21 +185,21 @@ struct vec2
 	vec2(const vec3&);
 	vec2(const oxygine::Vector2& v)
 	{
-		x = v.x;
-		y = v.y;
+		x = (type)v.x;
+		y = (type)v.y;
 	}
 
 	operator oxygine::Vector2() const
 	{
-		return oxygine::Vector2(x, y);
+		return oxygine::Vector2((oxygine::Vector2::type)x, (oxygine::Vector2::type)y);
 	}
 
-	float at(int i) const
+	type at(int i) const
 	{
 		OS_ASSERT(i >= 0 && i < 2);
 		return (&x)[i];
 	}
-	void set(int i, float f)
+	void set(int i, type f)
 	{
 		OS_ASSERT(i >= 0 && i < 2);
 		(&x)[i] = f;
@@ -291,20 +293,20 @@ struct vec2
 		return vec2(x*b, y*b);
 	}
 
-	float dot(const vec2& b) const
+	type dot(const vec2& b) const
 	{
 		return x*b.x + y*b.y;
 	}
 
-	float invLen() const
+	type invLen() const
 	{
 		return MathLib::invSqrt(dot(*this));
 	}
-	float len() const
+	type len() const
 	{
 		return MathLib::sqrt(dot(*this));
 	}
-	float sqrLen() const
+	type sqrLen() const
 	{
 		return dot(*this);
 	}
@@ -314,10 +316,10 @@ struct vec2
 		return mul(invLen());
 	}
 
-	float lenNorm(vec2& dir)
+	type lenNorm(vec2& dir)
 	{
-		float sqrLen = dot(*this);
-		float invLen = MathLib::invSqrt(sqrLen);
+		type sqrLen = dot(*this);
+		type invLen = MathLib::invSqrt(sqrLen);
 		dir.x = x * invLen;
 		dir.y = y * invLen;
 		return sqrLen * invLen;
@@ -347,18 +349,20 @@ struct vec2
 
 struct vec3
 {
-	float x;  ///< x pos
-	float y;  ///< y pos
-	float z;  ///< z pos
+	typedef float type;
+
+	type x;  ///< x pos
+	type y;  ///< y pos
+	type z;  ///< z pos
 
 	vec3(){ x = y = z = 0; }
-	vec3(float ax, float ay, float az)
+	vec3(type ax, type ay, type az)
 	{
 		x = ax;
 		y = ay;
 		z = az;
 	}
-	vec3(float a)
+	vec3(type a)
 	{
 		x = a;
 		y = a;
@@ -370,6 +374,14 @@ struct vec3
 		y = b.y;
 		z = 0.0f;
 	}
+	vec3(const oxygine::Color& color)
+	{
+		// oxygine::Color color = _color.premultiplied();
+		x = (type)color.getRedF();
+		y = (type)color.getGreenF();
+		z = (type)color.getBlueF();
+	}
+
 
 	operator oxygine::Color() const 
 	{
@@ -382,7 +394,7 @@ struct vec3
 	}
 
 
-	float at(int i) const
+	type at(int i) const
 	{
 		OS_ASSERT(i >= 0 && i < 3);
 		return (&x)[i];
@@ -489,7 +501,7 @@ struct vec3
 		return vec3(x*b, y*b, z*b);
 	}
 
-	float dot(const vec3& b) const
+	type dot(const vec3& b) const
 	{
 		return x*b.x + y*b.y + z*b.z;
 	}
@@ -498,15 +510,15 @@ struct vec3
 		return vec3(y * b.z - z * b.y, z * b.x - x * b.z, x * b.y - y * b.x);
 	}
 
-	float invLen() const
+	type invLen() const
 	{
 		return MathLib::invSqrt(dot(*this));
 	}
-	float len() const
+	type len() const
 	{
 		return MathLib::sqrt(dot(*this));
 	}
-	float sqrLen() const
+	type sqrLen() const
 	{
 		return dot(*this);
 	}
@@ -516,10 +528,10 @@ struct vec3
 		return mul(invLen());
 	}
 
-	float lenNorm(vec3& dir) const
+	type lenNorm(vec3& dir) const
 	{
-		float sqrLen = dot(*this);
-		float invLen = MathLib::invSqrt(sqrLen);
+		type sqrLen = dot(*this);
+		type invLen = MathLib::invSqrt(sqrLen);
 		dir.x = x * invLen;
 		dir.y = y * invLen;
 		dir.z = z * invLen;

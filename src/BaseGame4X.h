@@ -80,6 +80,55 @@ struct LightInfo
 	}
 };
 
+DECLARE_SMART(BaseLight, spBaseLight);
+class BaseLight: public Object
+{
+public:
+	OS_DECLARE_CLASSINFO(BaseLight);
+
+	std::string name;
+	Color shadowColor;
+	// float tileRadiusScale;
+
+	vec2 pos;
+	Color color;
+	float radius;
+
+	// bool isLevelLights;
+
+	BaseLight()
+	{
+		shadowColor = Color(127, 127, 127, 255);
+		// tileRadiusScale = 1.0f;
+		pos = vec2(0.0f, 0.0f);
+		color = Color(255, 255, 255, 255);
+		radius = 0.0f; // disabled by default
+		// isLevelLights = false;
+	}
+
+	// OS getters, setters
+	std::string getName() const { return name; }
+	void setName(const char * value){ name = value;}
+
+	// float getTileRadiusScale() const { return tileRadiusScale; }
+	// void setTileRadiusScale(float value){ tileRadiusScale = value;}
+
+	Color getShadowColor() const { return shadowColor; }
+	void setShadowColor(const Color& value){ shadowColor = value;}
+
+	vec2 getPos() const { return pos; }
+	void setPos(const vec2& value){ pos = value;}
+
+	Color getColor() const { return color; }
+	void setColor(const Color& value){ color = value;}
+
+	float getRadius() const { return radius; }
+	void setRadius(float value){ radius = value;}
+
+	// bool getIsLevelLights() const { return isLevelLights; }
+	// void setIsLevelLights(bool value){ isLevelLights = value;}
+};
+
 DECLARE_SMART(BaseLightLayer, spBaseLightLayer);
 class BaseLightLayer: public Sprite
 {
@@ -131,6 +180,12 @@ public:
 	void posToCeilTile(const vec2& pos, int& x, int& y);
 
 	void registerLevelInfo(int tiledmapWidth, int tiledmapHeight, const OS::String& data);
+
+	int getNumLights();
+	spBaseLight getLight(int);
+	void addLight(spBaseLight light);
+	void removeLight(spBaseLight light);
+
 	void updateLightLayer(BaseLightLayer*);
 
 protected:
@@ -151,7 +206,10 @@ protected:
 	
 	spResources resources;
 
-	std::vector<OS_BYTE> lightVolume;
+	std::vector<spBaseLight> lights;
+	std::vector<Point> activeTilesXY;
+
+	// std::vector<OS_BYTE> lightVolume;
 
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);
 	void setUniformColor(const char * name, const vec3& color);
@@ -220,7 +278,10 @@ namespace ObjectScript {
 
 // OS_DECL_CTYPE_ENUM(TileType);
 // OS_DECL_CTYPE_ENUM(TileType);
+OS_DECL_CTYPE_NAME(vec2, "vec2");
+template <> struct CtypeValue<vec2>: public CtypeValuePoint<vec2> {};
 
+OS_DECL_OX_CLASS(BaseLight);
 OS_DECL_OX_CLASS(BaseLightLayer);
 OS_DECL_OX_CLASS(BaseGame4X);
 

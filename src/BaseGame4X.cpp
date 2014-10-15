@@ -41,6 +41,35 @@ static bool __registerGlobals = addRegFunc(registerGlobals);
 
 // =====================================================================
 
+static void registerBaseLight(OS * os)
+{
+	struct Lib {
+		static BaseLight * __newinstance()
+		{
+			return new BaseLight();
+		}
+	};
+
+	OS::FuncDef funcs[] = {
+		def("__newinstance", &Lib::__newinstance),
+		DEF_PROP("name", BaseLight, Name),
+		DEF_PROP("shadowColor", BaseLight, ShadowColor),
+		// DEF_PROP("tileRadiusScale", BaseLight, TileRadiusScale),
+		DEF_PROP("pos", BaseLight, Pos),
+		DEF_PROP("color", BaseLight, Color),
+		DEF_PROP("radius", BaseLight, Radius),
+		{}
+	};
+
+	OS::NumberDef nums[] = {
+		{}
+	};
+	registerOXClass<BaseLight, Object>(os, funcs, nums, true OS_DBG_FILEPOS);
+}
+static bool __registerBaseLight = addRegFunc(registerBaseLight);
+
+// =====================================================================
+
 static void registerBaseLightLayer(OS * os)
 {
 	struct Lib {
@@ -107,6 +136,10 @@ static void registerBaseGame4X(OS * os)
 	OS::FuncDef funcs[] = {
 		def("__newinstance", &Lib::__newinstance),
 		def("registerLevelInfo", &BaseGame4X::registerLevelInfo),
+		DEF_GET("numLights", BaseGame4X, NumLights),
+		def("getLight", &BaseGame4X::getLight),
+		def("addLight", &BaseGame4X::addLight),
+		def("removeLight", &BaseGame4X::removeLight),
 		def("updateLightLayer", &BaseGame4X::updateLightLayer),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getFrontType", &BaseGame4X::getFrontType),
@@ -175,9 +208,9 @@ bool BaseGame4X::getTileVertices(TileType type, std::vector<Vector2>& vertices)
 
 vec3 colorFromInt(int color)
 {
-	float r = (color >> 16) & 0xff;
-	float g = (color >> 8) & 0xff;
-	float b = (color >> 0) & 0xff;
+	float r = (float)((color >> 16) & 0xff);
+	float g = (float)((color >> 8) & 0xff);
+	float b = (float)((color >> 0) & 0xff);
 	return vec3(r / 255.0f, g / 255.0f, b / 255.0f);
 }
 
@@ -187,18 +220,44 @@ void BaseGame4X::setUniformColor(const char * name, const vec3& color)
 	IVideoDriver::instance->setUniform(name, &c, 1);
 }
 
+int BaseGame4X::getNumLights()
+{
+	return (int)lights.size();
+}
+
+spBaseLight BaseGame4X::getLight(int i)
+{
+	if(i >= 0 && i < (int)lights.size()){
+		return lights[i];
+	}
+	return NULL;
+}
+
+void BaseGame4X::addLight(spBaseLight light)
+{
+	OX_ASSERT(std::find(lights.begin(), lights.end(), light) == lights.end());
+	lights.push_back(light);
+}
+
+void BaseGame4X::removeLight(spBaseLight light)
+{
+	std::vector<spBaseLight>::iterator it = std::find(lights.begin(), lights.end(), light);
+	OX_ASSERT(it != lights.end());
+	lights.erase(it);
+}
+
 void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 {
 	vec2 size = getSize();
 	if(!lightProg){
-// #ifdef _WIN32
+#if defined _WIN32 && 0
 		Point displaySize = core::getDisplaySize();
 		float displayWidthScale = (float)displaySize.x / getWidth();
 		float displayHeightScale = (float)displaySize.y / getHeight();
 		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
-// #else
-//		lightScale = 1.0f / 2.0f;
-// #endif
+#else
+		lightScale = 1.0f / 2.0f;
+#endif
 
 		lightTextureWidth = (int)(size.x * lightScale);
 		lightTextureHeight = (int)(size.y * lightScale);
@@ -306,6 +365,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
 #if 1
+	/*
 	std::vector<LightInfo> lights;
 	
 	// LightFormInfo lightFormInfo(OS::String(os, "light-02"), (0.2f, 0.2f, 0.2f), 1.5f);
@@ -376,15 +436,35 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 				));
 		}
 	}
+	*/
 
+	/*
 	int tileAreaWidth = endX - startX + 1;
 	int tileAreaHeight = endY - startY + 1;
 	int tileAreaCount = tileAreaWidth * tileAreaHeight;
 	lightVolume.resize(tileAreaCount);
+	*/
 
-	for(int i = 0; i < lights.size(); i++){
-		float radius = lights[i].tileRadius * lights[i].lightForm.tileRadiusScale * TILE_SIZE;
-		vec2 lightViewPos = lights[i].pos - offs;
+	activeTilesXY.clear();
+
+	pushCtypeValue(os, this);
+	os->getProperty("tiles");
+	while(os->nextIteratorStep()){
+		int x = (os->getProperty(-1, "tileX"), os->popInt());
+		int y = (os->getProperty(-1, "tileY"), os->popInt());
+		activeTilesXY.push_back(Point(x, y));
+		os->pop(2);
+	}
+	os->pop();
+
+
+	for(int i = 0; i < (int)lights.size(); i++){
+		spBaseLight light = lights[i];
+		float radius = light->radius; // tileRadius * light->tileRadiusScale * TILE_SIZE;
+		if(radius <= 0.0f){
+			continue;
+		}
+		vec2 lightScreenPos = light->pos - offs;
 
 		/*
 		std::vector<OS_BYTE>::iterator it = lightVolume.begin();
@@ -409,17 +489,20 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		IVideoDriver::instance->setShaderProgram(shadowMaskProg);
-
 		IVideoDriver::instance->setUniform("projection", &viewProj);
-		
-		setUniformColor("color", lights[i].lightForm.shadowColor);
+		setUniformColor("color", light->shadowColor);
 
 		int tx, ty;
-		posToTile(lights[i].pos, tx, ty);
+		posToTile(light->pos, tx, ty);
 		TileType type = getFrontType(tx, ty);
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01)
-		for(int y = startY; y <= endY; y++){
-			for(int x = startX; x <= endX; x++){
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+			std::vector<Point>::iterator it = activeTilesXY.begin();
+			for(; it != activeTilesXY.end(); ++it){
+				const Point& p = *it;
+				int x = p.x;
+				int y = p.y;
+		// for(int y = startY; y <= endY; y++){
+			// for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
 				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 					continue;
@@ -460,17 +543,17 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 					const vec2& p2 = points[(i+1) % count];
 					vec2 edge = p2 - p1;
 					vec2 normal = vec2(edge.y, -edge.x).norm();
-					float dist = normal.dot(p1) - normal.dot(lightViewPos);
+					float dist = normal.dot(p1) - normal.dot(lightScreenPos);
 					if(dist <= 0 || dist > radius){
 						continue;
 					}
 
-					vec2 lightToCurrent = p1 - lightViewPos;
+					vec2 lightToCurrent = p1 - lightScreenPos;
 					OX_ASSERT(normal.dot(lightToCurrent) > 0);
 					type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
 					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
 						vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-						vec2 p2_target = p2 + (p2 - lightViewPos) * (radius * 100);
+						vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
 						
 						r.drawPoly(p1 * lightScale, 
 								p1_target * lightScale, 
@@ -483,8 +566,13 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		r.drawBatch();
 
 		setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
-		for(int y = startY; y <= endY; y++){
-			for(int x = startX; x <= endX; x++){
+		std::vector<Point>::iterator it = activeTilesXY.begin();
+		for(; it != activeTilesXY.end(); ++it){
+			const Point& p = *it;
+			int x = p.x;
+			int y = p.y;
+		// for(int y = startY; y <= endY; y++){
+			// for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
 				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){ // || type == TILE_TYPE_DOOR_01){
 					continue;
@@ -500,7 +588,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 					points[1] * lightScale, 
 					points[2] * lightScale, 
 					points[3] * lightScale);
-			}
+			// }
 		}
 		r.end();
 
@@ -527,16 +615,16 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		AffineTransform t; t.identity();
 		r.setMask(shadowMaskTexture, shadowSrc, shadowDest, t, true);
 
-		ResAnim * resAnim = resources->getResAnim(lights[i].lightForm.form.toChar());
+		ResAnim * resAnim = resources->getResAnim(light->name);
 		AnimationFrame frame = resAnim->getFrame(0, 0);
 		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(lights[i].color);
+		r.setPrimaryColor(light->color);
 
 		IVideoDriver::instance->setTexture(0, frame.getDiffuse().base);
 		IVideoDriver::instance->setTexture(1, shadowMaskTexture);
 
 		radius = radius * lightScale;
-		vec2 pos = lightViewPos * lightScale;
+		vec2 pos = lightScreenPos * lightScale;
 
 		// pos.y = lightTextureSize.y - pos.y;
 		r.draw(frame.getSrcRect(), RectF(pos - vec2(radius, radius), vec2(radius*2.0f, radius*2.0f)));
@@ -556,8 +644,13 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 	IVideoDriver::instance->setUniform("projection", &viewProj);
 		
 	vec3 color, prevColor(0, 0, 0);
-	for(int y = startY; y <= endY; y++){
-		for(int x = startX; x <= endX; x++){
+	std::vector<Point>::iterator it = activeTilesXY.begin();
+	for(; it != activeTilesXY.end(); ++it){
+		const Point& p = *it;
+		int x = p.x;
+		int y = p.y;
+	// for(int y = startY; y <= endY; y++){
+		// for(int x = startX; x <= endX; x++){
 			TileType type = getBackType(x, y);
 			if(type != TILE_TYPE_TRADE_STOCK){
 				// continue;
@@ -597,7 +690,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 				points[1] * lightScale, 
 				points[2] * lightScale, 
 				points[3] * lightScale);
-		}
+		// }
 	}
 
 	r.end();
@@ -830,7 +923,7 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 		glEnd();
 		continue;
 #else
-		vec2 lightViewPos = pos; // offs + pos;
+		vec2 lightScreenPos = pos; // offs + pos;
 
 		for(int y = startY; y <= endY; y++){
 			for(int x = startX; x <= endX; x++){
@@ -851,10 +944,10 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 					vec2& p2 = vertices[(i+1) % count];
 					vec2 edge = p2 - p1;
 					vec2 normal = vec2(edge.y, -edge.x);
-					vec2 lightToCurrent = p1 - lightViewPos;
+					vec2 lightToCurrent = p1 - lightScreenPos;
 					if(normal.dot(lightToCurrent) > 0){
 						vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-						vec2 p2_target = p2 + (p2 - lightViewPos) * (radius * 100);
+						vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
 						
 						glBegin(GL_QUADS);
 						glVertex2f(p1.x, p1.y);
