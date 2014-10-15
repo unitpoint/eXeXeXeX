@@ -61,6 +61,7 @@ Door = extends Tile {
 		@handleAction = null
 		@timeoutHandle = null
 		@state = @STATE_CLOSED
+		@sound = null
 	},
 	
 	__get@openState = function(){
@@ -71,6 +72,22 @@ Door = extends Tile {
 		return @state != @STATE_CLOSED
 	},
 	
+	cleanup = function(){
+		super()
+		@sound.fadeOut(0.5)
+	},
+	
+	pause = function(){
+		super()
+		@sound.fadeOut(0.5)
+		// @sound.pause()
+	},
+	
+	resume = function(){
+		// @sound.resume()
+		super()
+	},
+	
 	open = function(){
 		if(@state == @STATE_OPENING || @state == @STATE_OPENED){
 			return
@@ -78,6 +95,11 @@ Door = extends Tile {
 		@state = @STATE_OPENING
 		@removeTimeout(@timeoutHandle); @timeoutHandle = null
 		@handleAction.target.removeAction(@handleAction)
+		
+		@sound.stop()
+		@sound = splayer.play {
+			sound = "door",
+		}
 		
 		var destAngle = 360*2.3
 		@handleAction = @handle.addTweenAction {
@@ -97,6 +119,7 @@ Door = extends Tile {
 					doneCallback = function(){
 						@handleAction = null
 						@state = @STATE_OPENED
+						@sound.fadeOut(0.5); @sound = null
 						@timeoutHandle = @addTimeout(1.0, function(){
 							@close()
 						})
@@ -113,6 +136,11 @@ Door = extends Tile {
 		@state = @STATE_CLOSING
 		@removeTimeout(@timeoutHandle); @timeoutHandle = null
 		@handleAction.target.removeAction(@handleAction)
+		
+		@sound.stop()
+		@sound = splayer.play {
+			sound = "door-02",
+		}
 		
 		@timeoutHandle = @addTimeout(0.4, function(){
 			@timeoutHandle = null
@@ -138,6 +166,7 @@ Door = extends Tile {
 						@handleShadow.angle = @handle.angle
 					},
 					doneCallback = function(){
+						@sound.fadeOut(1.5); @sound = null
 						@handleAction = null
 					},
 				}
@@ -147,5 +176,6 @@ Door = extends Tile {
 	
 	pickByEnt = function(ent){
 		@open()
+		return true
 	},
 }
