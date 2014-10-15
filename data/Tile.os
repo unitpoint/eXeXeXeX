@@ -97,7 +97,25 @@ Tile = extends BaseTile {
 		@itemGlowing = null
 		@itemType = @game.getItemType(x, y)
 		if(@itemType != ITEM_TYPE_EMPTY){
-			if(@frontType != TILE_TYPE_EMPTY){
+			if(@itemType == ITEM_TYPE_STAND_FLAME_01){
+				@item = StandFlame(@game, this).attrs {
+					// pos = vec2(@width/2, @height),
+					priority = @PRIORITY_ITEM,
+					// parent = this,
+				}
+				/* var lightTileRadius = 3
+				var lightTileRadiusScale = 1.5 // dependence on light name
+				var lightRadius = lightTileRadius * lightTileRadiusScale * TILE_SIZE
+				var lightColor = Color(1.0, 0.95, 0.7)
+				@light = Light().attrs {
+					name = "light-01",
+					// shadowColor = Color(0.3, 0.3, 0.3),
+					color = lightColor,
+					radius = lightRadius,
+					pos = @pos + @size / 2,
+				}
+				@game.addLight(@light) */			
+			}else if(@frontType != TILE_TYPE_EMPTY && @frontType != TILE_TYPE_LADDERS){
 				var itemResName = @game.getTileItemResName(@itemType, x, y)
 				@item = Sprite().attrs {
 					resAnim = res.get(itemResName),
@@ -147,12 +165,15 @@ Tile = extends BaseTile {
 	},
 	
 	cleanup = function(){
-		@glowing.detach()
-		@itemGlowing.detach()
-		@front.detach()
-		@back.detach()
-		@item.detach()
-		@shadow.detach()
+		// print "Tile.cleanup: ${@tileX}x${@tileY}"
+		// printBackTrace()
+		// @light && @game.removeLight(@light)
+		@glowing.parent != this && @glowing.detach()
+		@itemGlowing.parent != this && @itemGlowing.detach()
+		@front.parent != this && @front.detach()
+		@back.parent != this && @back.detach()
+		@item.parent != this && @item.detach()
+		@shadow.parent != this && @shadow.detach()
 		@detach()
 	},
 	
@@ -204,12 +225,15 @@ Tile = extends BaseTile {
 			looping = true,
 		}
 		var wait = ITEMS_INFO[@itemType].explodeWait || 1
-		@addTimeout(wait, function(){
+		@game.addTimeout(wait, function(){
 			sound.stop()
-			@itemType != ITEM_TYPE_EMPTY || return;
+			var tx, ty = @tileX, @tileY
+			var itemType = @game.getItemType(tx, ty)
+			if(itemType == ITEM_TYPE_EMPTY || @itemType == ITEM_TYPE_EMPTY){
+				return
+			}
 			var radius = ITEMS_INFO[@itemType].explodeRadius || 1
 			var damage = ITEMS_INFO[@itemType].damage || 1
-			var tx, ty = @tileX, @tileY
 			@game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
 			var areaRadius = math.ceil(radius)
 			var ax, ay = tx - areaRadius, ty - areaRadius
@@ -232,12 +256,81 @@ Tile = extends BaseTile {
 						if(canExplode){
 							@game.setFrontType(x, y, TILE_TYPE_EMPTY)
 							@game.removeTile(x, y, true)
+							@game.removeCrack(x, y, true)
 							@game.getTileEnt(x, y).damage(damage)
 						}
 					}
 				}
 			}
 			@game.updateTiledmapViewport(ax-1, ay-1, bx+1, by+1)
+			
+			var explode = AnimSprite(sprintf("explode-%02d", @itemType % 2 + 1).."-%02d", 16).attrs {
+				pivot = vec2(0.5, 0.5),
+				pos = @pos + @size/2,
+				blendMode = BLEND_ADD,
+				scale = radius * TILE_SIZE / 60 * 1.7,
+				parent = @game.layers[LAYER_EXPLODES],
+				delay = 0.1 + radius * 0.002,
+				doneCallback = function(){
+					explode.detach()
+				},
+			}
+			var explodeTime = explode.numFrames * explode.delay
+			// print "explodeTime: ${explodeTime}"
+			var lightTileRadius = radius * 3
+			var lightTileRadiusScale = 1.5 // dependence on light name
+			var lightRadius = lightTileRadius * lightTileRadiusScale * TILE_SIZE
+			var lightColor = Color(1.0, 0.95, 0.7)
+			var light = Light().attrs {
+				name = "light-01",
+				shadowColor = Color(0.01, 0.01, 0.01),
+				// color = lightColor,
+				radius = 0,
+				pos = explode.pos,
+			}
+			var accumTime = 0
+			var lightUpdateHandle = @game.addUpdate(function(ev){
+				accumTime += ev.dt
+				var t = accumTime / explodeTime
+				// print "light t: ${t}"
+				if(t > 1) t = 1
+				var radius = lightRadius
+				if(t < 0.05){
+					local t = t * (1 / 0.05)
+					radius = lightRadius * t
+				}
+				/* if(t < 0.5){
+					local t = t * (1 / 0.5)
+					light.shadowColor = Color(0.2, 0.2, 0.2) * t
+				}
+				if(t > 0.5){
+					local t = (1 - t) * (1 / 0.5)
+					light.shadowColor = Color(0.2, 0.2, 0.2) * t
+				} */
+				if(t > 0.95){
+					local t = (1 - t) * (1 / 0.05)
+					radius = lightRadius * t
+				}
+				light.radius = radius // * math.random(0.9, 1)
+				light.color = lightColor * math.random(0.9, 1)
+				light.pos = explode.pos + vec2(math.random(-0.1, 0.1) * TILE_SIZE, math.random(-0.1, 0.1) * TILE_SIZE)
+				if(accumTime > explodeTime){
+					@game.removeUpdate(lightUpdateHandle)
+					@game.removeLight(light)
+				}
+			})
+			@game.addLight(light)
+			
+			splayer.play {
+				sound = sprintf("explode-%02d", math.round(math.random(1, 3))),
+				fadeIn = 0.1,
+				fadeOut = 0.5,
+			}
+			/* @game.addTimeout(3.0, function(){
+				splayer.play {
+					sound = sprintf("rock-break-%02d", math.round(math.random(1, 4))),
+				}
+			}) */
 		})
 	},
 	
@@ -274,6 +367,7 @@ Tile = extends BaseTile {
 		@game.setFrontType(tx, ty, TILE_TYPE_EMPTY)
 		@game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
 		@game.removeTile(tx, ty)
+		@game.removeCrack(tx, ty, true)
 		@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
 		@parent = @game.layers[LAYER_FALLING_TILES]
 		@shadow.removeChildren()
@@ -289,6 +383,7 @@ Tile = extends BaseTile {
 				@game.setFrontType(tx, ty, frontType)
 				@game.setItemType(tx, ty, itemType)
 				@game.removeTile(tx, ty, true)
+				@game.removeCrack(tx, ty, true)
 				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
 				
 				var ent = @game.getTileEnt(tx, ty)
