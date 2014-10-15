@@ -66,13 +66,30 @@ Player = extends Entity {
 		super(game, name)
 		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
-		@_stamina = game.playerMaxStamina
+		@_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar
 		@staminaUpdateHandle = null
 		@startBreathing()
 		// @jumpTileX = @jumpTileY = null
 		@footSound = null
 		@painSound = null
+		
+		@lightTileRadius = 2.5
+		@lightTileRadiusScale = 1.5 // dependence on light name
+		@light = Light().attrs {
+			name = "light-01",
+			shadowColor = Color(0.1, 0.1, 0.1),
+			radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
+			color = Color(0.8, 1.0, 1.0),
+			// tileRadius = @lightTileRadius,
+			// parent = this,
+		}
+		@game.addLight(@light)
+		
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
+	},
+	
+	cleanup = function(){
+		@game.removeLight(@light)
 	},
 	
 	reset = function(){
@@ -303,9 +320,10 @@ Player = extends Entity {
 		var type = @game.getFrontType(tx, ty)
 		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 			var type = @game.getItemType(tx, ty)
-			if(type != ITEM_TYPE_EMPTY){
+			if(type != ITEM_TYPE_EMPTY && type != ITEM_TYPE_STAND_FLAME_01){
 				if(@game.takeTileItem(type, tx, ty)){
 					@game.removeTile(tx, ty, true)
+					// @game.removeCrack(tx, ty, true)
 					@game.updateTile(tx, ty)
 					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
 				}
@@ -328,5 +346,8 @@ Player = extends Entity {
 			// @moveDir = vec2(0, 0)
 		}
 		super()
+		
+		@light.pos = @pos + vec2(math.random(-0.02, 0.02) * TILE_SIZE, math.random(-0.02, 0.02) * TILE_SIZE)
+		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.97, 1.03)
 	},
 }
