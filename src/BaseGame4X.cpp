@@ -250,13 +250,15 @@ void BaseGame4X::updateLightLayer(BaseLightLayer * lightLayer)
 {
 	vec2 size = getSize();
 	if(!lightProg){
-#if defined _WIN32 && 0
 		Point displaySize = core::getDisplaySize();
 		float displayWidthScale = (float)displaySize.x / getWidth();
 		float displayHeightScale = (float)displaySize.y / getHeight();
 		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
+#if defined _WIN32 && 1
+		// keep max quality lightScale
 #else
-		lightScale = 1.0f / 2.0f;
+		// lightScale = 1.0f / 2.0f;
+		lightScale *= 1.0f / 2.0f;
 #endif
 
 		lightTextureWidth = (int)(size.x * lightScale);
