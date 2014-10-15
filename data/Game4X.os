@@ -1468,11 +1468,14 @@ Game4X = extends BaseGame4X {
 	updateView = function(){
 		var offs = -@view.pos / @view.scale
 		var startX, startY = @posToTile(offs)
+		var edge = 2
+		startX, startY = startX - edge-1, startY - edge-1
 		if(startX != @oldViewTilePosX || startY != @oldViewTilePosY){
 			@oldViewTilePosX, @oldViewTilePosY = startX, startY
 			
 			var endOffs = offs + @size / @view.scale
 			var endX, endY = @posToCeilTile(endOffs)
+			endX, endY = endX + edge, endY + edge
 			
 			@updateTiledmapViewport(startX, startY, endX, endY)
 			
