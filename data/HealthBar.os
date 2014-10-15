@@ -67,15 +67,25 @@ HealthBar = extends Actor {
 		@value = 1
 	},
 	
-	__get@width = function(){
-		return super()
-	},
-	
 	__set@width = function(value){
 		super(@border.width = value)
 		var saveValue = @_value
 		@_value = 0
 		@value = saveValue
+	},
+	
+	__set@height = function(value){
+		super(@border.height = @filler.height = value)
+		var guide = math.ceil(value/3)
+		@border.setGuides(guide, guide, guide, guide)
+		/* var saveValue = @_value
+		@_value = 0
+		@value = saveValue */
+	},
+	
+	__set@size = function(value){
+		@width = value.x
+		@height = value.y
 	},
 	
 	__get@value = function(){
