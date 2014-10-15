@@ -103,7 +103,7 @@ DragndropItems = extends Actor {
 				
 				@itemSelected.pos += delta
 				
-				var minOffs = SLOT_SIZE / 4
+				var minOffs = SLOT_SIZE / 2
 				var offs = @itemSelected.pos - @startTouchPos
 				if(math.abs(offs.x) > minOffs || math.abs(offs.y) > minOffs){	
 					@moved = true

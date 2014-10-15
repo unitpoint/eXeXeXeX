@@ -8,6 +8,8 @@ pack_dir.cmd
 
 tools/cache-osc
 tools/src
+tools/sounds
+tools/screen_blood_01
 
 data/ext
 data-ram

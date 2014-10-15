@@ -37,6 +37,7 @@ LAYER_DECALS = enumCount++
 LAYER_MONSTERS = enumCount++
 LAYER_PLAYER = enumCount++
 LAYER_FALLING_TILES = enumCount++
+LAYER_EXPLODES = enumCount++
 LAYER_COUNT = enumCount
 
 TILE_FADE_SIZE = 32
@@ -125,6 +126,7 @@ ITEM_TYPE_BOMB_01 = 32
 ITEM_TYPE_BOMB_02 = 33
 ITEM_TYPE_BOMB_03 = 34
 ITEM_TYPE_BOMB_04 = 35
+ITEM_TYPE_STAND_FLAME_01 = 40
 
 ITEMS_INFO = {
 	1 = {
@@ -284,6 +286,11 @@ ITEMS_INFO = {
 		damage = 5000,
 		useDistance = 3,
 	},
+	[ITEM_TYPE_STAND_FLAME_01] = {
+		strengthScale = 2.0,
+		price = 300,
+		// useDistance = 3,
+	},
 	/*
 	301 = {
 		staminaScale = 1.1,
@@ -367,6 +374,8 @@ Game4X = extends BaseGame4X {
 		@parent = stage
 		@size = stage.size
 		@centerViewPos = @size/2
+		
+		@blockSound = null
 		
 		@bg = Sprite().attrs {
 			resAnim = res.get("bg-start"),
@@ -747,22 +756,46 @@ Game4X = extends BaseGame4X {
 			}
 			screenBlood_03.scale = @height / screenBlood_03.height
 			
+			var screenBloodAnim_01 = Sprite().attrs {
+				resAnim = res.get("screen-blood-anim-01.png"),
+				priority = 1000,
+				// parent = this,
+				pivot = vec2(0.5, 0.5),
+				// pos = vec2(0, 0),
+				touchEnabled = false,
+			}
+			// screenBloodAnim_01.scale = @height / screenBlood_03.height
+			
 			var self = this
-			var screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03]
+			var screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03, screenBloodAnim_01]
 			
 			monster.attackCallback = function(){
 				// print "attackCallback"
-				for(var i = 0; i < #screenBloods; i++){
+				var screenBloods = screenBloods.clone()
+				for(var i = #screenBloods-1; i >= 0; i--){
 					if(screenBloods[i].parent){
+						delete screenBloods[i]
 						// print "screenBloods[${i}].parent found"
-						return
+						// return
 					}
 				}
-				if(math.random() < 0.9){
+				if(#screenBloods > 0 && math.random() < 0.9){
 					var b = randItem(screenBloods)
 					b.parent = self
 					b.opacity = 1
 					b.addTimeout(math.random(1, 3), function(){
+						if(b === screenBloodAnim_01){
+							b.pos = vec2(math.random(b.width, @width - b.width), math.random(b.height, @height - b.height))
+							b.addUpdate(0.1, function(){
+								if(b.resAnimFrameNum >= b.resAnim.totalFrames){
+									b.detach()
+								}else{
+									b.resAnimFrameNum = b.resAnimFrameNum + 1
+								}
+							})
+							return
+						}
+
 						b.addTweenAction {
 							duration = math.random(2, 4),
 							opacity = 0,
@@ -813,7 +846,19 @@ Game4X = extends BaseGame4X {
 		}
 		screenBlood_03.scale = @height / screenBlood_03.height
 		
-		@screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03]
+		@screenBloodAnim_01 = Sprite().attrs {
+			resAnim = res.get("screen-blood-anim-01"),
+			priority = 1000,
+			// parent = this,
+			pivot = vec2(0, 0),
+			// pos = vec2(0, 0),
+			touchEnabled = false,
+		}
+		var scale = @height / @screenBloodAnim_01.height * 0.7
+		@screenBloodAnim_01.scale = scale
+		@screenBloodAnim_01.size = @screenBloodAnim_01.size * scale
+		
+		@screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03, @screenBloodAnim_01]
 		
 		ColorRectSprite().attrs {
 			size = @size,
@@ -841,7 +886,38 @@ Game4X = extends BaseGame4X {
 		var b = randItem(allowBloods)
 		b.parent = this
 		b.opacity = 1
+		if(b === @screenBloodAnim_01){
+			b.pos = vec2(
+						math.random(b.width * 0.5, @width - b.width * 1.5), 
+						math.random(b.height * 0.5, @height - b.height * 1.5))
+			b.resAnimFrameNum = 0
+		}
 		b.addTimeout(math.random(1, 3), function(){
+			if(b === @screenBloodAnim_01){
+				var delay = 0.2
+				var handle = b.addUpdate(delay, function(){
+					// print "cur frame: ${b.resAnimFrameNum}"
+					var saveSize = b.size
+					b.resAnimFrameNum = (b.resAnimFrameNum + 1) % b.resAnim.totalFrames
+					b.size = saveSize
+					
+					if(b.resAnimFrameNum == 0){
+						b.removeUpdate(handle)
+						b.removeAction(action)
+						b.detach()
+					}else{
+						// var saveSize = b.size, b.scale
+						// b.size, b.scale = saveSize, saveScale
+					}
+				})
+				var action = b.addTweenAction {
+					duration = (b.resAnim.totalFrames * 1.0) * delay,
+					opacity = 0,
+					// detachTarget = true,
+				}
+				return
+			}
+
 			b.addTweenAction {
 				duration = math.random(2, 4),
 				opacity = 0,
@@ -850,31 +926,48 @@ Game4X = extends BaseGame4X {
 		})
 	},
 	
-	cleanupActor = function(actor){
-		"cleanup" in actor && actor.cleanup()
+	traverseActor = function(actor, methodName){
 		for(var _, child in actor.childrenList){
-			@cleanupActor(child)
+			@traverseActor(child, methodName)
 		}
+		methodName in actor && actor[methodName]()
+	},
+	
+	cleanupActor = function(actor){
+		@traverseActor(actor, "cleanup")
+	},
+	
+	pauseActor = function(actor){
+		@traverseActor(actor, "pause")
+	},
+	
+	resumeActor = function(actor){
+		@traverseActor(actor, "resume")
 	},
 	
 	closeModal = function(){
 		if(@modalView.visible){
-			@view.clock.resume()
+			@cleanupActor(@modalView)
 			@modalView.visible = false
 			@modalView.touchEnabled = false
-			@cleanupActor(@modalView)
 			@modalView.removeChildren()
 			var closeCallback = @modalView.closeCallback
-			closeCallback() // use callback's this instead of @modalView
 			@modalView.closeCallback = null
+
+			@view.clock.resume()
+			@resumeActor(@view)
+			
+			closeCallback() // use callback's this instead of @modalView
 		}
 	},
 	
 	openModal = function(window, closeCallback){
 		@closeModal()
+		@view.clock.pause()
+		@pauseActor(@view)
+		
 		@modalView.visible = true
 		@modalView.touchEnabled = true
-		@view.clock.pause()
 		
 		@moveJoystick.visible = false
 		@modalView.closeCallback = function(){
@@ -981,6 +1074,28 @@ Game4X = extends BaseGame4X {
 		@getTile(tx, ty).explodeItem()
 	},
 	
+	playBlockSound = function(){
+		if(!@blockSound){
+			var name = sprintf("block-%02d", math.round(math.random(1, 2)))
+			@blockSound = splayer.play {
+				sound = name,
+			}
+			@blockSound.doneCallback = function(){
+				@blockSound = null
+			}
+		}
+	},
+	
+	removeCrack = function(tx, ty, cleanup){
+		var key = "${tx}-${ty}"
+		var crack = @tileCracks[key]
+		if(crack){
+			delete @tileCracks[key]
+			crack.detach()
+			cleanup && @cleanupActor(crack) // .cleanup()
+		}
+	},
+	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			return
@@ -989,7 +1104,7 @@ Game4X = extends BaseGame4X {
 		var type = @getAutoFrontType(tx, ty)
 		var tileInfo = TILES_INFO[type]
 		if(!tileInfo.strength){
-			tile.pickByEnt(@player)
+			tile.pickByEnt(@player) || (Player.pickItemType && type != TILE_TYPE_EMPTY && @playBlockSound())
 			return
 		}
 		Player.pickItemType || return;
@@ -1000,7 +1115,7 @@ Game4X = extends BaseGame4X {
 				* (itemInfo.strengthScale || 1) / damage)
 		if(strength > 15){
 			print "tile ${tx}x${ty} too strength: ${strength}, deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
-			tile.pickByEnt(@player)
+			tile.pickByEnt(@player) || @playBlockSound()
 			return
 		}
 		var key = "${tx}-${ty}"
@@ -1038,7 +1153,10 @@ Game4X = extends BaseGame4X {
 		// print "tile ${tx}x${ty} strength: ${crack.damage+1}/${strength} , deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
-				delete @tileCracks[key]; crack.detach()
+				crack.detach()
+				delete @tileCracks[key]
+				@cleanupActor(crack)
+				
 				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
 				if(tile.itemType != ITEM_TYPE_EMPTY){
 					@takeTileItem(tile.itemType, tx, ty)
@@ -1230,16 +1348,17 @@ Game4X = extends BaseGame4X {
 		if(tile){
 			delete @tiles[key]
 			tile.detach()
-			cleanup && tile.cleanup()
+			cleanup && @cleanupActor(tile) // .cleanup()
 		}
 	},
 	
 	markTileVisibility = function(tile, visible){
 		if(!visible){
 			// print "DELETE tile ${tile.tileX}x${tile.tileY}, type: ${tile.tileType}, name: ${tile.resAnim.name}"
-			delete @tiles["${tile.tileX}-${tile.tileY}"]
-			tile.detach()
-			tile.cleanup()
+			// delete @tiles["${tile.tileX}-${tile.tileY}"]
+			// tile.detach()
+			// tile.cleanup()
+			@removeTile(tile.tileX, tile.tileY, true)
 		}
 	},
 	
@@ -1255,6 +1374,49 @@ Game4X = extends BaseGame4X {
 	},
 	
 	followPlayer = function(){
+		var viewScale = @view.scale
+		var idealPos = (@size / 2 / viewScale - @player.pos) * viewScale
+		var pos = @view.pos
+		pos = pos + (idealPos - pos) * math.min(1, 3.0 * @dt)
+		
+		var maxOffs = @size * 0.3 / viewScale
+		if(idealPos.x - pos.x > maxOffs.x){
+			pos.x = idealPos.x - maxOffs.x
+		}else if(idealPos.x - pos.x < -maxOffs.x){
+			pos.x = idealPos.x + maxOffs.x
+		}
+		if(idealPos.y - pos.y > maxOffs.y){
+			pos.y = idealPos.y - maxOffs.y
+		}else if(idealPos.y - pos.y < -maxOffs.y){
+			pos.y = idealPos.y + maxOffs.y
+		}
+		
+		/* if(@view.width <= @width){
+			pos.x = (@width - @view.width) / 2
+		}else
+		if(pos.x > -@view.startContentOffs.x){
+			pos.x = -@view.startContentOffs.x
+		}else if(pos.x + @view.width < @width){
+			pos.x = @width - @view.width
+		}
+		if(@view.height <= @height){
+			pos.y = (@height - @view.height) / 2
+		}else 
+		if(pos.y > -@view.startContentOffs.y){
+			pos.y = -@view.startContentOffs.y
+		}else if(pos.y + @view.height < @height){
+			pos.y = @height - @view.height
+		} */
+
+		// pos.x = math.round(pos.x) // * @view.scaleX)
+		// pos.y = math.round(pos.y) // * @view.scaleY)
+		
+		@view.pos = pos
+		@glowingTiles.pos = pos
+		
+		@updateView()
+	
+		/*
 		// if(!@following){
 			var tx, ty = @posToTile(@player.pos) // @player.tileX, @player.tileY
 			if(@followTileX != tx || @followTileY != ty){
@@ -1280,6 +1442,7 @@ Game4X = extends BaseGame4X {
 		
 		// @lightMask.pos = pos
 		// @lightMask.updateDark()
+		*/
 	},
 	
 	tileToCenterPos = function(x, y){
@@ -1313,12 +1476,19 @@ Game4X = extends BaseGame4X {
 			
 			@updateTiledmapViewport(startX, startY, endX, endY)
 			
-			for(var i, layer in @layers){
-				if(i == LAYER_TILES){
-					for(var _, tile in layer){
-						@markTileVisibility(tile, tile.time == @time)
-					}
+			/* for(var i = @numLights-1; i >= 0; i--){
+				var light = @getLight(i)
+				var startLightX, startLightY = @posToTile(light.pos - light.radius)
+				var endLightX, endLightY = @posToCeilTile(light.pos + light.radius)
+				if(startLightX <= endX && endLightX >= startX
+					&& startLightY <= endY && endLightY >= startY)
+				{
+					@updateTiledmapViewport(startLightX, startLightY, endLightX, endLightY)
 				}
+			} */
+			
+			for(var _, tile in @layers[LAYER_TILES]){
+				@markTileVisibility(tile, tile.time == @time)
 			}
 			// print "alive tiles: ${#@layers[LAYER_TILES]}"
 		}
@@ -1345,6 +1515,14 @@ Game4X = extends BaseGame4X {
 			var t = (math.sin(sprite.glowPhase + @time * 2 * sprite.glowTimeScale) + 1) / 2
 			sprite.opacity = 0.3 + 0.7 * t
 		}
+		for(var i = @numLights-1; i >= 0; i--){
+			var light = @getLight(i)
+			if("updateCallback" in light){
+				var updateCallback = light.updateCallback
+				updateCallback()
+			}
+		}
+		
 		@followPlayer()
 		@updateLightLayer(@lightLayer)
 	},
