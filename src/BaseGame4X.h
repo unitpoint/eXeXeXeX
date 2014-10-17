@@ -24,6 +24,8 @@ struct Tile
 #define LEVEL_BIN_DATA_PREFIX "level-layers:front:back:items."
 
 #define TILE_TYPE_EMPTY		0
+#define TILE_TYPE_LIGHT_ROCK_01 2
+#define TILE_TYPE_LIGHT_ROCK_02 3
 #define TILE_TYPE_DOOR_01	16
 #define TILE_TYPE_LADDERS	17
 #define TILE_TYPE_TRADE_STOCK	24
@@ -199,6 +201,8 @@ protected:
 
 	spNativeTexture lightTexture;
 	ShaderProgramGL * lightProg;
+	ShaderProgramGL * lightTileProg;
+	spSprite tempLightSprite;
 	
 	float lightScale;
 	int lightTextureWidth;
@@ -232,6 +236,11 @@ public:
 	{
 		_maxVertices = indices16.size()/3 * 2;
 		_vdecl = _driver->getVertexDeclaration(VERTEX_PCT2T2);
+	}
+
+	void setVertexDeclaration(bvertex_format vf)
+	{
+		_vdecl = _driver->getVertexDeclaration(vf);
 	}
 
 	bool begin(spNativeTexture rt, const Rect &viewport, const Vector4& clearColor)

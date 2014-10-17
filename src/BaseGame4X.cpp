@@ -326,6 +326,36 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 
 		lightProg = createShaderProgram(lightVS, lightFS, VERTEX_PCT2T2);
 
+		const char* lightTileVS = "\
+			varying vec4 result_color; \
+			varying vec2 result_uv; \
+			\
+			uniform mat4 projection; \
+			attribute vec2 position; \
+			attribute vec4 color; \
+			attribute vec2 uv; \
+			\
+			void main() {\
+				gl_Position = projection * vec4(position, 0.0, 1.0); \
+				result_color = color; \
+				result_uv = uv; \
+			}\
+			";
+
+		const char* lightTileFS = "\
+			varying vec4 result_color; \
+			varying vec2 result_uv; \
+			\
+			uniform sampler2D base_texture; \
+			\
+			void main() { \
+				vec4 base = texture2D(base_texture, result_uv); \
+				gl_FragColor = base * result_color; \
+			} \
+			";
+
+		lightTileProg = createShaderProgram(lightTileVS, lightTileFS, VERTEX_PCT2);
+
 		Diffuse df;
 		df.base = lightTexture;
 		
@@ -516,6 +546,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		r.begin(shadowMaskTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
+		r.setVertexDeclaration(VERTEX_POSITION);
 		IVideoDriver::instance->setShaderProgram(shadowMaskProg);
 		IVideoDriver::instance->setUniform("projection", &viewProj);
 		setUniformColor("color", light->shadowColor);
@@ -630,6 +661,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 
+		r.setVertexDeclaration(VERTEX_PCT2T2);
 		IVideoDriver::instance->setShaderProgram(lightProg);
 		IVideoDriver::instance->setUniformInt("base_texture", 0);
 		IVideoDriver::instance->setUniformInt("shadow_texture", 1);
@@ -666,6 +698,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
+	r.setVertexDeclaration(VERTEX_POSITION);
 	IVideoDriver::instance->setShaderProgram(shadowMaskProg);
 
 	// Matrix viewProj = r.getViewProjection();
@@ -719,6 +752,300 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				points[2] * lightScale, 
 				points[3] * lightScale);
 		// }
+	}
+	r.drawBatch();
+
+	// glEnable(GL_BLEND);
+	// glBlendFunc(GL_ONE, GL_ONE);
+
+	r.setVertexDeclaration(VERTEX_PCT2);
+	IVideoDriver::instance->setShaderProgram(lightTileProg);
+	IVideoDriver::instance->setUniformInt("base_texture", 0);
+
+	// Matrix viewProj = r.getViewProjection();
+	IVideoDriver::instance->setUniform("projection", &viewProj);
+
+	if(!tempLightSprite){
+		tempLightSprite = new Sprite();
+	}
+	Sprite * lightSprite = tempLightSprite.get();
+	float lightT = (sinf((float)getTimeMS() / 1000.0f * 0.5f) + 1.0f) / 2.0f;
+	lightSprite->setColor(colorFromInt(0xff5900) * (0.5f + 0.5f * lightT));
+	lightSprite->setBlendMode(blend_add);
+
+	RenderState rs;
+	rs.renderer = &r;
+	r.setBlendMode(blend_disabled);
+	IVideoDriver::instance->setState(IVideoDriver::STATE_BLEND, 0);
+
+	const float TILE_LIGHT_SIZE = TILE_SIZE * 0.5f;
+
+	it = activeTilesXY.begin();
+	for(; it != activeTilesXY.end(); ++it){
+		const Point& p = *it;
+		int x = p.x;
+		int y = p.y;
+		
+		struct Lib {
+			static bool isEmptyLightTile(BaseGame4X * game, int x, int y)
+			{
+				TileType type = game->getFrontType(x, y);
+				return type != TILE_TYPE_LIGHT_ROCK_01 && type != TILE_TYPE_LIGHT_ROCK_02;
+			}
+		};
+
+		TileType type = getFrontType(x, y);
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+			vec2 pos = tileToPos(x, y) - offs;
+			
+			AffineTransform t;
+			t.identity();
+			t.translate(pos);
+
+			rs.transform = t;
+
+			bool top = Lib::isEmptyLightTile(this, x, y-1);
+			bool bottom = Lib::isEmptyLightTile(this, x, y+1);
+			bool left = Lib::isEmptyLightTile(this, x-1, y);
+			bool right = Lib::isEmptyLightTile(this, x+1, y);
+			bool leftTop = Lib::isEmptyLightTile(this, x-1, y-1);
+			bool rightTop = Lib::isEmptyLightTile(this, x+1, y-1);
+			bool leftBottom = Lib::isEmptyLightTile(this, x-1, y+1);
+			bool rightBottom = Lib::isEmptyLightTile(this, x+1, y+1);
+
+			if(!top){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-left"),
+					angle = 90,
+					// pos = vec2(0, 0),
+					pivot = vec2(0, 1),
+					opacity = opacity,
+					parent = @shadow
+				} */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+				lightSprite->setRotationDegrees(90.0f);
+				lightSprite->setAnchor(0.0f, 1.0f);
+				lightSprite->setY(0);
+				float x = 0, size = TILE_SIZE;
+				if(!left){
+					x = TILE_LIGHT_SIZE;
+					size = size - TILE_LIGHT_SIZE;
+				}
+				if(!right){
+					size = size - TILE_LIGHT_SIZE;
+				}
+				lightSprite->setX(x);
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}		
+			if(!bottom){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-left"),
+					angle = -90,
+					// pos = vec2(0, 0),
+					y = TILE_SIZE,
+					pivot = vec2(0, 0),
+					opacity = opacity,
+					parent = @shadow
+				} */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+				lightSprite->setRotationDegrees(-90.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setY(TILE_SIZE);
+				float x = 0.0f, size = TILE_SIZE;
+				if(!left){
+					x = TILE_LIGHT_SIZE;
+					size = size - TILE_LIGHT_SIZE;
+				}
+				if(!right){
+					size = size - TILE_LIGHT_SIZE;
+				}
+				lightSprite->setX(x);
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(!left){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-left"),
+					angle = 0,
+					// pos = vec2(0, 0),
+					pivot = vec2(0, 0),
+					opacity = opacity,
+					parent = @shadow
+				} */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+				lightSprite->setRotationDegrees(0.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setX(0);
+				float y = 0.0f, size = TILE_SIZE;
+				if(!top){
+					y = TILE_LIGHT_SIZE;
+					size = size - TILE_LIGHT_SIZE;
+				}
+				if(!bottom){
+					size = size - TILE_LIGHT_SIZE;
+				}
+				lightSprite->setY(y);
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(!right){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-left"),
+					angle = 180,
+					// pos = vec2(0, 0),
+					x = TILE_SIZE,
+					pivot = vec2(0, 1),
+					opacity = opacity,
+					parent = @shadow
+				} */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+				lightSprite->setRotationDegrees(180.0f);
+				lightSprite->setAnchor(0.0f, 1.0f);
+				lightSprite->setX(TILE_SIZE);
+				float y = 0.0f, size = TILE_SIZE;
+				if(!top){
+					y = TILE_LIGHT_SIZE;
+					size = size - TILE_LIGHT_SIZE;
+				}
+				if(!bottom){
+					size = size - TILE_LIGHT_SIZE;
+				}
+				lightSprite->setY(y);
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(left && top && !leftTop){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-outer-left-top"),
+					// pivot = vec2(0, 0),
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+				lightSprite->setRotationDegrees(0.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(0.0f, 0.0f));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}else if(!left && !top){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-inner-left-top"),
+					// pivot = vec2(0, 0),
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+				lightSprite->setRotationDegrees(0.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(0.0f, 0.0f));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(right && top && !rightTop){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-outer-left-top"),
+					pivot = vec2(0, 0),
+					angle = 90,
+					x = TILE_SIZE,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+				lightSprite->setRotationDegrees(90.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}else if(!right && !top){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-inner-left-top"),
+					pivot = vec2(0, 0),
+					angle = 90,
+					x = TILE_SIZE,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+				lightSprite->setRotationDegrees(90.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(left && bottom && !leftBottom){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-outer-left-top"),
+					// pivot = vec2(0, 0),
+					y = TILE_SIZE,
+					angle = -90,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+				lightSprite->setRotationDegrees(-90.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}else if(!left && !bottom){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-inner-left-top"),
+					// pivot = vec2(0, 0),
+					y = TILE_SIZE,
+					angle = -90,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+				lightSprite->setRotationDegrees(-90.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+			if(right && bottom && !rightBottom){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-outer-left-top"),
+					// pivot = vec2(0, 0),
+					x = TILE_SIZE,
+					y = TILE_SIZE,
+					angle = 180,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+				lightSprite->setRotationDegrees(180.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}else if(!right && !bottom){
+				/* var fade = Sprite().attrs {
+					resAnim = res.get("tile-fade-inner-left-top"),
+					// pivot = vec2(0, 0),
+					x = TILE_SIZE,
+					y = TILE_SIZE,
+					angle = 180,
+					opacity = opacity,
+					parent = @shadow,
+				}
+				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+				lightSprite->setRotationDegrees(180.0f);
+				lightSprite->setAnchor(0.0f, 0.0f);
+				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
+				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+				lightSprite->render(rs);
+			}
+		}
 	}
 
 	r.end();
@@ -1227,6 +1554,7 @@ BaseGame4X::BaseGame4X()
 	tiledmapHeight = 0;
 	shadowMaskProg = NULL;
 	lightProg = NULL;
+	lightTileProg = NULL;
 	lightTextureWidth = 0;
 	lightTextureHeight = 0;
 	lightScale = 0.0f;
@@ -1241,6 +1569,7 @@ BaseGame4X::~BaseGame4X()
 	delete [] tiles;
 	delete shadowMaskProg;
 	delete lightProg;
+	delete lightTileProg;
 }
 
 Actor * BaseGame4X::getOSChild(const char * name)

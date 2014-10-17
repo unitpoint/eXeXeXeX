@@ -1,0 +1,1 @@
+..\..\..\tools\os compile-tmx.os %1 %2 %3 

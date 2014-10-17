@@ -32,7 +32,11 @@
 		<image file="tile-fade-outer-left-top.png" />
 		<image file="tile-fade-inner-left-top.png" />
 		<image file="tile-fade-left.png" />
-
+		
+		<image file="tile-light-outer-left-top.png" />
+		<image file="tile-light-inner-left-top.png" />
+		<image file="tile-light-left.png" />
+		
 		<image file="hand-finger.png" />
 		<image file="touch-circle.png" />
 		<image file="panel.png" />
