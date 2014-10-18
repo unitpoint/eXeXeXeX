@@ -23,12 +23,13 @@ StandFlame = extends Actor {
 		@touchEnabled = false
 		@touchChildrenEnabled = false
 		
-		var lightTileRadius = 3
+		var lightTileRadius = 2
 		var lightTileRadiusScale = 1.5 // dependence on light name
 		var lightRadius = lightTileRadius * lightTileRadiusScale * TILE_SIZE
-		var lightColor = Color(1.0, 0.95, 0.7)
+		// var lightColor = Color(1.0, 0.95, 0.7)
+		var lightColor = Color(1, 1, 1)
 		@light = Light().attrs {
-			name = "light-01",
+			name = "light-03",
 			shadowColor = Color(0.2, 0.2, 0.2),
 			color = lightColor,
 			radius = lightRadius,
