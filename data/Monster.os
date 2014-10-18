@@ -97,6 +97,21 @@ Monster = extends Entity {
 		@healthRecoveryTime || @healthRecoveryTime = @game.time + @attackLevel * 15
 	},
 	
+	getState = function(){
+		var state = super()
+		state.patrolArea = @patrolArea
+		return state
+	},
+	
+	loadState = function(state){
+		super(state)
+		@patrolArea = {
+			start = vec2(state.patrolArea.start.x, state.patrolArea.start.y),
+			end = vec2(state.patrolArea.end.x, state.patrolArea.end.y),
+		}
+		print "load patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
+	},
+
 	createPatrolAreaIfNecessary = function(){
 		if(@fly){
 			@patrolArea || @{
@@ -113,7 +128,7 @@ Monster = extends Entity {
 			if(tx < @patrolArea.start.x || tx > @patrolArea.end.x
 				|| ty < @patrolArea.start.y || ty > @patrolArea.end.y)
 			{
-				// print "delete patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
+				print "delete patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
 				@patrolArea = null
 			}else{
 				return
@@ -158,7 +173,7 @@ Monster = extends Entity {
 				}
 			}
 		}
-		// print "create patrol area:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
+		print "create patrol area:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
 	},
 	
 	// debugCheckMoveDir = true,

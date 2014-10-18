@@ -207,13 +207,28 @@ Backpack = extends Actor {
 		}
 	},
 	
+	getState = function(){
+		return {
+			cols = Backpack.cols,
+			rows = Backpack.rows,
+			pack = Backpack.pack.getState(),
+		}
+	},
+	
+	loadState = function(state){
+		Backpack.cols = math.max(Backpack.cols, toNumber(state.cols))
+		Backpack.rows = math.max(Backpack.rows, toNumber(state.rows))
+		Backpack.pack = ItemsPack(Backpack.cols * Backpack.rows)
+		Backpack.pack.loadState(state.pack)
+	},
+	
 	initPack = function(){
-		@cols, @rows = 3, 2
-		@pack = ItemsPack(@cols * @rows)
+		Backpack.cols, Backpack.rows = 3, 2
+		Backpack.pack = ItemsPack(Backpack.cols * Backpack.rows)
 		
 		for(var i, type in [1, 3, 6]){
 		// for(var i, type in [1, 3, 11, 13]){
-			@pack.items[i] = {type = type, count = 1}
+			Backpack.pack.items[i] = {type = type, count = 1}
 		}
 		
 		/* for(var type, item in ITEMS_INFO){

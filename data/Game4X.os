@@ -64,6 +64,7 @@ GAME_PRIORITY_HUD = 5
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
 GAME_PRIORITY_DRAGNDROP = 6
+GAME_PRIORITY_BLOOD = 7
 GAME_PRIORITY_FADEIN = 10
 
 HUD_ICON_SIZE = 80
@@ -227,8 +228,8 @@ ITEMS_INFO = {
 	},
 	[ITEM_TYPE_LADDERS] = {
 		strengthScale = 1.1,
-		price = 20,
-		useDistance = 1,
+		price = 10,
+		// useDistance = 1,
 	},
 	[ITEM_TYPE_STAMINA] = {
 		addMaxStamina = 25,
@@ -289,6 +290,7 @@ ITEMS_INFO = {
 	[ITEM_TYPE_STAND_FLAME_01] = {
 		strengthScale = 2.0,
 		price = 300,
+		canBuy = false,
 		// useDistance = 3,
 	},
 	/*
@@ -447,15 +449,17 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosY = -1,
 		player = null,
 		playerMaxStamina = 300,
-		npcList = {},
+		// npcList = {},
 		lightMask = null,
 		following = null,
 		followTileX = -1,
 		followTileY = -1,
 	},
 	
-	__construct = function(){
+	__construct = function(saveSlotNum, levelNum){
 		super()
+		@saveSlotNum = saveSlotNum || 0
+		@levelNum = levelNum || 0
 		@parent = stage
 		@size = stage.size
 		@centerViewPos = @size/2
@@ -577,6 +581,14 @@ Game4X = extends BaseGame4X {
 			onClicked = @openBackpack.bind(this),
 			parent = @hud,
 		}
+		hudIcons[] = HudIcon("save").attrs {
+			onClicked = @saveGame.bind(this),
+			parent = @hud,
+		}
+		hudIcons[] = HudIcon("load").attrs {
+			onClicked = @reloadGame.bind(this),
+			parent = @hud,
+		}
 		var hudIconY = @hudStamina.x + @hudStamina.height + HUD_ICON_INDENT
 		for(var _, hudIcon in hudIcons){
 			hudIcon.x = 2
@@ -612,24 +624,6 @@ Game4X = extends BaseGame4X {
 			}
 		}
 		
-		/*
-		@panel = Box9Sprite().attrs {
-			resAnim = res.get("panel"),
-			pos = vec2(100, 100),
-			size = vec2(500, 400),
-			opacity = 0.8,
-			priority = 17,
-			parent = this,
-		}
-		@panel.setGuides(10, 10, 10, 10)
-		*/
-		
-		/*
-		@backpack = Backpack()
-		@backpack.parent = @hud
-		@backpack.pos = (@size - @backpack.size) / 2
-		*/
-		
 		@moveJoystick = Joystick().attrs {
 			// priority = GAME_PRIORITY_JOYSTICK,
 			parent = @hud,
@@ -638,6 +632,7 @@ Game4X = extends BaseGame4X {
 		}
 		
 		@keyPressed = {}
+		@keyEventDownId = @keyEventUpId = null
 		if(PLATFORM == "windows"){
 			var moveJoystickActivated = false
 			var keyboardEvent = function(ev){
@@ -683,30 +678,11 @@ Game4X = extends BaseGame4X {
 					@moveJoystick.touchEnabled = true
 				}
 			}
-			stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
-			stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
+			@keyEventDownId = stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
+			@keyEventUpId = stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
 		}
 
 		@addUpdate(@update.bind(this))
-		// @addUpdate(0.5, @checkFalling.bind(this))
-		
-		/* var style = TextStyle()
-		style.resFont = res.get("big")
-		style.vAlign = TextStyle.VALIGN_BOTTOM
-		style.hAlign = TextStyle.HALIGN_CENTER */
-		
-		/* var text = TextField().attrs {
-			resFont = res.get("normal"),
-			vAlign = TextStyle.VALIGN_BOTTOM,
-			hAlign = TextStyle.HALIGN_CENTER,
-			// style = style,
-			text = "Test text",
-			// pivot = vec2(0.5, 0.5),
-			pos = vec2(@width/2, @height),
-			priority = 20,
-			parent = this,
-		} */
-
 		
 		@addEventListener(TouchEvent.CLICK, function(ev){
 			if(ev.target is BaseTile){
@@ -715,7 +691,7 @@ Game4X = extends BaseGame4X {
 			}
 			if(ev.target is NPC){
 				var npc = ev.target
-				if(npc.type == "trader"){
+				if(npc.typeName == "trader"){
 					@openShop()
 				}
 				return
@@ -734,202 +710,62 @@ Game4X = extends BaseGame4X {
 			// var touch = ev.localPosition
 		})
 		
-		if(false){
-			var draging = null
+		@dragging = null
+		if(true){
 			@addEventListener(TouchEvent.START, function(ev){
-				draging = ev.localPosition
+				if(ev.target is BaseTile){
+					@dragging = ev.localPosition
+				}
 			})
 			
 			@addEventListener(TouchEvent.MOVE, function(ev){
-				if(draging){
-					var offs = ev.localPosition - draging
+				if(@dragging){
+					var offs = ev.localPosition - @dragging
 					@view.pos += offs
 					@glowingTiles.pos = @view.pos
-					draging = ev.localPosition
+					@dragging = ev.localPosition
 				}
 			})
 			
 			@addEventListener(TouchEvent.END, function(ev){
-				draging = null
+				@dragging = null
 			})
 		}
 		
-		if(false){
-		
-			for(var i = 0; i < 10; i++){
-				Sprite().attrs {
-					resAnim = res.get("tile-01"),
-					pivot = vec2(0.5, 0.5),
-					pos = vec2(i*128, 300+128),
-					parent = this,
-				}
-				Sprite().attrs {
-					resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
-					pivot = vec2(0.5, 0.5),
-					pos = vec2(i*128, 300+128*2),
-					parent = this,
-				}
-				Sprite().attrs {
-					resAnim = res.get(sprintf("tile-%02d", math.random(2, 4))),
-					pivot = vec2(0.5, 0.5),
-					pos = vec2(i*128, 300+128*3),
-					parent = this,
-				}
-			}
-
-			// lightMask.animateLight(1.5)
-			/* lightMask.addTimeout(0.0, function(){
-				var scale = 2.5
-				lightMask.addTweenAction {
-					duration = 3.0,
-					scale = scale,
-					ease = Ease.QUINT_IN,
-					doneCallback = function(){
-						lightMask.animateLight(scale)
-					}
-				}
-			}) */
-			/* lightMask.addAction(RepeatForeverAction(SequenceAction(
-				TweenAction {
-					duration = 2.0,
-					scale = 2.8,
-					ease = Ease.CIRC_IN_OUT,
-				},
-				TweenAction {
-					duration = 2.0,
-					scale = 1.0,
-					ease = Ease.CIRC_IN_OUT,
-				},
-			))) */
-
-			var monster = Monster("monster-01").attrs {
-				pos = player.pos - vec2(128*2, 0),
-				parent = this,
-			}
-			// monster.breathing(2)
-			
-			var monster = Monster("monster-03").attrs {
-				pos = player.pos + vec2(128, 0),
-				parent = this,
-			}
-			
-			var screenBlood_01 = Sprite().attrs {
-				resAnim = res.get("screen-blood-scratch"),
-				priority = 1000,
-				// parent = this,
-				pivot = vec2(0.5, 0.5),
-				pos = @size / 2,
-				touchEnabled = false,
-			}
-			screenBlood_01.scale = @width / screenBlood_01.width
-			
-			var screenBlood_02 = Sprite().attrs {
-				resAnim = res.get("screen-blood-breaks-01"),
-				priority = 1000,
-				// parent = this,
-				pivot = vec2(0, 0),
-				pos = vec2(0, 0),
-				touchEnabled = false,
-			}
-			screenBlood_02.scale = @height / screenBlood_02.height
-			
-			var screenBlood_03 = Sprite().attrs {
-				resAnim = res.get("screen-blood-breaks-02"),
-				priority = 1000,
-				// parent = this,
-				pivot = vec2(0, 0),
-				pos = vec2(0, 0),
-				touchEnabled = false,
-			}
-			screenBlood_03.scale = @height / screenBlood_03.height
-			
-			var screenBloodAnim_01 = Sprite().attrs {
-				resAnim = res.get("screen-blood-anim-01.png"),
-				priority = 1000,
-				// parent = this,
-				pivot = vec2(0.5, 0.5),
-				// pos = vec2(0, 0),
-				touchEnabled = false,
-			}
-			// screenBloodAnim_01.scale = @height / screenBlood_03.height
-			
-			var self = this
-			var screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03, screenBloodAnim_01]
-			
-			monster.attackCallback = function(){
-				// print "attackCallback"
-				var screenBloods = screenBloods.clone()
-				for(var i = #screenBloods-1; i >= 0; i--){
-					if(screenBloods[i].parent){
-						delete screenBloods[i]
-						// print "screenBloods[${i}].parent found"
-						// return
-					}
-				}
-				if(#screenBloods > 0 && math.random() < 0.9){
-					var b = randItem(screenBloods)
-					b.parent = self
-					b.opacity = 1
-					b.addTimeout(math.random(1, 3), function(){
-						if(b === screenBloodAnim_01){
-							b.pos = vec2(math.random(b.width, @width - b.width), math.random(b.height, @height - b.height))
-							b.addUpdate(0.1, function(){
-								if(b.resAnimFrameNum >= b.resAnim.totalFrames){
-									b.detach()
-								}else{
-									b.resAnimFrameNum = b.resAnimFrameNum + 1
-								}
-							})
-							return
-						}
-
-						b.addTweenAction {
-							duration = math.random(2, 4),
-							opacity = 0,
-							detachTarget = true,
-						}
-					})
-				}
-			}
-			
-			var attack = function(){
-				player.attack(function(){
-					monster.attack(-1, attack)
-				})
-			}
-			attack()
-		
-		} // if(false)
-		
-		@initLevel(0)
+		@hudBlood = Actor().attrs {
+			priority = GAME_PRIORITY_BLOOD,
+			touchEnabled = false,
+			touchChildrenEnabled = false,
+			parent = this,
+		}
 		
 		var screenBlood_01 = Sprite().attrs {
 			resAnim = res.get("screen-blood-scratch"),
-			priority = 1000,
+			// priority = 1000,
 			// parent = this,
 			pivot = vec2(0.5, 0.5),
 			pos = @size / 2,
-			touchEnabled = false,
+			// touchEnabled = false,
 		}
 		screenBlood_01.scale = @width / screenBlood_01.width
 		
 		var screenBlood_02 = Sprite().attrs {
 			resAnim = res.get("screen-blood-breaks-01"),
-			priority = 1000,
+			// priority = 1000,
 			// parent = this,
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			touchEnabled = false,
+			// touchEnabled = false,
 		}
 		screenBlood_02.scale = @height / screenBlood_02.height
 		
 		var screenBlood_03 = Sprite().attrs {
 			resAnim = res.get("screen-blood-breaks-02"),
-			priority = 1000,
+			// priority = 1000,
 			// parent = this,
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			touchEnabled = false,
+			// touchEnabled = false,
 		}
 		screenBlood_03.scale = @height / screenBlood_03.height
 		
@@ -939,7 +775,7 @@ Game4X = extends BaseGame4X {
 			// parent = this,
 			pivot = vec2(0, 0),
 			// pos = vec2(0, 0),
-			touchEnabled = false,
+			// touchEnabled = false,
 		}
 		var scale = @height / @screenBloodAnim_01.height * 0.7
 		@screenBloodAnim_01.scale = scale
@@ -958,6 +794,8 @@ Game4X = extends BaseGame4X {
 			opacity = 0,
 			detachTarget = true,
 		}
+		
+		@initLevel()
 	},
 	
 	createBlood = function(value){
@@ -971,7 +809,7 @@ Game4X = extends BaseGame4X {
 			return
 		}
 		var b = randItem(allowBloods)
-		b.parent = this
+		b.parent = @hudBlood
 		b.opacity = 1
 		if(b === @screenBloodAnim_01){
 			b.pos = vec2(
@@ -1095,12 +933,19 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
-	initLevel = function(num){
+	initLevel = function(){
 		var filenames = require("levels")
 		var names = filenames.keys
-		var filename = filenames[names[@levelNum = num % #names]]
-		var level = json.decode(File.readContents(filename))
-		var data = zlib.gzuncompress(File.readContents(filename.replace(".json", ".bin")))
+		var filename = filenames[names[@levelNum = @levelNum % #names]]
+		
+		var jsonData = File.readContents(filename)
+		@levelJsonCRC = hashlib.crc32(jsonData)
+		var level = json.decode(jsonData)
+		
+		var data = File.readContents(filename.replace(".json", ".bin"))
+		@levelDataCRC = hashlib.crc32(data)
+		var data = zlib.gzuncompress(data)
+		
 		var dataPrefix = LEVEL_BIN_DATA_PREFIX
 		print "level: "..typeOf(level)
 		print "data len: ${#data}, prefix: ${data.sub(0, #dataPrefix) == dataPrefix}"
@@ -1111,10 +956,136 @@ Game4X = extends BaseGame4X {
 		@tiledmapHeight = level.height
 		@tiledmapFloor = level.floor
 		
-		@registerLevelInfo(@tiledmapWidth, @tiledmapHeight, data)
+		// load
+		var saveJsonFilename = "save-${@levelNum}-${@saveSlotNum}.json"
+		var loaded = File.exists(saveJsonFilename) && @{
+			var notLoaded = function(str){
+				print "[saved game (${saveJsonFilename}) error] ${str}"
+				return false
+			}
+			try{
+				var levelSave = json.decode(File.readContents(saveJsonFilename))
+				levelSave.jsonCRC == @levelJsonCRC || return notLoaded("jsonCRC")
+				levelSave.dataCRC == @levelDataCRC || return notLoaded("dataCRC")
+				
+				var data = zlib.gzuncompress(File.readContents(saveJsonFilename.replace(".json", ".bin")))
+				var dataPrefix = LEVEL_BIN_DATA_PREFIX
+				print "levelSave: "..typeOf(levelSave)
+				print "data len: ${#data}, prefix: ${data.sub(0, #dataPrefix) == dataPrefix}"
+				data.sub(0, #dataPrefix) == dataPrefix || return notLoaded("dataPrefix") // throw "save level data corrupted"
+				// data = data.sub(#dataPrefix)
+				
+				@tiledmapWidth == levelSave.width || return notLoaded("tiledmapWidth") // throw "save level corrupted"
+				@tiledmapHeight == levelSave.height || return notLoaded("tiledmapHeight") // throw "save level corrupted"
+				@tiledmapFloor == levelSave.floor || return notLoaded("tiledmapFloor") // throw "save level corrupted"
+				
+				@loadGameState(levelSave.state)
+				@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
+				for(var _, obj in levelSave.groups.entities.objects){
+					@addTiledmapEntity(obj, obj.state) // .x, obj.y, obj.gid, obj.type)
+				}
+				print "game level is loaded"
+				return true
+			}catch(e){
+				print "exception: ${e.message}"
+				printBackTrace(e.trace)
+				return notLoaded(e.message)
+			}
+		}
+		if(!loaded){
+			@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
+			for(var _, obj in level.groups.entities.objects){
+				@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
+			}
+			print "game level is initialized"
+		}
+	},
+	
+	saveGame = function(){
+		var saveJsonFilename = "save-${@levelNum}-${@saveSlotNum}.json"
 		
-		for(var _, obj in level.groups.entities.objects){
-			@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
+		var levelSave = {
+			jsonCRC = @levelJsonCRC,
+			dataCRC = @levelDataCRC,
+			width = @tiledmapWidth,
+			height = @tiledmapHeight,
+			floor = @tiledmapFloor,
+			state = @getGameState(),
+			groups = {
+				entities = {
+					objects = [],
+				},
+			},
+		}
+		
+		var objects = levelSave.groups.entities.objects
+		for(var _, ent in @tileEnt){
+			var obj = {
+				type = ent.typeName,
+				gid = ent.type,
+				// x = ent.tileX,
+				// y = ent.tileY,
+				state = ent.getState(),
+			}
+			objects[] = obj
+		}
+		File.writeContents(saveJsonFilename, json.encode(levelSave))
+		
+		var data = zlib.gzcompress(@retrieveLevelData())
+		File.writeContents(saveJsonFilename.replace(".json", ".bin"), data)
+	},
+	
+	reloadGame = function(){
+		@touchEnabled = false
+		@touchChildrenEnabled = false
+		ColorRectSprite().attrs {
+			size = @size,
+			color = Color.BLACK,
+			priority = GAME_PRIORITY_FADEIN,
+			opacity = 1,
+			parent = this,
+		}.addTweenAction {
+			duration = 1.0,
+			opacity = 1,
+			// detachTarget = true,
+			doneCallback = function(){
+				var saveSlotNum, levelNum = @saveSlotNum, @levelNum
+				@cleanupActor(this)
+				Game4X(saveSlotNum, levelNum)
+			},
+		}		
+	},
+	
+	cleanup = function(){
+		print "begin game cleanup, max alloc: ${gc.allocatedBytes}, used: ${gc.usedBytes}"
+		@keyEventDownId && stage.removeEventListener(@keyEventDownId)
+		@keyEventUpId && stage.removeEventListener(@keyEventUpId)
+		@removeChildren()
+		@detach()
+		@clear()
+		gc.full()
+		print "end game cleanup, max alloc: ${gc.allocatedBytes}, used: ${gc.usedBytes}"
+	},
+	
+	getGameState = function(){
+		var state = {
+			maxStamina = @playerMaxStamina,
+			player = Player.getPlayerState(),
+			hudSlots = {},
+		}
+		for(var hudSlotNum, slot in @hudSlots){
+			state.hudSlots[hudSlotNum] = slot.type
+		}
+		return state
+	},
+	
+	loadGameState = function(state){
+		@playerMaxStamina = math.max(@playerMaxStamina, toNumber(state.maxStamina))
+		Player.loadPlayerState(state.player)
+		for(var hudSlotNum, type in state.hudSlots){
+			if(hudSlotNum >= 0 && hudSlotNum < #@hudSlots){
+				@hudSlots[hudSlotNum].type = type
+			}
 		}
 	},
 
@@ -1250,7 +1221,7 @@ Game4X = extends BaseGame4X {
 				}
 				@removeTile(tx, ty, true)
 				@updateTile(tx, ty)
-				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
+				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
@@ -1366,25 +1337,28 @@ Game4X = extends BaseGame4X {
 		tile.time = @time
 	},
 	
-	updateTiledmapShadowViewport = function(ax, ay, bx, by){
+	updateTiledmapShadowViewport = function(ax, ay, bx, by, recreate){
 		for(var y = ay; y <= by; y++){
 			for(var x = ax; x <= bx; x++){
 				var tile = @getTile(x, y)
-				tile.updateShadow()
+				tile.updateShadow(recreate)
 			}
 		}
 	},
 	
-	updateTiledmapViewport = function(ax, ay, bx, by){
+	updateTiledmapViewport = function(ax, ay, bx, by, recreate){
 		for(var y = ay; y <= by; y++){
 			for(var x = ax; x <= bx; x++){
 				@updateTile(x, y)
 			}
 		}
-		@updateTiledmapShadowViewport(ax, ay, bx, by)
+		@updateTiledmapShadowViewport(ax, ay, bx, by, recreate)
 	},
 	
 	playerDead = function(){
+		@reloadGame()
+		return
+	
 		Player.pickItemType = null
 		// Player.laddersItemType = null
 		Backpack.pack.items = {}
@@ -1401,30 +1375,42 @@ Game4X = extends BaseGame4X {
 		@centerViewToTile(Player.saveTileX, Player.saveTileY)
 	},
 	
-	addTiledmapEntity = function(obj){ // x, y, type, isPlayer){
+	addTiledmapEntity = function(obj, state){ // x, y, type, isPlayer){
 		if(obj.type == "player"){
 			@player && throw "player is already exist"
 			@player = Player(this, obj.gid)
-			@initEntTile(@player, obj.x, obj.y)
-			@centerViewToTile(obj.x, obj.y)
-			
 			Player.saveName = obj.gid
-			Player.saveTileX = obj.x
-			Player.saveTileY = obj.y
-			return
+			if(state){
+				@player.loadState(state)
+			}else{
+				@initEntTile(@player, obj.x, obj.y)
+			}
+			Player.saveTileX = @player.tileX
+			Player.saveTileY = @player.tileY
+			@centerViewToTile(@player.tileX, @player.tileY)
+			return @player
 		}
 		if(obj.type == "trader"){
 			var npc = NPC(this, obj.gid, obj.type)
-			@npcList[npc] = npc
-			@initEntTile(npc, obj.x, obj.y)
-			npc.createPatrolAreaIfNecessary()
-			return
+			// @npcList[npc] = npc
+			if(state){
+				npc.loadState(state)
+			}else{
+				@initEntTile(npc, obj.x, obj.y)
+				npc.createPatrolAreaIfNecessary()
+			}
+			@centerViewToTile(obj.x, obj.y)
+			return npc
 		}
 		if(obj.gid > 0){
 			var monster = Monster(this, obj.gid)
-			@initEntTile(monster, obj.x, obj.y)
-			monster.createPatrolAreaIfNecessary()
-			return
+			if(state){
+				monster.loadState(state)
+			}else{
+				@initEntTile(monster, obj.x, obj.y)
+				monster.createPatrolAreaIfNecessary()
+			}
+			return monster
 		}
 		throw "unknown entity tiledmap type: ${obj.gid}"
 	},

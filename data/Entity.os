@@ -67,13 +67,27 @@ Entity = extends Actor {
 		fly = false,
 	},
 	
+	getState = function(){
+		return {
+			tileX = @tileX,
+			tileY = @tileY,
+		}
+	},
+	
+	loadState = function(state){
+		// @game.unsetEntTile(this)
+		@game.initEntTile(this, state.tileX, state.tileY)
+	},
+	
 	__construct = function(game, type){
 		super()
+		@cull = true
 		@game = game
 		@type = type
+		@typeName = null
 		@name = game.getResName("ent", type)
 		@fly = ENTITIES_INFO[type].fly
-		@attackValue = ENTITIES_INFO[	type].attack || 25
+		@attackValue = ENTITIES_INFO[type].attack || 25
 		@healthValue = ENTITIES_INFO[type].health || @attackValue
 		@damageValue = 0
 		

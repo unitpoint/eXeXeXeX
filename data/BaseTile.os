@@ -34,6 +34,7 @@
 BaseTile = extends Actor {
 	__construct = function(game, x, y){
 		super()
+		@cull = true
 		@game = game
 		@tileX = x
 		@tileY = y

@@ -26,6 +26,7 @@
 		
 		<image file="light-01.png" />
 		<image file="light-02.png" />
+		<image file="light-03.png" />
 		<image file="light-mask.png" />
 		<image file="light-fill.png" />
 		
@@ -46,6 +47,8 @@
 		<image file="slot-arrow-right.png" />
 		<image file="slot-arrow-left.png" />
 		<image file="backpack.png" />
+		<image file="save.png" />
+		<image file="load.png" />
 		<image file="stamina-border.png" />
 		<image file="stamina-monster.png" />
 		<image file="white.png" />

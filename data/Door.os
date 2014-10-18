@@ -111,7 +111,7 @@ Door = extends Tile {
 			},
 			doneCallback = function(){
 				@back.visible = true
-				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1)
+				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1, true)
 				@handleAction = @front.addTweenAction {
 					duration = 1.0, // (1 - @openState) * 1.0,
 					y = @openY,
@@ -157,7 +157,7 @@ Door = extends Tile {
 			doneCallback = function(){
 				@back.visible = false
 				@state = @STATE_CLOSED
-				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1)
+				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1, true)
 				@handleAction = @handle.addTweenAction {
 					duration = 1.0,
 					angle = 0,

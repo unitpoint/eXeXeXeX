@@ -1,7 +1,7 @@
 NPC = extends Monster {
-	__construct = function(game, name, type){
-		super(game, name)
-		@type = type
+	__construct = function(game, type, typeName){
+		super(game, type)
+		@typeName = typeName
 		@warnOnMove = false
 	},
 	

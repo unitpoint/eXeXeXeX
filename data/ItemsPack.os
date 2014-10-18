@@ -35,7 +35,31 @@ ItemsPack = extends Object {
 	__object = {
 		items = {}, // by slot num
 		numItemsByType = {},
-		// numSlots = 0,
+		numSlots = 0,
+	},
+	
+	getState = function(){
+		return @items
+	},
+	
+	loadState = function(state){
+		@items = {}
+		for(var slotNum, item in state){
+			if(slotNum < 0 || slotNum >= @numSlots){
+				print "error slot num: ${slotNum}, count: ${@numSlots}"
+				continue
+			}
+			item = {
+				type = numberOf(item.type), // || throw "empty item type: ${item}",
+				count = math.max(1, numberOf(item.count) || 1),
+			}
+			if(item.type in ITEMS_INFO == false){
+				print "error item type: ${item}"
+				continue
+			}
+			@items[slotNum] = item
+		}
+		@updateNumItems()
 	},
 	
 	__construct = function(numSlots){
@@ -45,6 +69,10 @@ ItemsPack = extends Object {
 	
 	hasItem = function(type){
 		return !!@numItemsByType[type]
+	},
+	
+	hasItems = function(type, count){
+		return @numItemsByType[type] >= (count || 1)
 	},
 	
 	addItem = function(type, count){
