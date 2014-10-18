@@ -262,7 +262,7 @@ Tile = extends BaseTile {
 					}
 				}
 			}
-			@game.updateTiledmapViewport(ax-1, ay-1, bx+1, by+1)
+			@game.updateTiledmapViewport(ax-1, ay-1, bx+1, by+1, true)
 			
 			var explode = AnimSprite(sprintf("explode-%02d", @itemType % 2 + 1).."-%02d", 16).attrs {
 				pivot = vec2(0.5, 0.5),
@@ -368,7 +368,7 @@ Tile = extends BaseTile {
 		@game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
 		@game.removeTile(tx, ty)
 		@game.removeCrack(tx, ty, true)
-		@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
+		@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1, true)
 		@parent = @game.layers[LAYER_FALLING_TILES]
 		@shadow.removeChildren()
 		@fallingInProgress = @addTweenAction {
@@ -384,7 +384,7 @@ Tile = extends BaseTile {
 				@game.setItemType(tx, ty, itemType)
 				@game.removeTile(tx, ty, true)
 				@game.removeCrack(tx, ty, true)
-				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1)
+				@game.updateTiledmapViewport(tx-1, ty-1, tx+1, ty+1, true)
 				
 				var ent = @game.getTileEnt(tx, ty)
 				ent.die()
@@ -449,8 +449,13 @@ Tile = extends BaseTile {
 		return tile.isEmpty
 	},
 	
-	updateShadow = function(){
+	resetShadow = function(){
 		@shadow.removeChildren()
+	},
+	
+	updateShadow = function(recreate){
+		recreate && @shadow.removeChildren()
+		@shadow.firstChild && return;
 		
 		var x, y = @tileX, @tileY
 		@getIsEmpty(x, y) || return;
