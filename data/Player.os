@@ -61,9 +61,29 @@ Player = extends Entity {
 	saveTileX = null,
 	saveTileY = null,
 	saveName = null,
+	
+	getPlayerState = function(){
+		return {
+			bullets = Player.bullets,
+			pickItemType = Player.pickItemType,
+			pickItemUsage = Player.pickItemUsage,
+			backpack = Backpack.getState(),
+		}
+	},
+	
+	loadPlayerState = function(state){
+		Player.bullets = math.max(Player.bullets, toNumber(state.player.bullets))
+		Player.pickItemType = numberOf(state.player.pickItemType)
+		if(Player.pickItemType in PICK_DAMAGE_ITEMS_INFO == false){
+			Player.pickItemType = null
+		}
+		Player.pickItemUsage = arrayOf(state.player.pickItemUsage) || {}
+		Backpack.loadState(state.backpack)
+	},
 
 	__construct = function(game, name){
 		super(game, name)
+		@typeName = "player"
 		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
 		@_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar
@@ -200,6 +220,7 @@ Player = extends Entity {
 	},
 	
 	canUseLaddersAt = function(tx, ty){
+		@moving && return;
 		var useDistance = ITEMS_INFO[ITEM_TYPE_LADDERS].useDistance || 1
 		if(/*Player.laddersItemType &&*/ !@isDead
 			&& @game.getBackType(tx, ty) != TILE_TYPE_TRADE_STOCK
@@ -227,6 +248,12 @@ Player = extends Entity {
 				// 	!= (downTileType != TILE_TYPE_LADDERS && downTileType != TILE_TYPE_EMPTY)
 				)
 			{
+				if(tx == @tileX && ty == @tileY-1){
+					var playerTileType = @game.getFrontType(@tileX, @tileY)
+					if(playerTileType == TILE_TYPE_EMPTY){
+						return Backpack.pack.hasItems(ITEM_TYPE_LADDERS, 2)
+					}
+				}
 				return true
 			}
 		}
@@ -250,13 +277,23 @@ Player = extends Entity {
 	},
 	
 	useLaddersAt = function(tx, ty){
-		if(@canUseLaddersAt(tx, ty) && Backpack.pack.subItem(ITEM_TYPE_LADDERS)){
-			@game.updateHudItems()
-			@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
-			@game.removeTile(tx, ty, true)
-			@game.updateTile(tx, ty)
-			@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
-			return true
+		if(@canUseLaddersAt(tx, ty)){
+			if(tx == @tileX && ty == @tileY-1){
+				var playerTileType = @game.getFrontType(@tileX, @tileY)
+				if(playerTileType == TILE_TYPE_EMPTY){
+					if(!@useLaddersAt(@tileX, @tileY)){
+						return
+					}
+				}
+			}
+			if(Backpack.pack.subItem(ITEM_TYPE_LADDERS)){
+				@game.updateHudItems()
+				@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
+				@game.removeTile(tx, ty, true)
+				@game.updateTile(tx, ty)
+				@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+				return true
+			}
 		}
 	},
 	
@@ -275,7 +312,7 @@ Player = extends Entity {
 			@game.setItemType(tx, ty, type)
 			@game.removeTile(tx, ty, true)
 			@game.updateTile(tx, ty)
-			@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
+			@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
 			if(ITEMS_INFO[type].explodeRadius){
 				@game.explodeTileItem(tx, ty)
 			}
@@ -326,7 +363,7 @@ Player = extends Entity {
 					@game.removeTile(tx, ty, true)
 					// @game.removeCrack(tx, ty, true)
 					@game.updateTile(tx, ty)
-					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1)
+					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
 				}
 			}
 		}
