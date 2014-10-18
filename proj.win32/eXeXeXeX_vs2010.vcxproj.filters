@@ -31,6 +31,9 @@
     <Filter Include="ext-url">
       <UniqueIdentifier>{f03b8a1a-3667-4927-ae80-891b3177cbb4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ext-hashlib">
+      <UniqueIdentifier>{22440106-5caf-47b5-b935-fac333a24329}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../src/entry_point.cpp">
@@ -129,6 +132,33 @@
     <ClCompile Include="..\src\MathLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.c">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\des\des.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\hmac.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha1.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha224-256.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha384-512.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\usha.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
@@ -151,6 +181,21 @@
     </ClInclude>
     <ClInclude Include="..\src\MathLib.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.h">
+      <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.h">
+      <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha-private.h">
+      <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha.h">
+      <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.h">
+      <Filter>ext-hashlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

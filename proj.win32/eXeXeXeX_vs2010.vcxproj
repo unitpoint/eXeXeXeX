@@ -89,6 +89,15 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-base64\cencode.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-base64\os-base64.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-datetime\os-datetime.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.c" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\des\des.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\hmac.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha1.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha224-256.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\sha384-512.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\sha\usha.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-json\os-json.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-url\os-url.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\os-zlib.cpp" />
@@ -117,6 +126,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha-private.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-binder.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h" />

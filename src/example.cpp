@@ -6,6 +6,7 @@
 #include <ext-base64/os-base64.h>
 #include <ext-json/os-json.h>
 #include <ext-zlib/os-zlib.h>
+#include <ext-hashlib/os-hashlib.h>
 
 using namespace oxygine;
 
@@ -18,6 +19,7 @@ void example_preinit()
 	initBase64Extension(os);
 	initJsonExtension(os);
 	initZlibExtension(os);
+	initHashExtension(os);
 }
 
 #ifdef WIN32

@@ -16,6 +16,15 @@ LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/os-base64.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cencode.cpp
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-base64/cdecode.cpp
 
+LOCAL_SRC_FILES += \
+				$(subst $(LOCAL_PATH)/,, \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-hashlib/*.cpp) \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-hashlib/des/*.cpp) \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-hashlib/md5/*.cpp) \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-hashlib/sha/*.cpp) \
+				$(wildcard $(LOCAL_PATH)/../../../../../objectscript/src/ext-hashlib/crc32/*.c) \
+				)
+
 LOCAL_SRC_FILES += ../../../../../objectscript/src/ext-zlib/os-zlib.cpp
 LOCAL_SRC_FILES += \
 				$(subst $(LOCAL_PATH)/,, \
