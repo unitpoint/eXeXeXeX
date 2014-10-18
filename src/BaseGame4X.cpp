@@ -135,7 +135,8 @@ static void registerBaseGame4X(OS * os)
 
 	OS::FuncDef funcs[] = {
 		def("__newinstance", &Lib::__newinstance),
-		def("registerLevelInfo", &BaseGame4X::registerLevelInfo),
+		def("registerLevelData", &BaseGame4X::registerLevelData),
+		def("retrieveLevelData", &BaseGame4X::retrieveLevelData),
 		DEF_GET("numLights", BaseGame4X, NumLights),
 		def("getLight", &BaseGame4X::getLight),
 		def("addLight", &BaseGame4X::addLight),
@@ -255,10 +256,10 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		float displayHeightScale = (float)displaySize.y / getHeight();
 		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
 #if defined _WIN32 && 1
-		// keep max quality lightScale
-#else
-		// lightScale = 1.0f / 2.0f;
+		// keep max quality lightScale?
 		lightScale *= 1.0f / 2.0f;
+#else
+		lightScale *= 1.0f / 3.0f;
 #endif
 
 		lightTextureWidth = (int)(size.x * lightScale);
@@ -381,28 +382,51 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	vec2 viewScale = view->getScale();
 
 	// followPlayer
-	vec2 idealPos = (vec2(getSize()) / 2.0f / viewScale - playerPos) * viewScale;
-	idealPos.x = floorf(idealPos.x + 0.5f); // (float)OS::Utils::round(idealPos.x);
-	idealPos.y = floorf(idealPos.y + 0.5f); // (float)OS::Utils::round(idealPos.y);
-	if(idealPos != viewPos){
-		float dt = (pushCtypeValue(os, this), os->getProperty("dt"), os->popFloat());
-		viewPos = viewPos + (idealPos - viewPos) * MathLib::min(1, 3.0f * dt);
+	bool dragging = (pushCtypeValue(os, this), os->getProperty("dragging"), os->popBool());
+	if(!dragging){
+		vec2 idealPos = (vec2(getSize()) / 2.0f / viewScale - playerPos) * viewScale;
+		idealPos.x = floorf(idealPos.x + 0.5f); // (float)OS::Utils::round(idealPos.x);
+		idealPos.y = floorf(idealPos.y + 0.5f); // (float)OS::Utils::round(idealPos.y);
+		if(idealPos != viewPos){
+			float dt = (pushCtypeValue(os, this), os->getProperty("dt"), os->popFloat());
+			vec2 maxOffs = vec2(getSize()) * 0.3f / viewScale;
+			if(afterDraggingMode){
+				viewPos = viewPos + (idealPos - viewPos) * 0.1f;
 
-		vec2 maxOffs = vec2(getSize()) * 0.3f / viewScale;
-		if(idealPos.x - viewPos.x > maxOffs.x){
-			viewPos.x = idealPos.x - maxOffs.x;
-		}else if(idealPos.x - viewPos.x < -maxOffs.x){
-			viewPos.x = idealPos.x + maxOffs.x;
-		}
-		if(idealPos.y - viewPos.y > maxOffs.y){
-			viewPos.y = idealPos.y - maxOffs.y;
-		}else if(idealPos.y - viewPos.y < -maxOffs.y){
-			viewPos.y = idealPos.y + maxOffs.y;
-		}
+				int validPos = 0;
+				if(idealPos.x - viewPos.x > maxOffs.x){
+				}else if(idealPos.x - viewPos.x < -maxOffs.x){
+				}else{
+					validPos++;
+				}
+				if(idealPos.y - viewPos.y > maxOffs.y){
+				}else if(idealPos.y - viewPos.y < -maxOffs.y){
+				}else{
+					validPos++;
+				}
+				if(validPos == 2){
+					afterDraggingMode = false;
+				}
+			}else{
+				viewPos = viewPos + (idealPos - viewPos) * MathLib::min(1, 3.0f * dt);
 
-		pushCtypeValue(os, this);
-		pushCtypeValue(os, viewPos);
-		os->setProperty("viewPos");
+				if(idealPos.x - viewPos.x > maxOffs.x){
+					viewPos.x = idealPos.x - maxOffs.x;
+				}else if(idealPos.x - viewPos.x < -maxOffs.x){
+					viewPos.x = idealPos.x + maxOffs.x;
+				}
+				if(idealPos.y - viewPos.y > maxOffs.y){
+					viewPos.y = idealPos.y - maxOffs.y;
+				}else if(idealPos.y - viewPos.y < -maxOffs.y){
+					viewPos.y = idealPos.y + maxOffs.y;
+				}
+			}
+			pushCtypeValue(os, this);
+			pushCtypeValue(os, viewPos);
+			os->setProperty("viewPos");
+		}
+	}else{
+		afterDraggingMode = true;
 	}
 
 	int startX, startY;
@@ -413,7 +437,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	vec2 endOffs = offs + size / viewScale;
 	posToCeilTile(endOffs, endX, endY);
 
-#if defined _WIN32 && 1
+#if 1 || defined _WIN32 && 1
 	startX -= 2; startY -= 1;
 	endX += 1; endY += 1;
 #endif
@@ -534,7 +558,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	}
 	os->pop();
 
-
+	std::vector<Point>::iterator it;
 	for(int i = 0; i < (int)lights.size(); i++){
 		spBaseLight light = lights[i];
 		float radius = light->radius; // tileRadius * light->tileRadiusScale * TILE_SIZE;
@@ -555,77 +579,81 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		posToTile(light->pos, tx, ty);
 		TileType type = getFrontType(tx, ty);
 		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
-			std::vector<Point>::iterator it = activeTilesXY.begin();
-			for(; it != activeTilesXY.end(); ++it){
-				const Point& p = *it;
-				int x = p.x;
-				int y = p.y;
-		// for(int y = startY; y <= endY; y++){
-			// for(int x = startX; x <= endX; x++){
-				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+			light->validPos = light->pos;
+		}else{
+			posToTile(light->validPos, tx, ty);
+			lightScreenPos = light->validPos - offs;
+		}
+		it = activeTilesXY.begin();
+		for(; it != activeTilesXY.end(); ++it){
+			const Point& p = *it;
+			int x = p.x;
+			int y = p.y;
+	// for(int y = startY; y <= endY; y++){
+		// for(int x = startX; x <= endX; x++){
+			TileType type = getFrontType(x, y);
+			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+				continue;
+			}
+			bool isDoor = false;
+			float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
+			if(type == TILE_TYPE_DOOR_01){
+				pushCtypeValue(os, this);
+				os->getProperty(-1, "getTile");
+				OX_ASSERT(os->isFunction());
+				pushCtypeValue(os, x);
+				pushCtypeValue(os, y);
+				os->callTF(2, 1);
+				os->getProperty("openState");
+				float openState = os->popFloat();
+				if(openState > 0.999f){
 					continue;
 				}
-				bool isDoor = false;
-				float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
-				if(type == TILE_TYPE_DOOR_01){
-					pushCtypeValue(os, this);
-					os->getProperty(-1, "getTile");
-					OX_ASSERT(os->isFunction());
-					pushCtypeValue(os, x);
-					pushCtypeValue(os, y);
-					os->callTF(2, 1);
-					os->getProperty("openState");
-					float openState = os->popFloat();
-					if(openState > 0.999f){
-						continue;
-					}
-					tileHeight *= 1.0f - openState;
-					isDoor = true;
+				tileHeight *= 1.0f - openState;
+				isDoor = true;
+			}
+			vec2 pos = tileToPos(x, y) - offs;
+			vec2 points[] = {
+				pos,
+				pos + vec2(tileWidth, 0),
+				pos + vec2(tileWidth, tileHeight),
+				pos + vec2(0, tileHeight)
+			};
+			static Point tileSideOffs[] = {
+				Point(0, -1),
+				Point(1, 0),
+				Point(0, 1),
+				Point(-1, 0),
+			};
+			int count = 4;
+			for(int i = 0; i < count; i++){
+				const vec2& p1 = points[i];
+				const vec2& p2 = points[(i+1) % count];
+				vec2 edge = p2 - p1;
+				vec2 normal = vec2(edge.y, -edge.x).norm();
+				float dist = normal.dot(p1) - normal.dot(lightScreenPos);
+				if(dist <= 0 || dist > radius){
+					continue;
 				}
-				vec2 pos = tileToPos(x, y) - offs;
-				vec2 points[] = {
-					pos,
-					pos + vec2(tileWidth, 0),
-					pos + vec2(tileWidth, tileHeight),
-					pos + vec2(0, tileHeight)
-				};
-				static Point tileSideOffs[] = {
-					Point(0, -1),
-					Point(1, 0),
-					Point(0, 1),
-					Point(-1, 0),
-				};
-				int count = 4;
-				for(int i = 0; i < count; i++){
-					const vec2& p1 = points[i];
-					const vec2& p2 = points[(i+1) % count];
-					vec2 edge = p2 - p1;
-					vec2 normal = vec2(edge.y, -edge.x).norm();
-					float dist = normal.dot(p1) - normal.dot(lightScreenPos);
-					if(dist <= 0 || dist > radius){
-						continue;
-					}
 
-					vec2 lightToCurrent = p1 - lightScreenPos;
-					OX_ASSERT(normal.dot(lightToCurrent) > 0);
-					type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
-						vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-						vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
+				vec2 lightToCurrent = p1 - lightScreenPos;
+				OX_ASSERT(normal.dot(lightToCurrent) > 0);
+				type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+					vec2 p1_target = p1 + lightToCurrent * (radius * 100);
+					vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
 						
-						r.drawPoly(p1 * lightScale, 
-								p1_target * lightScale, 
-								p2_target * lightScale, 
-								p2 * lightScale);
-					}
+					r.drawPoly(p1 * lightScale, 
+							p1_target * lightScale, 
+							p2_target * lightScale, 
+							p2 * lightScale);
 				}
 			}
 		}
 		r.drawBatch();
 
 		setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
-		std::vector<Point>::iterator it = activeTilesXY.begin();
+		it = activeTilesXY.begin();
 		for(; it != activeTilesXY.end(); ++it){
 			const Point& p = *it;
 			int x = p.x;
@@ -705,7 +733,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	IVideoDriver::instance->setUniform("projection", &viewProj);
 		
 	vec3 color, prevColor(0, 0, 0);
-	std::vector<Point>::iterator it = activeTilesXY.begin();
+	it = activeTilesXY.begin();
 	for(; it != activeTilesXY.end(); ++it){
 		const Point& p = *it;
 		int x = p.x;
@@ -770,7 +798,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	}
 	Sprite * lightSprite = tempLightSprite.get();
 	float lightT = (sinf((float)getTimeMS() / 1000.0f * 0.5f) + 1.0f) / 2.0f;
-	lightSprite->setColor(colorFromInt(0xff5900) * (0.5f + 0.5f * lightT));
+	lightSprite->setColor(colorFromInt(0xff9d68) * (0.3f + 0.7f * lightT));
 	lightSprite->setBlendMode(blend_add);
 
 	RenderState rs;
@@ -792,17 +820,24 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				TileType type = game->getFrontType(x, y);
 				return type != TILE_TYPE_LIGHT_ROCK_01 && type != TILE_TYPE_LIGHT_ROCK_02;
 			}
+			static void render(RenderState& rs, Sprite * lightSprite, const vec2& pos, float scale)
+			{
+				lightSprite->setPosition((pos + lightSprite->getPosition()) * scale);
+				lightSprite->setScale(lightSprite->getScale() * scale);
+				lightSprite->render(rs);
+			}
 		};
 
 		TileType type = getFrontType(x, y);
 		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 			vec2 pos = tileToPos(x, y) - offs;
 			
-			AffineTransform t;
+			/* AffineTransform t;
 			t.identity();
 			t.translate(pos);
+			t.scale(vec2(lightScale, lightScale));
 
-			rs.transform = t;
+			rs.transform = t; */
 
 			bool top = Lib::isEmptyLightTile(this, x, y-1);
 			bool bottom = Lib::isEmptyLightTile(this, x, y+1);
@@ -836,7 +871,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				}
 				lightSprite->setX(x);
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}		
 			if(!bottom){
 				/* var fade = Sprite().attrs {
@@ -862,7 +897,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				}
 				lightSprite->setX(x);
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(!left){
 				/* var fade = Sprite().attrs {
@@ -887,7 +922,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				}
 				lightSprite->setY(y);
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(!right){
 				/* var fade = Sprite().attrs {
@@ -913,7 +948,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				}
 				lightSprite->setY(y);
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(left && top && !leftTop){
 				/* var fade = Sprite().attrs {
@@ -928,7 +963,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(0.0f, 0.0f));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}else if(!left && !top){
 				/* var fade = Sprite().attrs {
 					resAnim = res.get("tile-fade-inner-left-top"),
@@ -942,7 +977,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(0.0f, 0.0f));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(right && top && !rightTop){
 				/* var fade = Sprite().attrs {
@@ -959,7 +994,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}else if(!right && !top){
 				/* var fade = Sprite().attrs {
 					resAnim = res.get("tile-fade-inner-left-top"),
@@ -975,7 +1010,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(left && bottom && !leftBottom){
 				/* var fade = Sprite().attrs {
@@ -992,7 +1027,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}else if(!left && !bottom){
 				/* var fade = Sprite().attrs {
 					resAnim = res.get("tile-fade-inner-left-top"),
@@ -1008,7 +1043,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 			if(right && bottom && !rightBottom){
 				/* var fade = Sprite().attrs {
@@ -1026,7 +1061,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}else if(!right && !bottom){
 				/* var fade = Sprite().attrs {
 					resAnim = res.get("tile-fade-inner-left-top"),
@@ -1043,7 +1078,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				lightSprite->setAnchor(0.0f, 0.0f);
 				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
 				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				lightSprite->render(rs);
+				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 		}
 	}
@@ -1562,6 +1597,7 @@ BaseGame4X::BaseGame4X()
 	startViewY = 0;
 	endViewX = 0;
 	endViewY = 0;
+	afterDraggingMode = false;
 }
 
 BaseGame4X::~BaseGame4X()
@@ -1670,14 +1706,46 @@ void BaseGame4X::posToCeilTile(const vec2& pos, int& x, int& y)
 	y = (int)(pos.y / TILE_SIZE + 0.5f);
 }
 
-void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, const OS::String& p_data)
+OS::String BaseGame4X::retrieveLevelData()
+{
+	struct Lib
+	{
+		static void encode(OS_BYTE * data, int i, int a)
+		{
+			OX_ASSERT(a >= 0 && a < 256);
+			data[i*2] = (OS_BYTE)(a & 0xff);
+			data[i*2+1] = (OS_BYTE)((a>>8) & 0xff);
+		}
+	};
+
+	const char * dataPrefix = LEVEL_BIN_DATA_PREFIX;
+	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
+	int count = tiledmapWidth * tiledmapHeight;
+	OS_BYTE * data = new OS_BYTE[count*2*3 + dataPrefixLen];
+	OX_ASSERT(data);
+	OS_MEMCPY(data, dataPrefix, dataPrefixLen); 
+	
+	OS_BYTE * front = data + dataPrefixLen;
+	OS_BYTE * back = front + count*2;
+	OS_BYTE * items = back + count*2;
+	for(int i = 0; i < count; i++){
+		Lib::encode(front, i, tiles[i].front);
+		Lib::encode(back, i, tiles[i].back);
+		Lib::encode(items, i, tiles[i].item);
+	}
+	OS::String str(os, (const void*)data, count*2*3 + dataPrefixLen);
+	delete [] data;
+	return str;
+}
+
+void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, const OS::String& p_data)
 {
 	struct Lib
 	{
 		static int decode(OS_BYTE * data, int i)
 		{
 			int a = data[i*2] + (data[i*2+1]<<8);
-			OX_ASSERT(a < 256);
+			OX_ASSERT(a >= 0 && a < 256);
 			return a;
 		}
 	};
@@ -1688,7 +1756,7 @@ void BaseGame4X::registerLevelInfo(int p_tiledmapWidth, int p_tiledmapHeight, co
 	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
 	int count = p_tiledmapWidth * p_tiledmapHeight;
 	if(count*2*3 + dataPrefixLen != p_data.getDataSize() || OS_STRNCMP((char*)data, dataPrefix, dataPrefixLen) != 0){
-		os->setException("error layer data size");
+		os->setException("error layer data");
 		tiles = NULL;
 		tiledmapWidth = tiledmapHeight = 0;
 		return;

@@ -96,13 +96,14 @@ public:
 	Color color;
 	float radius;
 
+	vec2 validPos;
 	// bool isLevelLights;
 
 	BaseLight()
 	{
 		shadowColor = Color(127, 127, 127, 255);
 		// tileRadiusScale = 1.0f;
-		pos = vec2(0.0f, 0.0f);
+		pos = validPos = vec2(0.0f, 0.0f);
 		color = Color(255, 255, 255, 255);
 		radius = 0.0f; // disabled by default
 		// isLevelLights = false;
@@ -181,7 +182,8 @@ public:
 	void posToTile(const vec2& pos, int& x, int& y);
 	void posToCeilTile(const vec2& pos, int& x, int& y);
 
-	void registerLevelInfo(int tiledmapWidth, int tiledmapHeight, const OS::String& data);
+	void registerLevelData(int tiledmapWidth, int tiledmapHeight, const OS::String& data);
+	OS::String retrieveLevelData();
 
 	int getNumLights();
 	spBaseLight getLight(int);
@@ -215,6 +217,7 @@ protected:
 
 	int startViewX, startViewY;
 	int endViewX, endViewY;
+	bool afterDraggingMode;
 
 	// std::vector<OS_BYTE> lightVolume;
 
