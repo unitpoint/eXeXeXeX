@@ -65,10 +65,10 @@ GAME_SETTINGS = {
 		// sellItem = false,
 	},
 	saveSlots = {
-		1 = {
+		/* 1 = {
 			levelNum = 1,
 			date = DateTime.now(),
-		},
+		}, */
 	},
 }
 
@@ -155,7 +155,8 @@ function playMusic(name, volume){
 		music = mplayer.play {
 			sound = name,
 			looping = true,
-			volume = volume || 0.8,
+			fadeIn = 1,
+			volume = volume || 0.5,
 		}
 	})
 }

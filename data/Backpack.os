@@ -192,7 +192,7 @@ Backpack = extends Actor {
 	
 	addItem = function(type, count){
 		if(type == ITEM_TYPE_BULLETS){
-			Player.bullets += (count || 1) * 200
+			Player.bullets += (count || 1) * math.round(math.random(50, 150))
 			return true
 		}
 		return @pack.addItem(type, count)

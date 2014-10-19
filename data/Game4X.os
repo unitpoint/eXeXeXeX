@@ -229,7 +229,7 @@ ITEMS_INFO = {
 	},
 	[ITEM_TYPE_LADDERS] = {
 		strengthScale = 1.1,
-		price = 10,
+		price = 20,
 		// useDistance = 1,
 	},
 	[ITEM_TYPE_STAMINA] = {
