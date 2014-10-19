@@ -359,14 +359,25 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 
 		Diffuse df;
 		df.base = lightTexture;
+		// df.premultiplied = false;
 		
 		AnimationFrame frame;
 		frame.init(0, df,
 			RectF(0, 0, (float)lightTextureWidth / lightTexture->getWidth(), (float)lightTextureHeight / lightTexture->getHeight()), 
 			RectF(vec2(0, 0), size), size);
 
-		lightLayer->setAnimFrame(frame);		
+		lightLayer->setAnimFrame(frame);
 		lightLayer->setBlendMode(blend_multiply);
+		lightLayer->removeChildren();
+
+#if 0
+		Sprite * illumination = new Sprite();
+		illumination->setAnimFrame(frame);
+		// illumination->setOpacity(0.1f);
+		illumination->setColor(Color(255/2, 255/2, 255/2, 255));
+		illumination->setBlendMode(blend_add_dst_color);
+		illumination->attachTo(lightLayer);
+#endif
 		
 		os->getGlobal("res");
 		resources = CtypeValue<Resources*>::getArg(os, -1);
