@@ -209,6 +209,7 @@ for(var _, filename in fs.readdir("../data/levels")){
 	}
 	levels[filename.replace(".json", "")] = "levels/${filename}"
 }
+levels.sort()
 var filename = "../data/levels.os"
 var data = <<<END"
 /* auto generated file */

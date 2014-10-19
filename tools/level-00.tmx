@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="front" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-front.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="65" name="back" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-back.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="129" name="entities" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-entities.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="193" name="items" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-items.png" width="256" height="256"/>
+ </tileset>
+ <layer name="back" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztwwEJAAAMBKGr9/0LrcdQcNVUVVXV1w/g/iQQ
+  </data>
+ </layer>
+ <layer name="front" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztksEKwDAIQ926S3v0/z92FBSCeNTCRoRHqRVCUi8RmYQQQshHGAFp1tv1BE7rZ6VJr1p7Ga63e7ehduJMl36Ww0n/fve/n5AHzq1ifdw/9+t9hffODDBv3Hs1vyPMVetnHrPq0CWEkD/yAm4wImE=
+  </data>
+ </layer>
+ <layer name="items" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFo2AUjIJRMApGASXg2EA7gE7gNJQ+giZ+mA52v6RQnhyAK14PQenjNLCTFDBS0t0oGAWjYBSMAuoBAH1KCAA=
+  </data>
+ </layer>
+ <objectgroup name="entities">
+  <object type="player" gid="132" x="511.333" y="546"/>
+  <object gid="149" x="446" y="577.333"/>
+  <object gid="155" x="573.333" y="578.667"/>
+  <object gid="164" x="509.333" y="642.667"/>
+  <object gid="143" x="574.667" y="509.333"/>
+  <object gid="137" x="608.667" y="640.667"/>
+  <object gid="166" x="383.333" y="638.667"/>
+  <object gid="158" x="445.5" y="512"/>
+  <object gid="161" x="383.5" y="513"/>
+ </objectgroup>
+</map>
