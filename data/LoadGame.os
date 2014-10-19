@@ -1,0 +1,79 @@
+LoadGame = extends Actor {
+	__construct = function(game){
+		super()
+		@game = game
+		
+		var bg = Box9Sprite().attrs {
+			resAnim = res.get("panel"),
+			// priority = 1,
+			opacity = 0.3,
+			parent = this
+		}
+		bg.setGuides(20, 20, 20, 20)
+		// @size = bg.size = vec2(400, 300)
+		// return;
+		
+		/* if(game.saveSlotNum){
+			@title = PanelTitle(this, game.saveSlotNum ? _T("Load game") : _T("Main menu"))
+		} */
+		@title = PanelTitle(this, _T("Load game"), Color.fromInt(0x97ec2a))
+		
+		@slotButtons = []
+		var numSlots, borderSize, paddingSize, self = 3, vec2(80, 40), 40, this
+		for(var i = 0; i < numSlots; i++){
+			var button = MenuSlotButton(2).attrs {
+				x = borderSize.x + (MenuSlotButton.SIZE.x + paddingSize) * i,
+				y = borderSize.y,
+				parent = this,
+				// text = _T("NEW\nGAME"),
+				slotNum = i,
+				onClick = function(){
+					print "start ${@slotNum}"
+					// @touchEnabled = false
+					playMenuClickSound()
+					game.loadGame(@slotNum)
+				},
+			}
+			if(GAME_SETTINGS.saveSlots[i]){
+				button.resAnim = res.get("load")
+				button.note = GAME_SETTINGS.saveSlots[i].date.format(_T("j M\nH:i:s"))
+				
+				var onLongPressed = button.onLongPressed
+				button.onLongPressed = function(){
+					onLongPressed.call(this)
+					@onLongPressed = null
+					@resAnim = null
+					@note = ""
+					@text = _T("NEW\nGAME")
+					delete GAME_SETTINGS.saveSlots[@slotNum]
+					saveGameSettings()
+					playMenuClickSound()
+					// self.resetSaveSlotNum(@slotNum)
+				}
+			}else{
+				button.onLongPressed = null
+				button.text = _T("NEW\nGAME")
+			}
+			@slotButtons[] = button
+		}
+		@width = button.x + button.width + borderSize.x
+		@height = button.y + button.height + borderSize.y
+		
+		@noteField = BorderedText().attrs {
+			resFont = res.get("test"),
+			vAlign = TEXT_VALIGN_MIDDLE,
+			hAlign = TEXT_HALIGN_CENTER,
+			text = _T("long-press a slot to delete save game"),
+			// linesOffset = -10,
+			pos = @size * vec2(0.5, 0.95),
+			// priority = 10,
+			color = Color(0.7, 0.7, 0.7),
+			borderColor = Color.fromInt(0xfce8ca),
+			borderVisible = false,
+			parent = this,
+		}
+		
+		@height += 20
+		bg.size = @size
+	},
+}
