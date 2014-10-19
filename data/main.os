@@ -45,51 +45,122 @@ scale = math.min(scale.x, scale.y)
 stage.size = (displaySize / scale).round()
 stage.scale = displaySize / stage.size // scale
 
-logoEnabled = false
+logoEnabled = true
+
 lang = "ru"
 langStrings = require("langs/${lang}/strings.os", false)
 
+baseLang = "en"
+baseLangStrings = require("langs/${baseLang}/strings.os", false)
+
 function _T(text){
-	return langStrings[text] || text
+	return langStrings[text] || baseLangStrings[text] || text
 }
 
 GAME_SETTINGS = {
 	sound = true,
 	music = true,
+	// bullets = 0,
 	doneTutorials = {
 		// sellItem = false,
 	},
 	saveSlots = {
-	
+		1 = {
+			levelNum = 1,
+			date = DateTime.now(),
+		},
 	},
 }
 
 var gameSettingsFilename = "settings.json"
 
 function loadGameSettings(){
-	GAME_SETTINGS = File.exists(gameSettingsFilename) && json.decode(File.readContents(gameSettingsFilename))
-	// print "loaded GAME_SETTINGS: ${GAME_SETTINGS}"
-	typeOf(GAME_SETTINGS) == "object" || GAME_SETTINGS = {}
-	GAME_SETTINGS.sound === null && GAME_SETTINGS.sound = true
-	GAME_SETTINGS.music === null && GAME_SETTINGS.music = true
-	typeOf(GAME_SETTINGS.doneTutorials) == "object" || GAME_SETTINGS.doneTutorials = {}
-	typeOf(GAME_SETTINGS.saveSlots) == "object" || GAME_SETTINGS.saveSlots = {}
+	File.exists(gameSettingsFilename) || return;
+	var settings = json.decode(File.readContents(gameSettingsFilename))
+	
+	GAME_SETTINGS.sound = settings.sound === null ? true : !!settings.sound
+	GAME_SETTINGS.music = settings.music === null ? true : !!settings.music
+	
+	GAME_SETTINGS.doneTutorials = {}
+	for(var key, value in settings.doneTutorials){
+		GAME_SETTINGS.doneTutorials[key] = !!value
+	}
+	
+	GAME_SETTINGS.saveSlots = {}
+	for(var saveSlotNum, saveSlot in settings.saveSlots){
+		var date, time = saveSlot.date.split(" ").unpack()
+		// print(date, time)
+		var year, month, day = date.split("-").unpack()
+		var hour, minute, seconds = time.split(":").unpack()
+		// print(year, month, day, hour, minute, seconds)
+		GAME_SETTINGS.saveSlots[saveSlotNum] = {
+			levelNum = toNumber(saveSlot.levelNum),
+			xor = toNumber(saveSlot.xor),
+			date = DateTime(year, month, day, hour, minute, seconds),
+		}
+	}
+	// Player.bullets = math.max(0, toNumber(GAME_SETTINGS.bullets))
 }
 
 function saveGameSettings(){
+	// GAME_SETTINGS.bullets = Player.bullets
 	var data = json.encode(GAME_SETTINGS)
 	File.writeContents(gameSettingsFilename, data)
 }
 
 loadGameSettings()
-// print "GAME_SETTINGS: ${GAME_SETTINGS}"
+print "GAME_SETTINGS: ${GAME_SETTINGS}"
 
-if(false)
-mplayer.play { 
-	sound = "music",
-	looping = true,
-	volume = 0.3,
+function playMenuClickSound(){
+	splayer.play {
+		sound = "menu-click",
+	}
 }
+
+var errSound = null
+function playErrClickSound(){
+	if(!errSound){
+		errSound = splayer.play {
+			sound = "unavailable",
+		}
+		errSound.doneCallback = function(){
+			errSound = null
+		}
+	}
+}
+
+var moneySound = null
+function playMoneySound(){
+	if(!moneySound){
+		var name = sprintf("coins-%02d", math.round(math.random(1, 3)))
+		moneySound = splayer.play {
+			sound = name,
+		}
+		moneySound.doneCallback = function(){
+			moneySound = null
+		}
+	}
+}
+
+var music, musicTimeout = null
+function playMusic(name, volume){
+	var delay = 0.01
+	if(music){
+		music.fadeOut(2)
+		delay = 2.01
+	}
+	stage.removeTimeout(musicTimeout)
+	musicTimeout = stage.addTimeout(delay, function(){
+		musicTimeout = null
+		music = mplayer.play {
+			sound = name,
+			looping = true,
+			volume = volume || 0.8,
+		}
+	})
+}
+
+// splayer.resources.get("menu-click")
 
 Logo()
 // Game4X().parent = stage

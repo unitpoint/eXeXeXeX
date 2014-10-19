@@ -9,6 +9,7 @@ pack_dir.cmd
 tools/cache-osc
 tools/src
 tools/sounds
+tools/music
 tools/screen_blood_01
 
 data/ext

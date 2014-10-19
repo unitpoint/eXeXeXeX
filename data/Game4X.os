@@ -64,7 +64,8 @@ GAME_PRIORITY_HUD = 5
 // GAME_PRIORITY_HUD_INVENTARY = 4
 // GAME_PRIORITY_HUD_JOYSTICK = 5
 GAME_PRIORITY_DRAGNDROP = 6
-GAME_PRIORITY_BLOOD = 7
+GAME_PRIORITY_MODALVIEW = 7
+GAME_PRIORITY_BLOOD = 8
 GAME_PRIORITY_FADEIN = 10
 
 HUD_ICON_SIZE = 80
@@ -235,21 +236,25 @@ ITEMS_INFO = {
 		addMaxStamina = 25,
 		strengthScale = 4,
 		price = 1000,
+		useSounds = ["max-stamina"],
 	},
 	[ITEM_TYPE_FOOD_01] = {
 		strengthScale = 1.1,
 		stamina = 25,
 		price = 25,
+		useSounds = ["item-04"],
 	},
 	[ITEM_TYPE_FOOD_02] = {
 		strengthScale = 1.2,
 		stamina = 100,
 		price = 100,
+		useSounds = ["item-04"],
 	},
 	[ITEM_TYPE_FOOD_03] = {
 		strengthScale = 1.3,
 		stamina = 200,
 		price = 150,
+		useSounds = ["item-04"],
 	},
 	[ITEM_TYPE_BOMB_01] = {
 		strengthScale = 1.5,
@@ -259,6 +264,7 @@ ITEMS_INFO = {
 		explodeWait = 3.0,
 		damage = 200,
 		useDistance = 1,
+		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
 	},
 	[ITEM_TYPE_BOMB_02] = {
 		strengthScale = 1.5,
@@ -268,6 +274,7 @@ ITEMS_INFO = {
 		explodeWait = 3.0,
 		damage = 500,
 		useDistance = 2,
+		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
 	},
 	[ITEM_TYPE_BOMB_03] = {
 		strengthScale = 2.0,
@@ -277,6 +284,7 @@ ITEMS_INFO = {
 		explodeWait = 3.0,
 		damage = 1500,
 		useDistance = 3,
+		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
 	},
 	[ITEM_TYPE_BOMB_04] = {
 		strengthScale = 2.5,
@@ -286,6 +294,7 @@ ITEMS_INFO = {
 		explodeWait = 3.0,
 		damage = 5000,
 		useDistance = 3,
+		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
 	},
 	[ITEM_TYPE_STAND_FLAME_01] = {
 		strengthScale = 2.0,
@@ -323,6 +332,8 @@ PICK_DAMAGE_ITEMS_INFO = {}
 	}
 }
 
+PLAYER_START_HEALTH = 200
+PLAYER_MAX_HEALTH = 800
 
 ENTITIES_INFO = {
 	1 = {
@@ -448,7 +459,8 @@ Game4X = extends BaseGame4X {
 		oldViewTilePosX = -1,
 		oldViewTilePosY = -1,
 		player = null,
-		playerMaxStamina = 300,
+		// playerMaxStamina = 300,
+		// playerStamina = 0,
 		// npcList = {},
 		lightMask = null,
 		following = null,
@@ -456,15 +468,22 @@ Game4X = extends BaseGame4X {
 		followTileY = -1,
 	},
 	
-	__construct = function(saveSlotNum, levelNum){
+	__construct = function(saveSlotNum){
 		super()
-		@saveSlotNum = saveSlotNum || 0
-		@levelNum = levelNum || 0
+		@saveSlotNum = saveSlotNum // GAME_SETTINGS.saveSlots[saveSlotNum] ? saveSlotNum : null// || 0
+		// @levelNum = null // levelNum || 0
 		@parent = stage
 		@size = stage.size
 		@centerViewPos = @size/2
 		
 		@blockSound = null
+		@blockSoundTime = 0
+		
+		@digSound = null
+		@digSoundTime = 0
+		
+		@rockBreakSound = null
+		@rockBreakSoundTime = 0
 		
 		@bg = Sprite().attrs {
 			resAnim = res.get("bg-start"),
@@ -511,26 +530,6 @@ Game4X = extends BaseGame4X {
 			parent = this,
 		}
 		
-		/*
-		@lightMask = LightMask().attrs {
-			pos = @centerViewPos,
-			scale = 10.0,
-			priority = GAME_PRIORITY_LIGHTMASK,
-			visible = false,
-			parent = this,
-		}
-		@lightMask.updateDark()
-		if(false)
-			@lightMask.animateLight(2.5, 2, function(){
-				@lightMask.animateLight(0.5, 20, function(){
-					print "ligth off"			
-				})
-			})
-		else if(false)
-			@lightMask.animateLight(2.5)
-		else @lightMask.animateLight(2.5)
-		*/
-			
 		@hud = Actor().attrs {
 			name = "hud",
 			size = @size,
@@ -540,6 +539,7 @@ Game4X = extends BaseGame4X {
 		}
 		
 		@modalView = ModalView().attrs {
+			name = "modalView",
 			size = @size,
 			parent = @hud,
 			// touchEnabled = false,
@@ -547,8 +547,11 @@ Game4X = extends BaseGame4X {
 			touchEnabled = false,
 			closeCallback = null,
 		}
-		@modalView.addEventListener(TouchEvent.CLICK, function(ev){
-			ev.target == @modalView && @closeModal()
+		@saveSlotNum && @modalView.addEventListener(TouchEvent.CLICK, function(ev){
+			if(ev.target == @modalView){
+				@closeModal()
+				playMenuClickSound()
+			}
 		})
 		
 		@hudStamina = HealthBar("stamina-border").attrs {
@@ -558,8 +561,11 @@ Game4X = extends BaseGame4X {
 			// height = 14,
 			parent = @hud,
 			value = 1,
+			visible = false
 		}
-		@hudStamina.width = @playerMaxStamina * 1.0
+		// @hudStamina.width = @playerMaxStamina * 1.0
+		// @playerStamina = @playerMaxStamina
+		
 		/* @hudStaminaNumber = TextField().attrs {
 			name = "staminaNumber",
 			resFont = res.get("test"),
@@ -581,12 +587,14 @@ Game4X = extends BaseGame4X {
 			onClicked = @openBackpack.bind(this),
 			parent = @hud,
 		}
-		hudIcons[] = HudIcon("save").attrs {
-			onClicked = @saveGame.bind(this),
+		hudIcons[] = @saveGameIcon = HudIcon("save").attrs {
+			// onClicked = @saveGame.bind(this),
+			onClicked = @openSaveGame.bind(this),
 			parent = @hud,
 		}
-		hudIcons[] = HudIcon("load").attrs {
-			onClicked = @reloadGame.bind(this),
+		hudIcons[] = @loadGameIcon = HudIcon("load").attrs {
+			// onClicked = @reloadGame.bind(this),
+			onClicked = @openLoadGame.bind(this),
 			parent = @hud,
 		}
 		var hudIconY = @hudStamina.x + @hudStamina.height + HUD_ICON_INDENT
@@ -595,6 +603,7 @@ Game4X = extends BaseGame4X {
 			hudIcon.y = hudIconY
 			hudIconY = hudIconY + hudIcon.height + HUD_ICON_INDENT
 		}
+		@disableSaveLoad()
 		
 		@hudSlots = []
 		if(false){
@@ -633,7 +642,7 @@ Game4X = extends BaseGame4X {
 		
 		@keyPressed = {}
 		@keyEventDownId = @keyEventUpId = null
-		if(PLATFORM == "windows"){
+		if(PLATFORM == "windows" && @saveSlotNum){
 			var moveJoystickActivated = false
 			var keyboardEvent = function(ev){
 				var pressed = ev.type == KeyboardEvent.DOWN
@@ -684,7 +693,7 @@ Game4X = extends BaseGame4X {
 
 		@addUpdate(@update.bind(this))
 		
-		@addEventListener(TouchEvent.CLICK, function(ev){
+		@saveSlotNum && @addEventListener(TouchEvent.CLICK, function(ev){
 			if(ev.target is BaseTile){
 				@pickTile(ev.target.tileX, ev.target.tileY, true)
 				return
@@ -711,7 +720,7 @@ Game4X = extends BaseGame4X {
 		})
 		
 		@dragging = null
-		if(true){
+		if(@saveSlotNum){
 			@addEventListener(TouchEvent.START, function(ev){
 				if(ev.target is BaseTile){
 					@dragging = ev.localPosition
@@ -783,6 +792,18 @@ Game4X = extends BaseGame4X {
 		
 		@screenBloods = [screenBlood_01, screenBlood_02, screenBlood_03, @screenBloodAnim_01]
 		
+		@initLevel()
+		if(!@saveSlotNum){
+			@hud.visible = false
+			@player.visible = false
+			@modalView.parent = this
+			@modalView.priority = GAME_PRIORITY_MODALVIEW
+			@modalView.color = Color(0.2, 0.23, 0.23, 0),
+			@openLoadGame()
+			playMusic("music-menu")
+		}else{
+			playMusic("music", 0.3)
+		}
 		ColorRectSprite().attrs {
 			size = @size,
 			color = Color.BLACK,
@@ -794,8 +815,6 @@ Game4X = extends BaseGame4X {
 			opacity = 0,
 			detachTarget = true,
 		}
-		
-		@initLevel()
 	},
 	
 	createBlood = function(value){
@@ -879,8 +898,10 @@ Game4X = extends BaseGame4X {
 			var closeCallback = @modalView.closeCallback
 			@modalView.closeCallback = null
 
-			@view.clock.resume()
-			@resumeActor(@view)
+			if(@modalView.pauseGame){
+				@view.clock.resume()
+				@resumeActor(@view)
+			}
 			
 			closeCallback() // use callback's this instead of @modalView
 		}
@@ -888,8 +909,12 @@ Game4X = extends BaseGame4X {
 	
 	openModal = function(window, closeCallback){
 		@closeModal()
-		@view.clock.pause()
-		@pauseActor(@view)
+		
+		@modalView.pauseGame = !!@saveSlotNum
+		if(@modalView.pauseGame){
+			@view.clock.pause()
+			@pauseActor(@view)
+		}
 		
 		@modalView.visible = true
 		@modalView.touchEnabled = true
@@ -902,10 +927,11 @@ Game4X = extends BaseGame4X {
 		
 		window.parent = @modalView
 		window.pos = (@size - window.size) / 2
-		window.runTutorial()
+		"runTutorial" in window && window.runTutorial()
 	},
 	
 	openShop = function(){
+		playMenuClickSound()
 		// @playerIcon.touchEnabled = false
 		@shop = Shop(this)
 		@openModal(@shop, function(){
@@ -915,10 +941,35 @@ Game4X = extends BaseGame4X {
 	},
 	
 	openBackpack = function(){
+		playMenuClickSound()
 		@backpackIcon.touchEnabled = false
 		@openModal(Backpack(this), function(){
 			@backpackIcon.touchEnabled = true
 		})
+	},
+	
+	openLoadGame = function(){
+		playMenuClickSound()
+		@loadGameIcon.touchEnabled = false
+		@openModal(LoadGame(this), function(){
+			@loadGameIcon.touchEnabled = true
+		})
+	},
+	
+	openSaveGame = function(){
+		playMenuClickSound()
+		@saveGameIcon.touchEnabled = false
+		@openModal(SaveGame(this), function(){
+			@saveGameIcon.touchEnabled = true
+		})
+	},
+	
+	enableSaveLoad = function(){
+		@saveGameIcon.visible = @loadGameIcon.visible = true
+	},
+	
+	disableSaveLoad = function(){
+		@saveGameIcon.visible = @loadGameIcon.visible = false
 	},
 	
 	updateHudItems = function(){
@@ -934,9 +985,22 @@ Game4X = extends BaseGame4X {
 	},
 	
 	initLevel = function(){
+		if(@saveSlotNum){
+			var saveSlot = GAME_SETTINGS.saveSlots[@saveSlotNum]
+			var levelNum = saveSlot.levelNum || 1
+			var xor = saveSlot.xor || 0
+		}else{
+			var levelNum, xor = 0, 0
+		}
+		if(!saveSlot){
+			Player.bullets = 0
+			Player.pickItemType = null
+			Player.pickItemUsage = {}
+			Backpack.initPack()
+		}
 		var filenames = require("levels")
 		var names = filenames.keys
-		var filename = filenames[names[@levelNum = @levelNum % #names]]
+		var filename = filenames[names[levelNum]] // = @levelNum % #names]]
 		
 		var jsonData = File.readContents(filename)
 		@levelJsonCRC = hashlib.crc32(jsonData)
@@ -957,8 +1021,8 @@ Game4X = extends BaseGame4X {
 		@tiledmapFloor = level.floor
 		
 		// load
-		var saveJsonFilename = "save-${@levelNum}-${@saveSlotNum}.json"
-		var loaded = File.exists(saveJsonFilename) && @{
+		var saveJsonFilename = "save-${@saveSlotNum}-${levelNum}-${xor}.json"
+		var loaded = saveSlot && File.exists(saveJsonFilename) && @{
 			var notLoaded = function(str){
 				print "[saved game (${saveJsonFilename}) error] ${str}"
 				return false
@@ -981,7 +1045,7 @@ Game4X = extends BaseGame4X {
 				
 				@loadGameState(levelSave.state)
 				@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
-				for(var _, obj in levelSave.groups.entities.objects){
+				for(var _, obj in levelSave.entities){
 					@addTiledmapEntity(obj, obj.state) // .x, obj.y, obj.gid, obj.type)
 				}
 				print "game level is loaded"
@@ -1001,8 +1065,20 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
-	saveGame = function(){
-		var saveJsonFilename = "save-${@levelNum}-${@saveSlotNum}.json"
+	saveGame = function(saveSlotNum){
+		saveSlotNum || return;
+		@closeModal()
+		
+		var saveSlot = GAME_SETTINGS.saveSlots[@saveSlotNum = saveSlotNum]
+		var levelNum = saveSlot.levelNum || 1
+		var xor = (saveSlot.xor || 0) ^ 1
+		var saveJsonFilename = "save-${@saveSlotNum}-${levelNum}-${xor}.json"
+		
+		GAME_SETTINGS.saveSlots[@saveSlotNum] = {
+			levelNum = levelNum,
+			xor = xor,
+			date = DateTime.now(),
+		}
 		
 		var levelSave = {
 			jsonCRC = @levelJsonCRC,
@@ -1011,14 +1087,9 @@ Game4X = extends BaseGame4X {
 			height = @tiledmapHeight,
 			floor = @tiledmapFloor,
 			state = @getGameState(),
-			groups = {
-				entities = {
-					objects = [],
-				},
-			},
+			entities = [],
 		}
 		
-		var objects = levelSave.groups.entities.objects
 		for(var _, ent in @tileEnt){
 			var obj = {
 				type = ent.typeName,
@@ -1027,33 +1098,51 @@ Game4X = extends BaseGame4X {
 				// y = ent.tileY,
 				state = ent.getState(),
 			}
-			objects[] = obj
+			levelSave.entities[] = obj
 		}
 		File.writeContents(saveJsonFilename, json.encode(levelSave))
 		
 		var data = zlib.gzcompress(@retrieveLevelData())
 		File.writeContents(saveJsonFilename.replace(".json", ".bin"), data)
+		
+		saveGameSettings()
 	},
 	
 	reloadGame = function(){
+		@loadGame(@saveSlotNum)
+	},
+	
+	loadGame = function(saveSlotNum){
+		// @saveSlotNum || throw
 		@touchEnabled = false
 		@touchChildrenEnabled = false
-		ColorRectSprite().attrs {
+		var rect = ColorRectSprite().attrs {
 			size = @size,
 			color = Color.BLACK,
 			priority = GAME_PRIORITY_FADEIN,
-			opacity = 1,
+			opacity = 0,
 			parent = this,
-		}.addTweenAction {
+		}
+		TextField().attrs {
+			resFont = res.get("test_2"),
+			vAlign = TEXT_VALIGN_BOTTOM,
+			hAlign = TEXT_HALIGN_LEFT,
+			text = _T("Loading..."),
+			pos = @size * vec2(0.08, 0.8),
+			color = Color.WHITE * 0.8,
+			parent = rect,
+		}
+		rect.addTweenAction {
 			duration = 1.0,
 			opacity = 1,
 			// detachTarget = true,
 			doneCallback = function(){
-				var saveSlotNum, levelNum = @saveSlotNum, @levelNum
-				@cleanupActor(this)
-				Game4X(saveSlotNum, levelNum)
+				@addTimeout(0.7, function(){
+					@cleanupActor(this)
+					Game4X(saveSlotNum)
+				})
 			},
-		}		
+		}
 	},
 	
 	cleanup = function(){
@@ -1069,7 +1158,7 @@ Game4X = extends BaseGame4X {
 	
 	getGameState = function(){
 		var state = {
-			maxStamina = @playerMaxStamina,
+			// maxStamina = @playerMaxStamina,
 			player = Player.getPlayerState(),
 			hudSlots = {},
 		}
@@ -1080,7 +1169,7 @@ Game4X = extends BaseGame4X {
 	},
 	
 	loadGameState = function(state){
-		@playerMaxStamina = math.max(@playerMaxStamina, toNumber(state.maxStamina))
+		// @playerMaxStamina = math.max(@playerMaxStamina, toNumber(state.maxStamina))
 		Player.loadPlayerState(state.player)
 		for(var hudSlotNum, type in state.hudSlots){
 			if(hudSlotNum >= 0 && hudSlotNum < #@hudSlots){
@@ -1133,14 +1222,48 @@ Game4X = extends BaseGame4X {
 	},
 	
 	playBlockSound = function(){
-		if(!@blockSound){
-			var name = sprintf("block-%02d", math.round(math.random(1, 2)))
+		if(!@blockSound && @time - @blockSoundTime > 0.5){
+			var name = sprintf("block-%02d", math.round(math.random(1, 3)))
 			@blockSound = splayer.play {
 				sound = name,
 			}
 			@blockSound.doneCallback = function(){
 				@blockSound = null
 			}
+			@blockSoundTime = @time
+		}
+	},
+	
+	playRockBreakSound = function(){
+		if(!@rockBreakSound && @time - @rockBreakSoundTime > 5.0){
+			var name = sprintf("rock-break-%02d", math.round(math.random(1, 4)))
+			@rockBreakSound = splayer.play {
+				sound = name,
+			}
+			@rockBreakSound.doneCallback = function(){
+				@rockBreakSound = null
+			}
+			@rockBreakSoundTime = @time
+		}
+	},
+	
+	playRockfallSound = function(){
+		var name = sprintf("rock-break-%02d", math.round(math.random(5, 6)))
+		splayer.play {
+			sound = name,
+		}
+	},
+	
+	playDigSound = function(){
+		if(!@digSound){ // && @time - @digSoundTime > 0.5){
+			var name = sprintf("dig-%02d", math.round(math.random(1, 2)))
+			@digSound = splayer.play {
+				sound = name,
+			}
+			@digSound.doneCallback = function(){
+				@digSound = null
+			}
+			@digSoundTime = @time
 		}
 	},
 	
@@ -1156,16 +1279,27 @@ Game4X = extends BaseGame4X {
 	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
+			playErrClickSound()
 			return
 		}
 		var tile = @getTile(tx, ty)
 		var type = @getAutoFrontType(tx, ty)
 		var tileInfo = TILES_INFO[type]
 		if(!tileInfo.strength){
-			tile.pickByEnt(@player) || (Player.pickItemType && type != TILE_TYPE_EMPTY && @playBlockSound())
+			var soundPlayed = false
+			if(!tile.pickByEnt(@player)){
+				if(Player.pickItemType && type != TILE_TYPE_EMPTY){
+					@playBlockSound()
+					soundPlayed = true
+				}
+			}
+			// soundPlayed || playErrClickSound()
 			return
 		}
-		Player.pickItemType || return;
+		if(!Player.pickItemType){
+			playErrClickSound()
+			return
+		}
 		var itemInfo = ITEMS_INFO[tile.itemType]
 		var damage = ITEMS_INFO[Player.pickItemType].pickDamage || 1
 		var deepStrength = math.abs(ty - @tiledmapFloor) / 15
@@ -1217,15 +1351,19 @@ Game4X = extends BaseGame4X {
 				
 				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
 				if(tile.itemType != ITEM_TYPE_EMPTY){
-					@takeTileItem(tile.itemType, tx, ty)
+					if(@takeTileItem(tile.itemType, tx, ty)){
+						@player.playTakeItemSound()
+					}
 				}
 				@removeTile(tx, ty, true)
 				@updateTile(tx, ty)
 				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+				@playRockBreakSound()
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
 			@player.useStaminaByCrack()
+			@playDigSound()
 		}
 		crack.resAnimFrameNum = (crack.damage+1) * crack.resAnim.totalFrames / crack.strength
 		return true

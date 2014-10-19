@@ -50,6 +50,10 @@ PLAYER_DEATH_SOUNDS = [
 	"player-death-01", "player-death-02",
 ]
 
+PLAYER_ITEM_SOUNDS = [
+	"item-01", "item-02", "item-03",
+]
+
 Player = extends Entity {
 	bullets = 0,
 	
@@ -72,26 +76,46 @@ Player = extends Entity {
 	},
 	
 	loadPlayerState = function(state){
-		Player.bullets = math.max(Player.bullets, toNumber(state.player.bullets))
-		Player.pickItemType = numberOf(state.player.pickItemType)
+		// Player.bullets = math.max(Player.bullets, toNumber(state.player.bullets))
+		Player.bullets = math.max(0, toNumber(state.bullets))
+		Player.pickItemType = numberOf(state.pickItemType)
 		if(Player.pickItemType in PICK_DAMAGE_ITEMS_INFO == false){
 			Player.pickItemType = null
 		}
-		Player.pickItemUsage = arrayOf(state.player.pickItemUsage) || {}
+		Player.pickItemUsage = arrayOf(state.pickItemUsage) || {}
 		Backpack.loadState(state.backpack)
 	},
 
+	getState = function(){
+		return super().merge {
+			health = @healthValue,
+			damage = @damageValue,
+		}
+	},
+	
+	loadState = function(state){
+		super(state)
+		@healthValue = math.max(PLAYER_START_HEALTH, toNumber(state.health))
+		@healthValue = math.min(PLAYER_MAX_HEALTH, @healthValue)
+		@damageValue = math.max(0, toNumber(state.damage))
+		@updateHealthBar()
+	},
 	__construct = function(game, name){
 		super(game, name)
 		@typeName = "player"
 		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
-		@_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar
+		// @_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar
+		@healthValue = PLAYER_START_HEALTH
+		@updateHealthBar()
+		
 		@staminaUpdateHandle = null
 		@startBreathing()
 		// @jumpTileX = @jumpTileY = null
 		@footSound = null
 		@painSound = null
+		@itemSound = null
+		@jumpSound = null
 		
 		@lightTileRadius = 2.5
 		@lightTileRadiusScale = 1.5 // dependence on light name
@@ -106,6 +130,7 @@ Player = extends Entity {
 		@game.addLight(@light)
 		
 		@addUpdate(0.3, @updatePlayerSector.bind(this))
+		@addTimeout(0.001, @onTileChanged.bind(this))
 	},
 	
 	cleanup = function(){
@@ -115,8 +140,10 @@ Player = extends Entity {
 	reset = function(){
 		@isPlayer = true
 		@isDead = false
-		@_stamina = @game.playerMaxStamina
-		@game.hudStamina.value = 1
+		// @_stamina = @game.playerMaxStamina
+		@damageValue = 0
+		@updateHealthBar()
+		// @game.hudStamina.value = 1
 		@sprite.attrs {
 			pos = @idealPos,
 			scale = @idealScale,
@@ -150,13 +177,70 @@ Player = extends Entity {
 		}
 	},
 	
+	playUseItemSound = function(sounds){
+		if(sounds){
+			@playTakeItemSound(sounds)
+		}else{
+			playMenuClickSound()
+		}
+	},
+	
+	playTakeItemSound = function(sounds){
+		if(!@itemSound){
+			var name = randItem(sounds || PLAYER_ITEM_SOUNDS)
+			@itemSound = splayer.play {
+				sound = name,
+			}
+			@itemSound.doneCallback = function(){
+				@itemSound = null
+			}
+		}
+	},
+	
+	playJumpSound = function(){
+		if(!@jumpSound){
+			@jumpSound = splayer.play {
+				sound = "jump",
+			}
+			@jumpSound.doneCallback = function(){
+				@jumpSound = null
+			}
+		}
+	},
+	
 	playDeathSound = function(){
 		splayer.play {
 			sound = randItem(PLAYER_DEATH_SOUNDS),
 		}
 	},
 	
-	__get@stamina = function(){
+	updateHealthBar = function(){
+		if(@damageValue < 0){
+			@damageValue = 0
+		}else if(@damageValue >= @healthValue){
+			@damageValue = @healthValue
+			@die()
+		}
+		var t = 1 - @damageValue / @healthValue
+		if(t > 0.75){
+			@startBreathing(1.0)
+		}else if(t > 0.5){
+			@startBreathing(2.0)
+		}else if(t > 0.25){
+			@startBreathing(4.0)
+		}else{
+			@startBreathing(8.0)
+		/* }else if(t > 0){
+			@startBreathing(8.0)
+		}else{
+			@die() */
+		}
+		@game.hudStamina.width = @healthValue * 1.0
+		@game.hudStamina.visible = true
+		@game.hudStamina.value = t
+	},
+	
+	/* __get@stamina = function(){
 		return @_stamina
 	},
 	
@@ -179,16 +263,19 @@ Player = extends Entity {
 		}
 		@game.hudStamina.value = t
 		// @game.hudStaminaNumber.text = math.round(@_stamina, 1)
-	},
+	}, */
 	
 	useStamina = function(value){
 		value || value = 1
-		@stamina -= value
+		// @stamina -= value
+		@damageValue += value
+		@updateHealthBar()
+		
 	},
 	
 	damage = function(value, attacker){
 		print "player damaged: ${value}"
-		if(value > @game.playerMaxStamina * 0.1){
+		if(value > @healthValue * 0.1){
 			@game.createBlood(value)
 		}
 		@playPainSound()
@@ -260,6 +347,7 @@ Player = extends Entity {
 	},
 	
 	canUseItemAt = function(type, tx, ty){
+		@game.modalView.visible && return;
 		type == ITEM_TYPE_LADDERS && return @canUseLaddersAt(tx, ty)
 		var useDistance = ITEMS_INFO[type].useDistance || 1
 		if(!@isDead
@@ -272,6 +360,7 @@ Player = extends Entity {
 			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
 				return @game.getItemType(tx, ty) == ITEM_TYPE_EMPTY
 					|| ITEMS_INFO[type].stamina
+					|| ITEMS_INFO[type].addMaxStamina
 			}
 		}
 	},
@@ -287,6 +376,7 @@ Player = extends Entity {
 				}
 			}
 			if(Backpack.pack.subItem(ITEM_TYPE_LADDERS)){
+				@playUseItemSound(ITEMS_INFO[ITEM_TYPE_LADDERS].useSounds)
 				@game.updateHudItems()
 				@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
 				@game.removeTile(tx, ty, true)
@@ -304,9 +394,18 @@ Player = extends Entity {
 	useItemAt = function(type, tx, ty){
 		type == ITEM_TYPE_LADDERS && return @useLaddersAt(tx, ty)
 		if(@canUseItemAt(type, tx, ty) && Backpack.pack.subItem(type)){
+			@playUseItemSound(ITEMS_INFO[type].useSounds)
 			@game.updateHudItems()
+			if(ITEMS_INFO[type].addMaxStamina){
+				@healthValue = @healthValue + ITEMS_INFO[type].addMaxStamina
+				@healthValue = math.max(PLAYER_START_HEALTH, @healthValue)
+				@healthValue = math.min(PLAYER_MAX_HEALTH, @healthValue)
+				@damageValue = 0
+				@updateHealthBar()
+				return true
+			}
 			if(ITEMS_INFO[type].stamina){
-				@stamina += ITEMS_INFO[type].stamina
+				@useStamina(-ITEMS_INFO[type].stamina)
 				return true
 			}
 			@game.setItemType(tx, ty, type)
@@ -346,10 +445,13 @@ Player = extends Entity {
 			if(@staminaUpdateHandle){
 				@game.removeUpdate(@staminaUpdateHandle)
 				@staminaUpdateHandle = null
+				@game.disableSaveLoad()
 			}
 		}else if(!@staminaUpdateHandle){
+			@game.enableSaveLoad()
 			@staminaUpdateHandle = @game.addUpdate(function(ev){
-				@stamina += (@game.playerMaxStamina / 10) * ev.dt
+				@useStamina(-(@healthValue / 10) * ev.dt)
+				// @stamina += (@game.playerMaxStamina / 10) * ev.dt
 			})
 		}
 		var tile = @game.getTile(tx, ty - 1)
@@ -364,6 +466,7 @@ Player = extends Entity {
 					// @game.removeCrack(tx, ty, true)
 					@game.updateTile(tx, ty)
 					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+					@playTakeItemSound()
 				}
 			}
 		}
