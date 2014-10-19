@@ -176,12 +176,14 @@ DragndropItems = extends Actor {
 			@game.updateHudItems()
 			shop.resetTargetSlot()
 		}else if(@targetSlot is HudSlot){
+			playMenuClickSound()
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
 			@targetSlot.type = itemInfo.type
 			@itemSelected.pos = @itemSlot.size/2
 			@itemSelected.parent = @itemSlot
 			@itemSelected.color = Color.WHITE
 		}else{
+			playMenuClickSound()
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
 			var targetItemInfo = owner.pack.items[@targetSlot.slotNum]
 			if(!targetItemInfo){
@@ -211,6 +213,7 @@ DragndropItems = extends Actor {
 	},
 	
 	breakBackpackDragndrop = function(){
+		playErrClickSound()
 	},
 	
 	clearShopItemCount = function(){
@@ -291,6 +294,8 @@ DragndropItems = extends Actor {
 		@removeTimeout(@shopTimeoutHandle); @shopTimeoutHandle = null
 		if(!@shopSkipBreakAction){
 			@updateShopPrice()
+		}else{
+			playErrClickSound()
 		}
 	},
 	
@@ -353,6 +358,8 @@ DragndropItems = extends Actor {
 					}
 				}
 			}
+		}else{
+			playErrClickSound()
 		}
 		shop.resetTargetSlot()
 	
@@ -371,6 +378,8 @@ DragndropItems = extends Actor {
 		@itemSlot.updateItem()
 		if(!@moved){ // @targetSlot == @itemSlot){
 			@itemSlot.useItem()
+		}else{
+			playErrClickSound()
 		}
 	},
 	
@@ -388,6 +397,7 @@ DragndropItems = extends Actor {
 	},
 	
 	handleHudDragndrop = function(){
+		playMenuClickSound()
 		@itemSelected.pos = @itemSlot.size/2
 		@itemSelected.parent = @itemSlot
 		@itemSelected.color = Color.WHITE

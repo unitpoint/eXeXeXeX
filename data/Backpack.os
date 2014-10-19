@@ -182,6 +182,7 @@ Backpack = extends Actor {
 				@bullets = math.round(startBullets + delta * t)
 			}
 		})
+		playMoneySound()
 	},
 	
 	updateItems = function(){

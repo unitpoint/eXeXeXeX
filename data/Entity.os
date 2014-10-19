@@ -347,6 +347,7 @@ Entity = extends Actor {
 					}
 					if(empty){
 						@setTile(tileX + dx, tileY - 1)
+						@playJumpSound()
 						// @onTileChanged()
 						var time = 0.3 * @moveSpeed
 						var pos = @game.tileToCenterPos(tileX + dx, tileY - 1)
@@ -427,6 +428,7 @@ Entity = extends Actor {
 						{
 							// print "jump move: ${tileX}, ${tileY - 1}"
 							@setTile(tileX, tileY - 1)
+							@playJumpSound()
 							// @onTileChanged()
 							var time = 0.3 * @moveSpeed
 							var pos = @game.tileToCenterPos(tileX, tileY - 1)
@@ -525,6 +527,9 @@ Entity = extends Actor {
 	updateMove = function(){
 		@updateMoveDir()
 		@update()
+	},
+	
+	playJumpSound = function(){
 	},
 	
 	playDeathSound = function(){

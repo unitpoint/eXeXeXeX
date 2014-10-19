@@ -376,6 +376,7 @@ Tile = extends BaseTile {
 			y = @y + TILE_SIZE,
 			ease = continues ? Ease.LINEAR : Ease.CUBIC_IN,
 			doneCallback = function(){
+				continues || @game.playRockfallSound()
 				@detach()
 				// @fallingInProgress = null
 				// @parent = @game.layers[LAYER_TILES]

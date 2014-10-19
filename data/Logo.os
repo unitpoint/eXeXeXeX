@@ -37,8 +37,10 @@ Logo = extends ColorRectSprite {
 		@size = stage.size
 		@color = Color.BLACK
 		
+		var sound = null
 		var startGame = function(){
 			spriteRes.unload()
+			sound.stop()
 			@detach()
 			Game4X()
 		}
@@ -63,7 +65,7 @@ Logo = extends ColorRectSprite {
 		}
 		var scale = @size / @sprite.size
 		// @sprite.scale = math.max(scale.x, scale.y)
-		@sprite.scale = math.min(scale.x, scale.y)
+		@sprite.scale = math.min(scale.x, scale.y) * 0.5
 		
 		@addTimeout(0.6, function(){
 			@sprite.addTweenAction {
@@ -72,8 +74,9 @@ Logo = extends ColorRectSprite {
 			}
 		})
 		
+		// playMusic("music-menu")
 		if(GAME_SETTINGS.sound || GAME_SETTINGS.music){
-			mplayer.play { 
+			sound = mplayer.play { 
 				sound = "logo",
 				volume = 0.5,
 				fadeIn = 0.5,
@@ -87,7 +90,9 @@ Logo = extends ColorRectSprite {
 			@sprite.addTweenAction {
 				duration = 2,
 				opacity = 0,
-				doneCallback = startGame,
+				doneCallback = function(){
+					@addTimeout(0.2, startGame)
+				},
 			}
 		})
 	}
