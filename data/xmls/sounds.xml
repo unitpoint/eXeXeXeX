@@ -9,11 +9,28 @@
 	<sound file="explode-03.ogg" />
 	<sound file="block-01.ogg" />
 	<sound file="block-02.ogg" />
-	<sound file="rock-explode.ogg" />
+	<sound file="block-03.ogg" />
+	<sound file="dig-01.ogg" />
+	<sound file="dig-02.ogg" />
 	<sound file="rock-break-01.ogg" />
 	<sound file="rock-break-02.ogg" />
 	<sound file="rock-break-03.ogg" />
 	<sound file="rock-break-04.ogg" />
+	<sound file="rock-break-05.ogg" />
+	<sound file="rock-break-06.ogg" />
+	<sound file="item-01.ogg" />
+	<sound file="item-02.ogg" />
+	<sound file="item-03.ogg" />
+	<sound file="item-04.ogg" />
+	<sound file="grenade-bounce-01.ogg" />
+	<sound file="grenade-bounce-02.ogg" />
+	<sound file="jump.ogg" />
+	<sound file="max-stamina.ogg" />
+	<sound file="unavailable.ogg" />
+	<sound file="coins-01.ogg" />
+	<sound file="coins-02.ogg" />
+	<sound file="coins-03.ogg" />
+	<sound file="menu-click.ogg" />
 	<sound file="door.ogg" />
 	<sound file="door-02.ogg" />
 	<sound file="foot-01-01.ogg" />
@@ -39,5 +56,6 @@
 	<sound file="player-pain-08.ogg" />
 	<sound file="player-death-01.ogg" />
 	<sound file="player-death-02.ogg" />
+	<sound file="music-menu.ogg" streaming="true" />
     <sound file="music.ogg" streaming="true" />
 </resources>

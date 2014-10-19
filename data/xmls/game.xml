@@ -42,6 +42,8 @@
 		<image file="touch-circle.png" />
 		<image file="panel.png" />
 		<image file="panel-title.png" />
+		<image file="button-01.png" />
+		<image file="button-01-pressed.png" />
 		<image file="slot.png" />
 		<image file="slot-target.png" />
 		<image file="slot-arrow-right.png" />
