@@ -60,12 +60,11 @@ GAME_PRIORITY_BG = 1
 GAME_PRIORITY_VIEW = 2
 GAME_PRIORITY_LIGHTMASK = 3
 GAME_PRIORITY_GLOWING = 4
-GAME_PRIORITY_HUD = 5
-// GAME_PRIORITY_HUD_INVENTARY = 4
-// GAME_PRIORITY_HUD_JOYSTICK = 5
-GAME_PRIORITY_DRAGNDROP = 6
-GAME_PRIORITY_MODALVIEW = 7
-GAME_PRIORITY_BLOOD = 8
+GAME_PRIORITY_BUBBLES = 5
+GAME_PRIORITY_HUD = 6
+GAME_PRIORITY_DRAGNDROP = 7
+GAME_PRIORITY_MODALVIEW = 8
+GAME_PRIORITY_BLOOD = 9
 GAME_PRIORITY_FADEIN = 10
 
 HUD_ICON_SIZE = 80
@@ -317,6 +316,7 @@ ITEMS_INFO = {
 
 SHOP_ITEMS_INFO = {}
 PICK_DAMAGE_ITEMS_INFO = {}
+BOMB_ITEMS_INFO = {}
 // LADDERS_ITEMS_INFO = {}
 
 @{
@@ -328,6 +328,9 @@ PICK_DAMAGE_ITEMS_INFO = {}
 		}
 		if(item.pickDamage > 0){
 			PICK_DAMAGE_ITEMS_INFO[type] = item
+		}
+		if(item.explodeRadius > 0){
+			BOMB_ITEMS_INFO[type] = item
 		}
 	}
 }
@@ -485,6 +488,8 @@ Game4X = extends BaseGame4X {
 		@rockBreakSound = null
 		@rockBreakSoundTime = 0
 		
+		@checkBombBubbleTime = 0
+		
 		@bg = Sprite().attrs {
 			resAnim = res.get("bg-start"),
 			pivot = vec2(0.5, 0),
@@ -498,6 +503,13 @@ Game4X = extends BaseGame4X {
 			priority = GAME_PRIORITY_GLOWING,
 			touchEnabled = false,
 			touchChildrenEnabled = false,
+			parent = this,
+		}
+		
+		@speechBubbles = Actor().attrs {
+			priority = GAME_PRIORITY_BUBBLES,
+			touchEnabled = false,
+			// touchChildrenEnabled = false,
 			parent = this,
 		}
 		
@@ -731,7 +743,7 @@ Game4X = extends BaseGame4X {
 				if(@dragging){
 					var offs = ev.localPosition - @dragging
 					@view.pos += offs
-					@glowingTiles.pos = @view.pos
+					@glowingTiles.pos = @speechBubbles.pos = @view.pos
 					@dragging = ev.localPosition
 				}
 			})
@@ -1267,6 +1279,37 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
+	bubbleNeedItem = function(ent, tx, ty, itemType){
+		// print "bubbleNeedItem"
+		if("speechBubble" in ent == false){
+			var getBubblePos = function(){
+				return ent.pos + vec2(TILE_SIZE * 0.0, -TILE_SIZE * 0.5)
+			}
+			ent.speechBubble = SpeechBubble(this, itemType, function(){
+				ent.speechBubble.detach()
+				delete ent.speechBubble
+			}).attrs {
+				// pos = vec2(TILE_SIZE * 0.5, -TILE_SIZE * 0.2),
+				// parent = ent,
+				pos = getBubblePos(), // + vec2(TILE_SIZE * 0.7, -TILE_SIZE * 0.2),
+				parent = @speechBubbles,
+			}
+			ent.speechBubble.addUpdate(function(){
+				ent.speechBubble.pos = getBubblePos()
+			})
+			// print "bubble created"
+		}
+	},
+	
+	checkBombBubble = function(ent, tx, ty){
+		if(@time - @checkBombBubbleTime > 1){
+			@checkBombBubbleTime = @time
+			if(math.random() < 0.1){
+				@bubbleNeedItem(ent, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
+			}
+		}
+	},
+	
 	removeCrack = function(tx, ty, cleanup){
 		var key = "${tx}-${ty}"
 		var crack = @tileCracks[key]
@@ -1290,6 +1333,7 @@ Game4X = extends BaseGame4X {
 			if(!tile.pickByEnt(@player)){
 				if(Player.pickItemType && type != TILE_TYPE_EMPTY){
 					@playBlockSound()
+					@checkBombBubble(@player, tx, ty)
 					soundPlayed = true
 				}
 			}
@@ -1297,6 +1341,7 @@ Game4X = extends BaseGame4X {
 			return
 		}
 		if(!Player.pickItemType){
+			@bubbleNeedItem(@player, tx, ty, ITEM_TYPE_SHOVEL)
 			playErrClickSound()
 			return
 		}
@@ -1308,6 +1353,18 @@ Game4X = extends BaseGame4X {
 		if(strength > 15){
 			print "tile ${tx}x${ty} too strength: ${strength}, deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
 			tile.pickByEnt(@player) || @playBlockSound()
+			
+			for(var pickType, pickItem in PICK_DAMAGE_ITEMS_INFO){
+				var damage = pickItem.pickDamage || 1
+				var strength = math.round(((tileInfo.strength || 3) + deepStrength) 
+						* (itemInfo.strengthScale || 1) / damage)
+				strength <= 15 && break
+			}
+			if(pickType && math.random() < 0.95){
+				@bubbleNeedItem(@player, tx, ty, pickType)
+			}else{
+				@bubbleNeedItem(@player, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
+			}
 			return
 		}
 		var key = "${tx}-${ty}"
@@ -1591,6 +1648,7 @@ Game4X = extends BaseGame4X {
 	__set@viewPos = function(value){
 		@view.pos = value
 		@glowingTiles.pos = value
+		@speechBubbles.pos = value
 	},
 	
 	/* followPlayer = function(){
