@@ -109,7 +109,7 @@ Monster = extends Entity {
 			start = vec2(state.patrolArea.start.x, state.patrolArea.start.y),
 			end = vec2(state.patrolArea.end.x, state.patrolArea.end.y),
 		}
-		print "load patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
+		// print "load patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
 	},
 
 	createPatrolAreaIfNecessary = function(){
@@ -173,7 +173,7 @@ Monster = extends Entity {
 				}
 			}
 		}
-		print "create patrol area:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
+		// print "create patrol area:${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
 	},
 	
 	// debugCheckMoveDir = true,
