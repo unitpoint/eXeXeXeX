@@ -1294,7 +1294,7 @@ Game4X = extends BaseGame4X {
 	
 	bubbleItem = function(ent, tx, ty, itemType){
 		// print "bubbleItem"
-		if("speechBubble" in ent == false){
+		if("speechBubble" in ent == false && @saveSlotNum){
 			var getBubblePos = function(){
 				return ent.pos + vec2(TILE_SIZE * 0.0, -TILE_SIZE * 0.5)
 			}

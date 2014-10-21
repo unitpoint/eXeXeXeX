@@ -36,6 +36,7 @@ LoadGame = extends Actor {
 					game.loadGame(@slotNum)
 				},
 			}
+			@slotButtons[] = button
 			if(GAME_SETTINGS.saveSlots[i]){
 				saveExists = true
 				button.resAnim = res.get("load")
@@ -56,8 +57,17 @@ LoadGame = extends Actor {
 			}else{
 				button.onLongPressed = null
 				button.text = _T("NEW\nGAME")
+				if(!game.saveSlotNum){
+					var emptySlots = true
+					for(var j = i+1; j < numSlots; j++){
+						if(GAME_SETTINGS.saveSlots[j]){
+							emptySlots = false
+							break
+						}
+					}
+					emptySlots && break
+				}
 			}
-			@slotButtons[] = button
 		}
 		@width = button.x + button.width + borderSize.x
 		@height = button.y + button.height + borderSize.y
