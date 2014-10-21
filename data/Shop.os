@@ -43,6 +43,11 @@ Shop = extends Actor {
 		@touchEnabled = false
 		@tutorial = null
 		
+		if(!GAME_SETTINGS.doneTutorials.touchTrader){
+			GAME_SETTINGS.doneTutorials.touchTrader = true
+			saveGameSettings()
+		}
+		
 		if(true || #@pack.items == 0 || @game.time > @nextItemsUpdateTime){
 			@nextItemsUpdateTime = @game.time + math.random(1, 3) * 60
 			@cols, @rows = 4, Backpack.rows

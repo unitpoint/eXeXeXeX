@@ -9,6 +9,9 @@ NPC = extends Monster {
 		// no stamina bar
 	},
 	
+	runTutorial = function(target){
+	},
+	
 	thinkAboutPlayer = function(){
 	},
 	

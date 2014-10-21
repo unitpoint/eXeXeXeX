@@ -32,6 +32,17 @@
 ******************************************************************************/
 
 Tutorial = extends Object {
+	animateTouchEntity = function(params){
+		params.ent || throw "params.ent required"
+		var pos = params.ent.localToLocal(params.ent.size/2, params.target)
+		params.startPos = params.endPos = pos
+		params.angle && params.startAngle = params.endAngle = params.angle
+		params.restartTutorial = function(){
+			@animateTouchEntity(params)
+		}
+		return @animateDragFinger(params)
+	},
+	
 	animateDragFinger = function(params){
 		var finger = params.finger || @{
 			var finger = HandFinger().attrs {
@@ -45,7 +56,7 @@ Tutorial = extends Object {
 			params.finger = finger
 		}
 		finger.pos = params.startPos
-		finger.angle = params.startAngle
+		finger.angle = params.startAngle || 0
 		finger.opacity = 0
 		finger.replaceTweenAction {
 			name = "tutorial",
@@ -56,9 +67,9 @@ Tutorial = extends Object {
 					finger.animateTouch(function(){
 						finger.replaceTweenAction {
 							name = "tutorial",
-							duration = 2,
+							duration = params.endPos != params.startPos ? 2 : 0.1,
 							pos = params.endPos,
-							angle = params.endAngle,
+							angle = params.endAngle || 0,
 							ease = Ease.CUBIC_IN_OUT,
 							doneCallback = function(){
 								finger.animateUntouch(function(){
@@ -69,7 +80,12 @@ Tutorial = extends Object {
 											opacity = 0,
 											doneCallback = function(){
 												finger.addTimeout(3, function(){
-													@animateDragFinger(params)
+													if(params.restartTutorial){
+														var restartTutorial = params.restartTutorial
+														restartTutorial()
+													}else{
+														@animateDragFinger(params)
+													}
 												})
 											},
 										}

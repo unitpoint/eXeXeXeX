@@ -1580,9 +1580,12 @@ Game4X = extends BaseGame4X {
 		@player = Player(this, Player.saveType)
 		@initEntTile(@player, Player.saveTileX, Player.saveTileY)
 		@centerViewToTile(Player.saveTileX, Player.saveTileY)
-		if(!Player.pickItemType){
-			@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
-		}
+		
+		@addTimeout(3, function(){
+			if(!Player.pickItemType){
+				@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
+			}
+		})
 	},
 	
 	addTiledmapEntity = function(obj, state){ // x, y, type, isPlayer){
@@ -1599,9 +1602,11 @@ Game4X = extends BaseGame4X {
 			Player.saveTileX = @player.tileX
 			Player.saveTileY = @player.tileY
 			@centerViewToTile(@player.tileX, @player.tileY)
-			if(!Player.pickItemType){
-				@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
-			}
+			@addTimeout(3, function(){
+				if(!Player.pickItemType){
+					@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
+				}
+			})
 			return @player
 		}
 		if(obj.gid > 0){
