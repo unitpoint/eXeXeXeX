@@ -283,7 +283,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 			";
 
 		const char* shadowMaskFS = "\
-			uniform mediump vec4 color;\
+			uniform lowp vec4 color;\
 			void main() { \
 				gl_FragColor = color; \
 			} \
@@ -292,9 +292,9 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		shadowMaskProg = createShaderProgram(shadowMaskVS, shadowMaskFS, VERTEX_POSITION);
 		
 		const char* lightVS = "\
-			varying vec4 result_color; \
-			varying vec2 result_uv; \
-			varying vec2 result_uv2; \
+			varying lowp vec4 result_color; \
+			varying mediump vec2 result_uv; \
+			varying mediump vec2 result_uv2; \
 			\
 			uniform mat4 projection; \
 			attribute vec2 position; \
@@ -311,16 +311,16 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 			";
 
 		const char* lightFS = "\
-			varying vec4 result_color; \
-			varying vec2 result_uv; \
-			varying vec2 result_uv2; \
+			varying lowp vec4 result_color; \
+			varying mediump vec2 result_uv; \
+			varying mediump vec2 result_uv2; \
 			\
-			uniform sampler2D base_texture; \
-			uniform sampler2D shadow_texture; \
+			uniform lowp sampler2D base_texture; \
+			uniform lowp sampler2D shadow_texture; \
 			\
 			void main() { \
-				vec4 base = texture2D(base_texture, result_uv); \
-				vec4 shadow = texture2D(shadow_texture, result_uv2); \
+				lowp vec4 base = texture2D(base_texture, result_uv); \
+				lowp vec4 shadow = texture2D(shadow_texture, result_uv2); \
 				gl_FragColor = base * shadow * result_color; \
 			} \
 			";
@@ -328,10 +328,10 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		lightProg = createShaderProgram(lightVS, lightFS, VERTEX_PCT2T2);
 
 		const char* lightTileVS = "\
-			varying vec4 result_color; \
-			varying vec2 result_uv; \
+			varying lowp vec4 result_color; \
+			varying mediump vec2 result_uv; \
 			\
-			uniform mat4 projection; \
+			uniform mediump mat4 projection; \
 			attribute vec2 position; \
 			attribute vec4 color; \
 			attribute vec2 uv; \
@@ -344,13 +344,13 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 			";
 
 		const char* lightTileFS = "\
-			varying vec4 result_color; \
-			varying vec2 result_uv; \
+			varying lowp vec4 result_color; \
+			varying mediump vec2 result_uv; \
 			\
-			uniform sampler2D base_texture; \
+			uniform lowp sampler2D base_texture; \
 			\
 			void main() { \
-				vec4 base = texture2D(base_texture, result_uv); \
+				lowp vec4 base = texture2D(base_texture, result_uv); \
 				gl_FragColor = base * result_color; \
 			} \
 			";
