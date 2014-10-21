@@ -820,7 +820,7 @@ Game4X = extends BaseGame4X {
 		@initLevel()
 		if(!@saveSlotNum){
 			@hud.visible = false
-			@player.visible = false
+			// @player.visible = false
 			@modalView.parent = this
 			@modalView.priority = GAME_PRIORITY_MODALVIEW
 			@modalView.color = Color(0.2, 0.23, 0.23, 0),

@@ -3,6 +3,7 @@ LoadGame = extends Actor {
 		super()
 		@game = game
 		
+		var numSlots = 3
 		if(game.saveSlotNum){
 			var bg = Box9Sprite().attrs {
 				resAnim = res.get("panel"),
@@ -18,10 +19,43 @@ LoadGame = extends Actor {
 				@title = PanelTitle(this, game.saveSlotNum ? _T("Load game") : _T("Main menu"))
 			} */
 			@title = PanelTitle(this, _T("Load game"), Color.fromInt(0x97ec2a))
+		}else{
+			var saveExists = false
+			for(var i = 0; i < numSlots; i++){
+				if(GAME_SETTINGS.saveSlots[i]){
+					saveExists = true
+					break
+				}
+			}
+			if(!saveExists){
+				@size = @game.size
+				@noteField = BorderedText().attrs {
+					resFont = res.get("test_2"),
+					vAlign = TEXT_VALIGN_BOTTOM,
+					hAlign = TEXT_HALIGN_CENTER,
+					text = _T("Click anywhere to start"),
+					// linesOffset = -10,
+					pos = @size * vec2(0.5, 0.95),
+					// priority = 10,
+					// color = Color(0.7, 0.7, 0.7),
+					// borderColor = Color.fromInt(0xfce8ca),
+					color = Color(0.9, 0.9, 0.9),
+					borderColor = Color.BLACK,
+					// borderVisible = false,
+					parent = this,
+				}
+				@addEventListener(TouchEvent.CLICK, function(){
+					var slotNum = 0
+					print "start ${slotNum}"
+					playMenuClickSound()
+					@game.loadGame(slotNum)
+				})
+				return
+			}
 		}
 		
 		@slotButtons = []
-		var numSlots, borderSize, paddingSize, saveExists = 3, vec2(80, 40), 40
+		var borderSize, paddingSize, saveExists = vec2(80, 40), 40
 		for(var i = 0; i < numSlots; i++){
 			var button = MenuSlotButton(2).attrs {
 				x = borderSize.x + (MenuSlotButton.SIZE.x + paddingSize) * i,
