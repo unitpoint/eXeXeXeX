@@ -129,6 +129,9 @@ ITEM_TYPE_BOMB_03 = 34
 ITEM_TYPE_BOMB_04 = 35
 ITEM_TYPE_STAND_FLAME_01 = 40
 
+// not real items
+ITEM_TYPE_SHOPPING = 1000
+
 ITEMS_INFO = {
 	1 = {
 		hasTileSprite = true,
@@ -344,6 +347,8 @@ ENTITIES_INFO = {
 	2 = {
 	},
 	3 = {
+		class = "Player",
+		// player = true,
 	},
 	4 = {
 	},
@@ -450,6 +455,10 @@ ENTITIES_INFO = {
 	37 = {
 		attack = 190,
 	},
+	43 = {
+		class = "NPC_Trader",
+		// trader = true,
+	},
 }
 
 Game4X = extends BaseGame4X {
@@ -478,6 +487,9 @@ Game4X = extends BaseGame4X {
 		@parent = stage
 		@size = stage.size
 		@centerViewPos = @size/2
+		
+		// @shakeOffs = vec2(0, 0)
+		@shakeUpdateHandle = null
 		
 		@blockSound = null
 		@blockSoundTime = 0
@@ -710,11 +722,12 @@ Game4X = extends BaseGame4X {
 				@pickTile(ev.target.tileX, ev.target.tileY, true)
 				return
 			}
-			if(ev.target is NPC){
-				var npc = ev.target
+			if(ev.target is NPC_Trader){
+				/* var npc = ev.target
 				if(npc.typeName == "trader"){
 					@openShop()
-				}
+				} */
+				@openShop()
 				return
 			}
 			if(ev.target is Monster){
@@ -1279,8 +1292,8 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
-	bubbleNeedItem = function(ent, tx, ty, itemType){
-		// print "bubbleNeedItem"
+	bubbleItem = function(ent, tx, ty, itemType){
+		// print "bubbleItem"
 		if("speechBubble" in ent == false){
 			var getBubblePos = function(){
 				return ent.pos + vec2(TILE_SIZE * 0.0, -TILE_SIZE * 0.5)
@@ -1305,7 +1318,7 @@ Game4X = extends BaseGame4X {
 		if(@time - @checkBombBubbleTime > 1){
 			@checkBombBubbleTime = @time
 			if(math.random() < 0.1){
-				@bubbleNeedItem(ent, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
+				@bubbleItem(ent, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
 			}
 		}
 	},
@@ -1322,7 +1335,7 @@ Game4X = extends BaseGame4X {
 	
 	pickTile = function(tx, ty, byTouch){
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
-			playErrClickSound()
+			// playErrClickSound()
 			return
 		}
 		var tile = @getTile(tx, ty)
@@ -1341,7 +1354,7 @@ Game4X = extends BaseGame4X {
 			return
 		}
 		if(!Player.pickItemType){
-			@bubbleNeedItem(@player, tx, ty, ITEM_TYPE_SHOVEL)
+			@bubbleItem(@player, tx, ty, ITEM_TYPE_SHOVEL)
 			playErrClickSound()
 			return
 		}
@@ -1361,9 +1374,9 @@ Game4X = extends BaseGame4X {
 				strength <= 15 && break
 			}
 			if(pickType && math.random() < 0.95){
-				@bubbleNeedItem(@player, tx, ty, pickType)
+				@bubbleItem(@player, tx, ty, pickType)
 			}else{
-				@bubbleNeedItem(@player, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
+				@bubbleItem(@player, tx, ty, randItem(BOMB_ITEMS_INFO.keys))
 			}
 			return
 		}
@@ -1564,48 +1577,42 @@ Game4X = extends BaseGame4X {
 		// @unsetEntTile(@player)
 		// @initEntTile(@player, Player.saveTileX, Player.saveTileY)
 		
-		@player = Player(this, Player.saveName)
+		@player = Player(this, Player.saveType)
 		@initEntTile(@player, Player.saveTileX, Player.saveTileY)
-		
 		@centerViewToTile(Player.saveTileX, Player.saveTileY)
+		if(!Player.pickItemType){
+			@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
+		}
 	},
 	
 	addTiledmapEntity = function(obj, state){ // x, y, type, isPlayer){
-		if(obj.type == "player"){
+		var entInfo = ENTITIES_INFO[obj.gid]
+		if(entInfo.class === "Player"){
 			@player && throw "player is already exist"
 			@player = Player(this, obj.gid)
-			Player.saveName = obj.gid
 			if(state){
 				@player.loadState(state)
 			}else{
 				@initEntTile(@player, obj.x, obj.y)
 			}
+			Player.saveType = obj.gid
 			Player.saveTileX = @player.tileX
 			Player.saveTileY = @player.tileY
 			@centerViewToTile(@player.tileX, @player.tileY)
+			if(!Player.pickItemType){
+				@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
+			}
 			return @player
 		}
-		if(obj.type == "trader"){
-			var npc = NPC(this, obj.gid, obj.type)
-			// @npcList[npc] = npc
-			if(state){
-				npc.loadState(state)
-			}else{
-				@initEntTile(npc, obj.x, obj.y)
-				npc.createPatrolAreaIfNecessary()
-			}
-			@centerViewToTile(obj.x, obj.y)
-			return npc
-		}
 		if(obj.gid > 0){
-			var monster = Monster(this, obj.gid)
+			var ent = _G[entInfo.class || "Monster"](this, obj.gid)
 			if(state){
-				monster.loadState(state)
+				ent.loadState(state)
 			}else{
-				@initEntTile(monster, obj.x, obj.y)
-				monster.createPatrolAreaIfNecessary()
+				@initEntTile(ent, obj.x, obj.y)
+				ent.createPatrolAreaIfNecessary()
 			}
-			return monster
+			return ent
 		}
 		throw "unknown entity tiledmap type: ${obj.gid}"
 	},
@@ -1735,6 +1742,25 @@ Game4X = extends BaseGame4X {
 			}
 			// print "alive tiles: ${#@layers[LAYER_TILES]}"
 		}
+	},
+	
+	shakeCamera = function(size, time){
+		time || time = 2
+		size = size * TILE_SIZE
+		@view.removeUpdate(@shakeUpdateHandle)
+		var accumTime = 0
+		@shakeUpdateHandle = @view.addUpdate(function(ev){
+			accumTime += ev.dt
+			if(accumTime > time){
+				@view.removeUpdate(@shakeUpdateHandle)
+				@shakeUpdateHandle = null
+				return
+			}
+			var t = Ease.run(1 - accumTime / time, Ease.CUBIC_OUT)
+			// var t = 1 - accumTime / time
+			var shakeOffs = vec2(randSign() * size * t, randSign() * size * t)
+			@viewPos += shakeOffs
+		})
 	},
 	
 	update = function(ev){

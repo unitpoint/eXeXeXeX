@@ -263,7 +263,7 @@ Tile = extends BaseTile {
 				}
 			}
 			@game.updateTiledmapViewport(ax-1, ay-1, bx+1, by+1, true)
-			
+			@game.shakeCamera(math.min(0.05, 0.015*radius))
 			var explode = AnimSprite(sprintf("explode-%02d", @itemType % 2 + 1).."-%02d", 16).attrs {
 				pivot = vec2(0.5, 0.5),
 				pos = @pos + @size/2,
@@ -361,6 +361,7 @@ Tile = extends BaseTile {
 	
 	falling = function(continues){
 		@fallingInProgress && return;
+		// continues || @game.shakeCamera(0.1, 1)
 		var tx, ty = @tileX, @tileY
 		var frontType = @game.getFrontType(tx, ty)
 		var itemType = @game.getItemType(tx, ty)
@@ -391,7 +392,11 @@ Tile = extends BaseTile {
 				ent.die()
 				
 				var tile = @game.getTile(tx, ty)
-				tile.canFalling() && tile.falling(true)
+				if(tile.canFalling()){
+					tile.falling(true)
+				}else{
+					@game.shakeCamera(0.04)
+				}
 				
 				/* frontType = @game.getFrontType(tx, ty + 1)
 				if((frontType == TILE_TYPE_EMPTY || frontType == TILE_TYPE_LADDERS)
@@ -407,6 +412,7 @@ Tile = extends BaseTile {
 	startFalling = function(){
 		@fallingInProgress && return;
 		if(!@fallingTimeout){
+			@game.shakeCamera(0.02)
 			@fallingTimeout = @addTimeout(3.0, function(){
 				@front.replaceTweenAction {
 					name = "falling",
