@@ -32,8 +32,8 @@
 ******************************************************************************/
 
 Monster = extends Entity {
-	__construct = function(game, name){
-		super(game, name)
+	__construct = function(game, type){
+		super(game, type)
 		@parent = game.layers[LAYER_MONSTERS]
 		@aiQueryTime = 0
 		@aiNextTime = null
@@ -44,44 +44,46 @@ Monster = extends Entity {
 		@warnOnMove = true
 		
 		@healthRecoveryTime = null
-		if(this is NPC == false){
-			@hudStamina = HealthBar("stamina-monster").attrs {
-				name = "stamina",
-				// pivot = vec2(0, 1),
-				// angle = -90,
-				// pos = vec2(@width-6, @height-6),
-				// width = @width - 6*2,
-				pos = vec2(8, @height - 13),
-				width = @width - 8*2,
-				height = 10,
-				// size = vec2(@width, 6),
-				parent = this,
-				value = 0.6,
-				visible = false,
-			}
-			@attackIcon = Sprite().attrs {
-				resAnim = res.get("monster-attack-icon"),
-				pivot = vec2(0, 1),
-				pos = vec2(8, @height - 13-2),
-				parent = this,
-			}
-			@attackLevelText = BorderedText().attrs {
-				resFont = res.get("test_2"),
-				vAlign = TEXT_VALIGN_BOTTOM,
-				hAlign = TEXT_HALIGN_LEFT,
-				// text = @attackLevel.." (${@attackValue})",
-				color = Color.WHITE, // fromInt(0xffeb00),
-				borderColor = Color.fromInt(0x840000),
-				pos = vec2(@attackIcon.x + @attackIcon.width + 2, @attackIcon.y),
-				parent = this,
-			}
-			@addTimeout(0.001, function(){
-				var scale = 1 + math.abs(@tileY - @game.tiledmapFloor) / 50
-				@attackValue *= scale
-				@healthValue *= scale
-				@attackLevelText.text = @attackLevel // .." (${@attackValue})"
-			})
+		@initHudStamina()
+	},
+	
+	initHudStamina = function(){
+		@hudStamina = HealthBar("stamina-monster").attrs {
+			name = "stamina",
+			// pivot = vec2(0, 1),
+			// angle = -90,
+			// pos = vec2(@width-6, @height-6),
+			// width = @width - 6*2,
+			pos = vec2(8, @height - 13),
+			width = @width - 8*2,
+			height = 10,
+			// size = vec2(@width, 6),
+			parent = this,
+			value = 0.6,
+			visible = false,
 		}
+		@attackIcon = Sprite().attrs {
+			resAnim = res.get("monster-attack-icon"),
+			pivot = vec2(0, 1),
+			pos = vec2(8, @height - 13-2),
+			parent = this,
+		}
+		@attackLevelText = BorderedText().attrs {
+			resFont = res.get("test_2"),
+			vAlign = TEXT_VALIGN_BOTTOM,
+			hAlign = TEXT_HALIGN_LEFT,
+			// text = @attackLevel.." (${@attackValue})",
+			color = Color.WHITE, // fromInt(0xffeb00),
+			borderColor = Color.fromInt(0x840000),
+			pos = vec2(@attackIcon.x + @attackIcon.width + 2, @attackIcon.y),
+			parent = this,
+		}
+		@addTimeout(0.001, function(){
+			var scale = 1 + math.abs(@tileY - @game.tiledmapFloor) / 50
+			@attackValue *= scale
+			@healthValue *= scale
+			@attackLevelText.text = @attackLevel // .." (${@attackValue})"
+		})
 	},
 	
 	damage = function(value, attacker){

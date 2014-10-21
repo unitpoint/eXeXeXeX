@@ -69,13 +69,13 @@ var parseObject = function(obj){
 		}
 		throw "entities uses error tileset at ${obj}"
 	}
-	if(obj.type == "player"){
-		isPlayerExist && throw "there are more than one player at ${obj}"
-		isPlayerExist = true
-	}
 	obj.gid = obj.gid - map.tilesets.entities.firstgid
 	obj.x = math.round(obj.x / map.tilewidth)
 	obj.y = math.round(obj.y / map.tileheight - 1)
+	if(obj.gid == 3){
+		isPlayerExist && throw "there are more than one player at ${obj}"
+		isPlayerExist = true
+	}
 	// print obj; // terminate()
 	return obj
 }

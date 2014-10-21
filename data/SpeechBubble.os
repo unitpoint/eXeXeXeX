@@ -9,7 +9,7 @@ SpeechBubble = extends Actor {
 		@bubble = Sprite().attrs {
 			resAnim = res.get("speech-bubble"),
 			priority = 1,
-			opacity = 0.8,
+			opacity = 0.5,
 			parent = this,
 		}
 		@size = @bubble.size
