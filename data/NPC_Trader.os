@@ -59,4 +59,8 @@ NPC_Trader = extends NPC {
 			}
 		}
 	},
+	
+	onClick = function(ev){
+		@game.openShop(this)
+	},	
 }

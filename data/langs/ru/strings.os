@@ -10,4 +10,5 @@
 	"long-press a slot to delete save game" = "нажмите долго, чтобы удалить сохраненную игру",
 	"long-press a slot to rewrite save game" = "нажмите долго, чтобы перезаписать сохраненную игру",
 	"Loading..." = "Загрузка...",
+	"Safe" = "Сейф",
 }

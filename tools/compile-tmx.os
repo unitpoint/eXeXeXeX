@@ -59,17 +59,22 @@ for(var _, name in ["front", "back", "entities", "items"]){
 
 var isPlayerExist = false
 var entitiesTileset = map.tilesets.entities
+var itemsTileset = map.tilesets.items
 // print "entities tileset: ${map.tilesets.entities}"; terminate()
 var parseObject = function(obj){
 	obj = fixNumbers(parseAttributes(obj))
 	// print obj; // terminate()
-	if(obj.gid <= entitiesTileset.firstgid || obj.gid > entitiesTileset.firstgid + entitiesTileset.count){
-		if(obj.gid == entitiesTileset.firstgid){
-			throw "entities should not use the first tileset gid: ${obj}"
-		}
-		throw "entities uses error tileset at ${obj}"
+	if(obj.gid >= itemsTileset.firstgid && obj.gid < itemsTileset.firstgid + itemsTileset.count){
+		obj.gid == itemsTileset.firstgid && throw "item should not use the first tileset gid: ${obj}"
+		obj.objType = "item"
+		obj.gid = obj.gid - itemsTileset.firstgid
+	}else if(obj.gid >= entitiesTileset.firstgid && obj.gid < entitiesTileset.firstgid + entitiesTileset.count){
+		obj.gid == entitiesTileset.firstgid && throw "entity should not use the first tileset gid: ${obj}"
+		// obj.objType = "entity"
+		obj.gid = obj.gid - entitiesTileset.firstgid
+	}else{
+		throw "error tileset gid: ${obj}"
 	}
-	obj.gid = obj.gid - map.tilesets.entities.firstgid
 	obj.x = math.round(obj.x / map.tilewidth)
 	obj.y = math.round(obj.y / map.tileheight - 1)
 	if(obj.gid == 3){
@@ -78,6 +83,29 @@ var parseObject = function(obj){
 	}
 	// print obj; // terminate()
 	return obj
+}
+
+function parseSize(text){
+	var mo = Regexp(`#^(\d+)x(\d+)$#s`).exec(text)
+	// print "parseSize: ${text}, ${mo}"
+	var x, y = toNumber(mo[1]), toNumber(mo[2])
+	"${x}" == mo[1] || throw "error size parsing of width: ${text}"
+	"${y}" == mo[2] || throw "error size parsing of height: ${text}"
+	return {x=x, y=y}
+}
+
+function parseItems(text){
+	var items = []
+	for(var _, itemInfo in text.split(",")){
+		var typeInfo, countInfo = itemInfo.split(":").unpack()
+		var type, count = toNumber(typeInfo), toNumber(countInfo || 1)
+		"${type}" == typeInfo || throw "error item type: ${text}"
+		if(countInfo){
+			"${count}" == countInfo || throw "error item count: ${text}"
+		}
+		items[] = {type=type, count=count}
+	}
+	return items
 }
 
 var m = Regexp(`#<objectgroup name="([^"]*)">(.*?)</objectgroup>#sg`).exec(contents)
@@ -89,20 +117,40 @@ for(var i, name in m[1]){
 	var objects = group.objects = []
 	
 	var groupContents = m[2][i]
-	var mo = Regexp(`#<object\s+([^>]+)>(.*?)</object>#sg`).exec(groupContents)
-	for(var io, obj in mo[1]){
-		/* print obj; terminate()
-		obj = obj.replace(Regexp(`#<properties>(.*?)</properties>#s`), function(m){
-			return ""
-		}) */
-		objects[] = parseObject(obj)
-	}
+	groupContents = groupContents.replace(Regexp(`#<object\s+([^>]+)/>#s`), function(m){
+		// print m
+		objects[] = parseObject(m[1])
+		return ""
+	})
 	
-	var mo = Regexp(`#<object\s+([^>]+)/>#sg`).exec(groupContents)
-	// print mo; // terminate()
-	for(var io, obj in mo[1]){
-		objects[] = parseObject(obj)
-	}
+	groupContents = groupContents.replace(Regexp(`#<object\s+([^>]+)>(.*?)</object>#sg`), function(m){
+		// print "prop obj: ${m}"
+		var obj = parseObject(m[1])
+		objects[] = obj
+		
+		var mo = Regexp(`#<property\s+([^>]+)/>#sg`).exec(m[2])
+		for(var _, propText in mo[1]){
+			// print "begin prop: ${propText}"
+			var prop = fixNumbers(parseAttributes(propText))
+			prop.name || throw "error prop name: ${propText}"
+			obj[prop.name] && throw "prop is alredy used: ${propText} in ${obj}"
+			switch(prop.name){
+			case "size":
+				obj.size = parseSize(prop.value)
+				break
+				
+			case "items":
+				obj.items = parseItems(prop.value)
+				break
+				
+			default:
+				throw "unknown prop: ${prop} in ${m}"
+				obj[prop.name] = prop.value
+			}
+		}
+		return ""
+	})
+	// print objects; terminate()
 	
 	if(group.name in groupNames){
 		map.groups[group.name] && throw "${group.name} objectgroup is already exist"

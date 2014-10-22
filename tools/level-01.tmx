@@ -260,5 +260,16 @@
   <object gid="159" x="2402.18" y="2600.85"/>
   <object gid="159" x="1947.64" y="1858.42"/>
   <object gid="159" x="241.576" y="3037.21"/>
+  <object gid="234" x="1535" y="766">
+   <properties>
+    <property name="items" value="1,10,26,33,5,6"/>
+    <property name="size" value="3x3"/>
+   </properties>
+  </object>
+  <object gid="234" x="1472" y="766">
+   <properties>
+    <property name="size" value="4x4"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

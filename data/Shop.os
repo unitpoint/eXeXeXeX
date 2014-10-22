@@ -34,7 +34,6 @@
 Shop = extends Actor {
 	pack = ItemsPack(),
 	nextItemsUpdateTime = 0,
-	openCount = 0,
 	
 	__construct = function(game, name){
 		super()

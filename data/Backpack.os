@@ -217,8 +217,8 @@ Backpack = extends Actor {
 	},
 	
 	loadState = function(state){
-		Backpack.cols = math.max(Backpack.cols, toNumber(state.cols))
-		Backpack.rows = math.max(Backpack.rows, toNumber(state.rows))
+		Backpack.cols = clamp(toNumber(state.cols), Backpack.cols, 4)
+		Backpack.rows = clamp(toNumber(state.rows), Backpack.rows, 4)
 		Backpack.pack = ItemsPack(Backpack.cols * Backpack.rows)
 		Backpack.pack.loadState(state.pack)
 	},

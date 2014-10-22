@@ -128,6 +128,7 @@ ITEM_TYPE_BOMB_02 = 33
 ITEM_TYPE_BOMB_03 = 34
 ITEM_TYPE_BOMB_04 = 35
 ITEM_TYPE_STAND_FLAME_01 = 40
+ITEM_TYPE_ENT_SAFEPACK = 41
 
 // not real items
 ITEM_TYPE_SHOPPING = 1000
@@ -340,6 +341,12 @@ BOMB_ITEMS_INFO = {}
 
 PLAYER_START_HEALTH = 200
 PLAYER_MAX_HEALTH = 800
+
+ENTITY_ITEMS_INFO = {
+	[ITEM_TYPE_ENT_SAFEPACK] = {
+		class = "EntItem_SafePack",
+	},
+}
 
 ENTITIES_INFO = {
 	1 = {
@@ -722,11 +729,11 @@ Game4X = extends BaseGame4X {
 				@pickTile(ev.target.tileX, ev.target.tileY, true)
 				return
 			}
+			if(ev.target is Entity){
+				ev.target.onClick(ev)
+			}
+			/*
 			if(ev.target is NPC_Trader){
-				/* var npc = ev.target
-				if(npc.typeName == "trader"){
-					@openShop()
-				} */
 				@openShop()
 				return
 			}
@@ -738,6 +745,7 @@ Game4X = extends BaseGame4X {
 				// print "player clicked: ${ev.target.name}"
 				return
 			}
+			*/
 			// print "unknown clicked: ${ev.localPosition}"
 			
 			// var pos = @toLocalPos(@player)
@@ -973,6 +981,12 @@ Game4X = extends BaseGame4X {
 		})
 	},
 	
+	openSafePack = function(item){
+		playMenuClickSound()
+		@openModal(SafePack(this, item), function(){
+		})
+	},
+	
 	openLoadGame = function(){
 		playMenuClickSound()
 		@loadGameIcon.touchEnabled = false
@@ -1117,11 +1131,11 @@ Game4X = extends BaseGame4X {
 		
 		for(var _, ent in @tileEnt){
 			var obj = {
-				type = ent.typeName,
 				gid = ent.type,
-				// x = ent.tileX,
-				// y = ent.tileY,
 				state = ent.getState(),
+			}
+			if(ent is EntItem){
+				obj.objType = "item"
 			}
 			levelSave.entities[] = obj
 		}
@@ -1588,7 +1602,24 @@ Game4X = extends BaseGame4X {
 		})
 	},
 	
-	addTiledmapEntity = function(obj, state){ // x, y, type, isPlayer){
+	addTiledmapItem = function(obj, state){
+		var itemInfo = ENTITY_ITEMS_INFO[obj.gid]
+		if(obj.gid > 0){
+			var ent = _G[itemInfo.class || "EntItem"](this, obj.gid)
+			if(state){
+				ent.loadState(state)
+			}else{
+				ent.initObject(obj)
+			}
+			return ent
+		}
+		throw "unknown entity tiledmap type: ${obj.gid}"
+	},
+	
+	addTiledmapEntity = function(obj, state){
+		if(obj.objType == "item"){
+			return @addTiledmapItem(obj, state)
+		}
 		var entInfo = ENTITIES_INFO[obj.gid]
 		if(entInfo.class === "Player"){
 			@player && throw "player is already exist"
@@ -1596,7 +1627,8 @@ Game4X = extends BaseGame4X {
 			if(state){
 				@player.loadState(state)
 			}else{
-				@initEntTile(@player, obj.x, obj.y)
+				@player.initObject(obj)
+				// @initEntTile(@player, obj.x, obj.y)
 			}
 			Player.saveType = obj.gid
 			Player.saveTileX = @player.tileX
@@ -1614,8 +1646,9 @@ Game4X = extends BaseGame4X {
 			if(state){
 				ent.loadState(state)
 			}else{
-				@initEntTile(ent, obj.x, obj.y)
-				ent.createPatrolAreaIfNecessary()
+				ent.initObject(obj)
+				// @initEntTile(ent, obj.x, obj.y)
+				// ent.createPatrolAreaIfNecessary()
 			}
 			return ent
 		}

@@ -102,7 +102,6 @@ Player = extends Entity {
 	},
 	__construct = function(game, name){
 		super(game, name)
-		@typeName = "player"
 		@parent = game.layers[LAYER_PLAYER]
 		@isPlayer = true
 		// @_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar

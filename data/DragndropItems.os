@@ -60,6 +60,12 @@ DragndropItems = extends Actor {
 					findTargetSlot = @findBackpackTargetSlot.bind(this)
 					handleDragndrop = @handleBackpackDragndrop.bind(this)
 					breakDragndrop = @breakBackpackDragndrop.bind(this)
+				}else if(ev.target.owner is SafePack){
+					@mode = "safe"
+					startDragndrop = @startSafePackDragndrop.bind(this)
+					findTargetSlot = @findSafePackTargetSlot.bind(this)
+					handleDragndrop = @handleSafePackDragndrop.bind(this)
+					breakDragndrop = @breakSafePackDragndrop.bind(this)
 				}else if(ev.target.owner is Shop && ev.target is TargetSlot == false){
 					@mode = "shop"
 					startDragndrop = @startShopDragndrop.bind(this)
@@ -149,6 +155,8 @@ DragndropItems = extends Actor {
 		})
 	},
 	
+	// ==============================================
+	
 	startBackpackDragndrop = function(){
 		@game.shop.showSell(@itemSlot)
 	},
@@ -156,7 +164,7 @@ DragndropItems = extends Actor {
 	findBackpackTargetSlot = function(slot){
 		return slot is HudSlot 
 			|| (slot is TargetSlot && slot.owner is Shop)
-			|| (slot is ItemSlot && slot.owner is Backpack)
+			|| (slot is ItemSlot && (slot.owner is Backpack || slot.owner is SafePack))
 	},
 	
 	handleBackpackDragndrop = function(){
@@ -183,6 +191,8 @@ DragndropItems = extends Actor {
 			@itemSelected.parent = @itemSlot
 			@itemSelected.color = Color.WHITE
 		}else{
+			@handlePackDragndrop()
+			/* 
 			playMenuClickSound()
 			var itemInfo = owner.pack.items[@itemSlot.slotNum]
 			var targetItemInfo = owner.pack.items[@targetSlot.slotNum]
@@ -209,12 +219,70 @@ DragndropItems = extends Actor {
 			@itemSelected.detach()
 			owner.updateItems()
 			@game.shop && @game.shop.showSell(@targetSlot)
+			*/
 		}
 	},
 	
 	breakBackpackDragndrop = function(){
 		playErrClickSound()
 	},
+	
+	// ==============================================
+	
+	startSafePackDragndrop = function(){
+	},
+	
+	findSafePackTargetSlot = function(slot){
+		return slot is ItemSlot && (slot.owner is Backpack || slot.owner is SafePack)
+			&& slot is HudSlot == false
+	},
+	
+	handleSafePackDragndrop = function(){
+		@handlePackDragndrop()
+	},
+	
+	handlePackDragndrop = function(){
+		if(@itemSlot.owner is SafePack == false && @itemSlot.owner is Backpack == false){
+			throw "SafePack or Backpack required for itemSlot.owner"
+		}
+		if(@targetSlot.owner is SafePack == false && @targetSlot.owner is Backpack == false){
+			throw "SafePack or Backpack required for targetSlot.owner"
+		}
+		// var owner = @itemSlot.owner // as SafePack || throw "SafePack required"
+		playMenuClickSound()
+		var itemInfo = @itemSlot.owner.pack.items[@itemSlot.slotNum]
+		var targetItemInfo = @targetSlot.owner.pack.items[@targetSlot.slotNum]
+		if(!targetItemInfo){
+			var moveCount = math.ceil(itemInfo.count / 2)
+			if(moveCount == itemInfo.count){
+				@targetSlot.owner.pack.items[@targetSlot.slotNum] = itemInfo
+				delete @itemSlot.owner.pack.items[@itemSlot.slotNum]
+			}else{
+				@targetSlot.owner.pack.items[@targetSlot.slotNum] = {
+					type = itemInfo.type,
+					count = moveCount,
+				}
+				itemInfo.count -= moveCount
+			}
+		}else if(targetItemInfo.type == itemInfo.type){
+			var moveCount = itemInfo.count
+			targetItemInfo.count += moveCount
+			delete @itemSlot.owner.pack.items[@itemSlot.slotNum]
+		}else{
+			@itemSlot.owner.pack.items[@itemSlot.slotNum] = targetItemInfo
+			@targetSlot.owner.pack.items[@targetSlot.slotNum] = itemInfo
+		}
+		@itemSelected.detach()
+		var itemOwner, targetOwner = @itemSlot.owner, @targetSlot.owner
+		itemOwner.updateItems()
+		itemOwner != targetOwner && targetOwner.updateItems()
+	},
+	
+	breakSafePackDragndrop = function(){
+		playErrClickSound()
+	},
+	
+	// ==============================================
 	
 	clearShopItemCount = function(){
 		@shopSlotSelected.count = null
@@ -370,6 +438,8 @@ DragndropItems = extends Actor {
 		@itemSelected.color = Color.WHITE
 	},
 	
+	// ==============================================
+	
 	startHudDragndrop = function(){
 		@itemSlot.count = null
 	},
@@ -414,6 +484,8 @@ DragndropItems = extends Actor {
 			@itemSlot.type = null
 		}
 	},
+	
+	// ==============================================
 	
 	cleanup = function(){
 		stage.removeEventListener(@startEventId)

@@ -114,6 +114,11 @@ Monster = extends Entity {
 		// print "load patrol area ${@classname}#${@__id}:${@name}, tile: ${@tileX}, ${@tileY}: ${@patrolArea}"
 	},
 
+	initObject = function(levelObj){
+		super(levelObj)
+		@createPatrolAreaIfNecessary()
+	},
+	
 	createPatrolAreaIfNecessary = function(){
 		if(@fly){
 			@patrolArea || @{

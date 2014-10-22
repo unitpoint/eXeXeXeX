@@ -132,7 +132,7 @@ function playErrClickSound(){
 var moneySound = null
 function playMoneySound(){
 	if(!moneySound){
-		var name = sprintf("coins-%02d", math.round(math.random(1, 3)))
+		var name = sprintf("coins-%02d", math.round(math.random(1, 1)))
 		moneySound = splayer.play {
 			sound = name,
 		}

@@ -63,8 +63,12 @@ Entity = extends Actor {
 		prevMoveDir = vec2(0, 0),
 		// moveStarted = false,
 		// moveFinishedCallback = null,
+		waddleEnabled = true,
 		
 		fly = false,
+		attackValue = 0,
+		healthValue = 0,
+		damageValue = 0,
 	},
 	
 	getState = function(){
@@ -79,17 +83,23 @@ Entity = extends Actor {
 		@game.initEntTile(this, state.tileX, state.tileY)
 	},
 	
-	__construct = function(game, type){
+	initObject = function(levelObj){
+		@game.initEntTile(this, levelObj.x, levelObj.y)
+	},
+	
+	__construct = function(game, type, group){
 		super()
 		@cull = true
 		@game = game
 		@type = type
-		@typeName = null
-		@name = game.getResName("ent", type)
-		@fly = ENTITIES_INFO[type].fly
-		@attackValue = ENTITIES_INFO[type].attack || 25
-		@healthValue = ENTITIES_INFO[type].health || @attackValue
-		@damageValue = 0
+		group || group = "ent"
+		@name = game.getResName(group, type)
+		if(group == "ent"){
+			@fly = ENTITIES_INFO[type].fly
+			@attackValue = ENTITIES_INFO[type].attack || 25
+			@healthValue = ENTITIES_INFO[type].health || @attackValue
+			@damageValue = 0
+		}
 		
 		@touchChildrenEnabled = false
 		@pivot = vec2(0.5, 0.5)
@@ -143,6 +153,9 @@ Entity = extends Actor {
 		return @attackValue * math.random(0.9, 1.1)
 	},
 	
+	queryAI = function(){
+	},
+	
 	centerSprite = function(){
 		@attacking || @moveLayer.replaceTweenAction {
 			name = "move",
@@ -150,6 +163,10 @@ Entity = extends Actor {
 			pos = @centerPos,
 			angle = 0,
 		}
+	},
+	
+	onClick = function(ev){
+	
 	},
 	
 	onTilePosChanged = function(){
@@ -224,14 +241,17 @@ Entity = extends Actor {
 	
 	pushByEnt = function(ent, dx, dy){
 		if(!@moving && !@pushingByEnt){
-			if(ent.isPlayer != @isPlayer && (ent is NPC == false && this is NPC == false)){
-				print "push ${@classname} by ${ent.classname}"
+			if(ent.isPlayer != @isPlayer 
+				&& (ent is NPC == false && this is NPC == false) 
+				&& (ent is EntItem == false && this is EntItem == false))
+			{
+				// print "push ${@classname} by ${ent.classname}"
 				@addTimeout(0.05, function(){
-					print "try #1 attack ${@classname} by ${ent.classname}, ent.attacking: ${!!ent.attacking}"
+					// print "try #1 attack ${@classname} by ${ent.classname}, ent.attacking: ${!!ent.attacking}"
 					!ent.attacking && ent.attack(this, dx)
 				})
 				@addTimeout(0.15, function(){ 
-					print "try #2 attack ${ent.classname} by ${@classname}, @attacking: ${!!@attacking}"
+					// print "try #2 attack ${ent.classname} by ${@classname}, @attacking: ${!!@attacking}"
 					!@attacking && @attack(ent, -dx) // , speed, doneCallback)
 				})
 				// return
@@ -245,21 +265,23 @@ Entity = extends Actor {
 	},
 	
 	onMoveStarted = function(){
-		var side = @prevTileX < @tileX ? 1 : -1
-		var action = RepeatForeverAction(SequenceAction(
-			TweenAction {
-				duration = 0.15 * @moveSpeed,
-				angle = -5 * side,
-				// ease = Ease.CUBIC_IN_OUT,
-			},
-			TweenAction {
-				duration = 0.15 * @moveSpeed,
-				angle = 5 * side,
-				// ease = Ease.CUBIC_IN_OUT,
-			},
-		))
-		action.name = "moveAngle"
-		@replaceAction(action)
+		if(@waddleEnabled){
+			var side = @prevTileX < @tileX ? 1 : -1
+			var action = RepeatForeverAction(SequenceAction(
+				TweenAction {
+					duration = 0.15 * @moveSpeed,
+					angle = -5 * side,
+					// ease = Ease.CUBIC_IN_OUT,
+				},
+				TweenAction {
+					duration = 0.15 * @moveSpeed,
+					angle = 5 * side,
+					// ease = Ease.CUBIC_IN_OUT,
+				},
+			))
+			action.name = "moveAngle"
+			@replaceAction(action)
+		}
 	},
 	
 	onMoveFinished = function(){
