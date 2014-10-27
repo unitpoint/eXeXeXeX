@@ -132,9 +132,6 @@
     <ClCompile Include="..\src\MathLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.c">
-      <Filter>ext-hashlib</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\des\des.cpp">
       <Filter>ext-hashlib</Filter>
     </ClCompile>
@@ -157,6 +154,9 @@
       <Filter>ext-hashlib</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.cpp">
+      <Filter>ext-hashlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.c">
       <Filter>ext-hashlib</Filter>
     </ClCompile>
   </ItemGroup>
@@ -182,9 +182,6 @@
     <ClInclude Include="..\src\MathLib.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.h">
-      <Filter>ext-hashlib</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.h">
       <Filter>ext-hashlib</Filter>
     </ClInclude>
@@ -195,6 +192,9 @@
       <Filter>ext-hashlib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.h">
+      <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.h">
       <Filter>ext-hashlib</Filter>
     </ClInclude>
   </ItemGroup>

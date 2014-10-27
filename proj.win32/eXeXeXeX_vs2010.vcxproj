@@ -89,7 +89,7 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-base64\cencode.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-base64\os-base64.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-datetime\os-datetime.cpp" />
-    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.c" />
+    <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.c" />
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\des\des.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.cpp" />
@@ -126,7 +126,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h" />
-    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\crc32.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\os-hashlib.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha-private.h" />
