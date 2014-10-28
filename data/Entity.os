@@ -536,7 +536,7 @@ Entity = extends Actor {
 			var speed = TILE_SIZE / (0.3 * @moveSpeed)
 			var moveOffs = speed * @game.dt
 			
-			var experimentalWay = false
+			var experimentalWay = true
 			if(experimentalWay){
 				if(!@moveAnimatedX){
 					var lenX = math.abs(offs.x)
