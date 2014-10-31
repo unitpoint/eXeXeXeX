@@ -124,6 +124,8 @@ Shop = extends Actor {
 		bg.width = slot.x + slot.width + borderSize
 		bg.height = slot.y + slot.height + borderSize
 		
+		BoxShadow(bg)
+		
 		@title = PanelTitle(bg, _T("Trader"), bg.color) // Color(0.99, 0.99, 0.7))
 		@title.x = bg.width - @title.width
 		

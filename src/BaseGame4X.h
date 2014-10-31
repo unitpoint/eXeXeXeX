@@ -132,14 +132,14 @@ public:
 	// void setIsLevelLights(bool value){ isLevelLights = value;}
 };
 
-DECLARE_SMART(BaseLightLayer, spBaseLightLayer);
-class BaseLightLayer: public Sprite
+DECLARE_SMART(BaseLightmap, spBaseLightmap);
+class BaseLightmap: public Sprite
 {
 public:
-	OS_DECLARE_CLASSINFO(BaseLightLayer);
+	OS_DECLARE_CLASSINFO(BaseLightmap);
 
-	BaseLightLayer();
-	~BaseLightLayer();
+	BaseLightmap();
+	~BaseLightmap();
 
 	// void init();
 
@@ -162,7 +162,7 @@ public:
 	~BaseGame4X();
 
 	Actor * getOSChild(const char * name);
-	Actor * getLayer(int num);
+	Actor * getMapLayer(int num);
 
 	// void initMap(const char * name);
 
@@ -190,7 +190,7 @@ public:
 	void addLight(spBaseLight light);
 	void removeLight(spBaseLight light);
 
-	void updateCamera(BaseLightLayer*);
+	void updateCamera(BaseLightmap*);
 
 protected:
 
@@ -297,7 +297,7 @@ OS_DECL_CTYPE_NAME(vec2, "vec2");
 template <> struct CtypeValue<vec2>: public CtypeValuePoint<vec2> {};
 
 OS_DECL_OX_CLASS(BaseLight);
-OS_DECL_OX_CLASS(BaseLightLayer);
+OS_DECL_OX_CLASS(BaseLightmap);
 OS_DECL_OX_CLASS(BaseGame4X);
 
 } // namespace ObjectScript

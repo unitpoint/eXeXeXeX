@@ -34,7 +34,7 @@
 Monster = extends Entity {
 	__construct = function(game, type){
 		super(game, type)
-		@parent = game.layers[LAYER_MONSTERS]
+		@parent = game.mapLayers[MAP_LAYER_ENTITIES]
 		@aiQueryTime = 0
 		@aiNextTime = null
 		@nextMoveDir = null

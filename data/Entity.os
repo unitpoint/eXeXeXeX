@@ -511,7 +511,7 @@ Entity = extends Actor {
 	_checkFalling = function(){
 		var tileX, tileY = @game.posToTile(@pos)
 		math.abs(tileX - @tileX) <= 1 && math.abs(tileY - @tileY) <= 1 || return;
-		var tileX, tileY = @tileX, @tileY
+		var tileX, tileY = @tileX, math.min(tileY, @tileY)
 		if((!@fly || @isDead) && !@moveAnimatedY
 			&& @isTileEmptyToFall(tileX, tileY + 1)
 			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDERS
@@ -551,6 +551,14 @@ Entity = extends Actor {
 				if(!@moveAnimatedY){
 					var lenY = math.abs(offs.y)
 					if(lenY > 0 && moveOffs < lenY){
+						if(offs.y > 0 && offs.x != 0){
+							var tileX, tileY = @game.posToTile(@pos)
+							if(math.abs(@tileX - tileX) <= 1 && tileY+1 == @tileY){
+								if(@getAutoFrontType(tileX, @tileY) != TILE_TYPE_EMPTY){
+									moveOffs *= 0.25
+								}
+							}
+						}
 						@y += offs.y * moveOffs / lenY
 					}else{
 						// prevent float number accuracy

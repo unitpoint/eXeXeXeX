@@ -31,34 +31,25 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-BaseTile = extends Actor {
-	__construct = function(game, x, y){
+BackTile = extends BaseLayerTile {
+	__construct = function(tile, type){
+		super(tile, type)
+		@parent = @tile.game.mapLayers[MAP_LAYER_TILE_BACK]
+		@tile.back && throw "tile.back is already set"
+		@tile.back = this
+		
+		var type = @tile.backType
+		var resName = @tile.game.getTileResName("tile", type, @tile.tileX, @tile.tileY, TILES_INFO[type].variants)
+		@resAnim = res.get(resName)
+		@scale = Tile.SIZE / @size
+		@size = Tile.SIZE
+		
+		@color = TILES_INFO[type].backColor || Color(0.5, 0.5, 0.5)
+	},
+	
+	cleanup = function(){
+		@tile.back === this || throw "error to clear tile.back"
+		@tile.back = null
 		super()
-		@cull = true
-		@game = game
-		@tileX = x
-		@tileY = y
-		// @frontType = TILE_TYPE_EMPTY
-		// @backType = TILE_TYPE_EMPTY
-		// @itemType = ITEM_TYPE_EMPTY
-		@size = vec2(TILE_SIZE, TILE_SIZE)
-		@pos = game.tileToPos(x, y)
-		@priority = TILE_PRIORITY_BASE
-		@touchChildrenEnabled = false
-		
-		@parent = game.layers[LAYER_TILES]
-		game.tiles["${x}-${y}"] = this
-	},
-	
-	__get@openState = function(){
-		return 0.0
-	},
-	
-	__get@isEmpty = function(){
-		return true
-	},
-	
-	pickByEnt = function(ent){
-		
 	},
 }

@@ -102,7 +102,7 @@ Player = extends Entity {
 	},
 	__construct = function(game, name){
 		super(game, name)
-		@parent = game.layers[LAYER_PLAYER]
+		@parent = game.mapLayers[MAP_LAYER_PLAYER]
 		@isPlayer = true
 		// @_stamina = 0; @stamina = game.playerMaxStamina // update stamina bar
 		@healthValue = PLAYER_START_HEALTH
@@ -281,7 +281,7 @@ Player = extends Entity {
 		@useStamina(value)
 	},
 	
-	useStaminaByCrack = function(){
+	useDigStamina = function(){
 		@useStamina(1)
 	},
 	
@@ -348,7 +348,7 @@ Player = extends Entity {
 	canUseItemAt = function(type, tx, ty){
 		@game.modalView.visible && return;
 		type == ITEM_TYPE_LADDERS && return @canUseLaddersAt(tx, ty)
-		var useDistance = ITEMS_INFO[type].useDistance || 1
+		var useDistance = ITEMS_INFO[type].useDistance || 0
 		if(!@isDead
 			// && @game.getBackType(tx, ty) != TILE_TYPE_TRADE_STOCK
 			&& math.abs(tx - @tileX) <= useDistance && math.abs(ty - @tileY) <= useDistance
@@ -378,9 +378,9 @@ Player = extends Entity {
 				@playUseItemSound(ITEMS_INFO[ITEM_TYPE_LADDERS].useSounds)
 				@game.updateHudItems()
 				@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
-				@game.removeTile(tx, ty, true)
-				@game.updateTile(tx, ty)
-				@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+				@game.deleteTile(tx, ty)
+				// @game.updateTile(tx, ty)
+				@game.updateMapTiles(tx-1, ty-1, tx+1, ty+1, true)
 				return true
 			}
 		}
@@ -461,10 +461,10 @@ Player = extends Entity {
 			var type = @game.getItemType(tx, ty)
 			if(type != ITEM_TYPE_EMPTY && type != ITEM_TYPE_STAND_FLAME_01){
 				if(@game.takeTileItem(type, tx, ty)){
-					@game.removeTile(tx, ty, true)
+					@game.deleteTile(tx, ty)
 					// @game.removeCrack(tx, ty, true)
-					@game.updateTile(tx, ty)
-					@game.updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+					@game.updateTile(tx, ty).updateShadow()
+					// @game.updateMapTileShadows(tx-1, ty-1, tx+1, ty+1, true)
 					@playTakeItemSound()
 				}
 			}
@@ -487,6 +487,8 @@ Player = extends Entity {
 		super()
 		
 		@light.pos = @pos + vec2(math.random(-0.02, 0.02) * TILE_SIZE, math.random(-0.02, 0.02) * TILE_SIZE)
-		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.97, 1.03)
+		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.98, 1.02)
+		
+		@game.playerTargetTile.pos = @game.tileToCenterPos(@tileX, @tileY)
 	},
 }

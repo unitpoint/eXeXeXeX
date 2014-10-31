@@ -45,7 +45,7 @@ scale = math.min(scale.x, scale.y)
 stage.size = (displaySize / scale).round()
 stage.scale = displaySize / stage.size // scale
 
-logoEnabled = true
+logoEnabled = false
 
 lang = "ru"
 langStrings = require("langs/${lang}/strings.os", false)

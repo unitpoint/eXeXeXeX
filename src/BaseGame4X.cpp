@@ -70,12 +70,12 @@ static bool __registerBaseLight = addRegFunc(registerBaseLight);
 
 // =====================================================================
 
-static void registerBaseLightLayer(OS * os)
+static void registerBaseLightmap(OS * os)
 {
 	struct Lib {
-		static BaseLightLayer * __newinstance()
+		static BaseLightmap * __newinstance()
 		{
-			return new BaseLightLayer();
+			return new BaseLightmap();
 		}
 
 		/* static int posToTile(OS * os, int params, int, int need_ret_values, void*)
@@ -102,9 +102,9 @@ static void registerBaseLightLayer(OS * os)
 	OS::NumberDef nums[] = {
 		{}
 	};
-	registerOXClass<BaseLightLayer, Actor>(os, funcs, nums, true OS_DBG_FILEPOS);
+	registerOXClass<BaseLightmap, Actor>(os, funcs, nums, true OS_DBG_FILEPOS);
 }
-static bool __registerBaseLightLayer = addRegFunc(registerBaseLightLayer);
+static bool __registerBaseLightmap = addRegFunc(registerBaseLightmap);
 
 // =====================================================================
 
@@ -179,7 +179,7 @@ Actor * getOSChild(Actor * actor, const char * name)
 	return CtypeValue<Actor*>::getArg(os, -1);
 }
 
-BaseLightLayer::BaseLightLayer()
+BaseLightmap::BaseLightmap()
 {
 	// lightProgram = NULL;
 	// blendProgram = NULL;
@@ -187,7 +187,7 @@ BaseLightLayer::BaseLightLayer()
 	setTouchChildrenEnabled(false);
 }
 
-BaseLightLayer::~BaseLightLayer()
+BaseLightmap::~BaseLightmap()
 {
 	// delete lightProgram;
 	// delete blendProgram;
@@ -247,7 +247,7 @@ void BaseGame4X::removeLight(spBaseLight light)
 	lights.erase(it);
 }
 
-void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
+void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 {
 	vec2 size = getSize();
 	if(!lightProg){
@@ -366,9 +366,9 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 			RectF(0, 0, (float)lightTextureWidth / lightTexture->getWidth(), (float)lightTextureHeight / lightTexture->getHeight()), 
 			RectF(vec2(0, 0), size), size);
 
-		lightLayer->setAnimFrame(frame);
-		lightLayer->setBlendMode(blend_multiply);
-		lightLayer->removeChildren();
+		lightmap->setAnimFrame(frame);
+		lightmap->setBlendMode(blend_multiply);
+		lightmap->removeChildren();
 
 #if 0
 		Sprite * illumination = new Sprite();
@@ -376,7 +376,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		// illumination->setOpacity(0.1f);
 		illumination->setColor(Color(255/2, 255/2, 255/2, 255));
 		illumination->setBlendMode(blend_add_dst_color);
-		illumination->attachTo(lightLayer);
+		illumination->attachTo(lightmap);
 #endif
 		
 		os->getGlobal("res");
@@ -388,30 +388,30 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	Actor * player = getOSChild("player"); OX_ASSERT(player);
 	vec2 playerPos = player->getPosition();
 
-	Actor * view = getOSChild("view"); OX_ASSERT(view);
-	vec2 viewPos = view->getPosition();
-	vec2 viewScale = view->getScale();
+	Actor * map = getOSChild("map"); OX_ASSERT(map);
+	vec2 mapPos = map->getPosition();
+	vec2 mapScale = map->getScale();
 
 	// followPlayer
 	bool dragging = (pushCtypeValue(os, this), os->getProperty("dragging"), os->popBool());
 	if(!dragging){
-		vec2 idealPos = (vec2(getSize()) / 2.0f / viewScale - playerPos) * viewScale;
+		vec2 idealPos = (vec2(getSize()) / 2.0f / mapScale - playerPos) * mapScale;
 		idealPos.x = floorf(idealPos.x + 0.5f); // (float)OS::Utils::round(idealPos.x);
 		idealPos.y = floorf(idealPos.y + 0.5f); // (float)OS::Utils::round(idealPos.y);
-		if(idealPos != viewPos){
+		if(idealPos != mapPos){
 			float dt = (pushCtypeValue(os, this), os->getProperty("dt"), os->popFloat());
-			vec2 maxOffs = vec2(getSize()) * 0.3f / viewScale;
+			vec2 maxOffs = vec2(getSize()) * 0.3f / mapScale;
 			if(afterDraggingMode){
-				viewPos = viewPos + (idealPos - viewPos) * 0.1f;
+				mapPos = mapPos + (idealPos - mapPos) * 0.1f;
 
 				int validPos = 0;
-				if(idealPos.x - viewPos.x > maxOffs.x){
-				}else if(idealPos.x - viewPos.x < -maxOffs.x){
+				if(idealPos.x - mapPos.x > maxOffs.x){
+				}else if(idealPos.x - mapPos.x < -maxOffs.x){
 				}else{
 					validPos++;
 				}
-				if(idealPos.y - viewPos.y > maxOffs.y){
-				}else if(idealPos.y - viewPos.y < -maxOffs.y){
+				if(idealPos.y - mapPos.y > maxOffs.y){
+				}else if(idealPos.y - mapPos.y < -maxOffs.y){
 				}else{
 					validPos++;
 				}
@@ -419,33 +419,33 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 					afterDraggingMode = false;
 				}
 			}else{
-				viewPos = viewPos + (idealPos - viewPos) * MathLib::min(1, 3.0f * dt);
+				mapPos = mapPos + (idealPos - mapPos) * MathLib::min(1, 3.0f * dt);
 
-				if(idealPos.x - viewPos.x > maxOffs.x){
-					viewPos.x = idealPos.x - maxOffs.x;
-				}else if(idealPos.x - viewPos.x < -maxOffs.x){
-					viewPos.x = idealPos.x + maxOffs.x;
+				if(idealPos.x - mapPos.x > maxOffs.x){
+					mapPos.x = idealPos.x - maxOffs.x;
+				}else if(idealPos.x - mapPos.x < -maxOffs.x){
+					mapPos.x = idealPos.x + maxOffs.x;
 				}
-				if(idealPos.y - viewPos.y > maxOffs.y){
-					viewPos.y = idealPos.y - maxOffs.y;
-				}else if(idealPos.y - viewPos.y < -maxOffs.y){
-					viewPos.y = idealPos.y + maxOffs.y;
+				if(idealPos.y - mapPos.y > maxOffs.y){
+					mapPos.y = idealPos.y - maxOffs.y;
+				}else if(idealPos.y - mapPos.y < -maxOffs.y){
+					mapPos.y = idealPos.y + maxOffs.y;
 				}
 			}
 			pushCtypeValue(os, this);
-			pushCtypeValue(os, viewPos);
-			os->setProperty("viewPos");
+			pushCtypeValue(os, mapPos);
+			os->setProperty("mapPos");
 		}
 	}else{
 		afterDraggingMode = true;
 	}
 
 	int startX, startY;
-	vec2 offs = -viewPos / viewScale;
+	vec2 offs = -mapPos / mapScale;
 	posToTile(offs, startX, startY);
 
 	int endX, endY;
-	vec2 endOffs = offs + size / viewScale;
+	vec2 endOffs = offs + size / mapScale;
 	posToCeilTile(endOffs, endX, endY);
 
 #if 1 || defined _WIN32 && 1
@@ -460,7 +460,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		endViewY = endY;
 
 		pushCtypeValue(os, this);
-		os->getProperty(-1, "updateViewport");
+		os->getProperty(-1, "updateMapTilesViewport");
 		pushCtypeValue(os, startX);
 		pushCtypeValue(os, startY);
 		pushCtypeValue(os, endX);
@@ -476,89 +476,16 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	Matrix viewProj = r.getViewProjection();
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
-#if 1
-	/*
-	std::vector<LightInfo> lights;
-	
-	// LightFormInfo lightFormInfo(OS::String(os, "light-02"), (0.2f, 0.2f, 0.2f), 1.5f);
-	LightFormInfo lightFormInfo(OS::String(os, "light-01"), (0.1f, 0.1f, 0.1f), 1.5f);
-
-	lights.push_back(LightInfo(
-			vec2(playerPos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
-			2.5f * os->getRand(0.97f, 1.03f), vec3(0.8f, 1.0f, 1.0f), lightFormInfo
-		));
-
-	bool lightItems = false;
-	if(lightItems)
-	for(int y = startY; y <= endY; y++){
-		for(int x = startX; x <= endX; x++){
-			ItemType type = getItemType(x, y);
-			if(!type){
-				continue;
-			}
-			vec3 color(0.5f, 0.5f, 0.5f);
-			switch(type){
-			default:
-				continue;
-
-			case 1:
-				color = colorFromInt(0xfcb251);
-				break;
-
-			case 2:
-				color = colorFromInt(0x60c983);
-				break;
-
-			case 3:
-				color = colorFromInt(0x8fb9db);
-				break;
-
-			case 4:
-				color = colorFromInt(0x7ddb3d);
-				break;
-
-			case 5:
-				color = colorFromInt(0xf95a4a);
-				break;
-
-			case 6:
-				color = colorFromInt(0xff9c53);
-				break;
-
-			case 7:
-				color = colorFromInt(0x65686c);
-				break;
-
-			case 8:
-				color = colorFromInt(0xefc7ac);
-				break;
-
-			case 9:
-				color = colorFromInt(0xcfce55);
-				break;
-
-			case 10:
-				color = colorFromInt(0xfbec9d);
-				break;
-			}
-			vec2 pos = tileToCenterPos(x, y);
-			lights.push_back(LightInfo(
-					vec2(pos + vec2(TILE_SIZE * os->getRand(-0.02f, 0.02f), TILE_SIZE * os->getRand(-0.02f, 0.02f))),
-					0.9f * os->getRand(0.97f, 1.03f), color, lightFormInfo
-				));
-		}
-	}
-	*/
-
-	/*
-	int tileAreaWidth = endX - startX + 1;
-	int tileAreaHeight = endY - startY + 1;
-	int tileAreaCount = tileAreaWidth * tileAreaHeight;
-	lightVolume.resize(tileAreaCount);
-	*/
-
 	activeTilesXY.clear();
 
+#if 1
+	activeTilesXY.reserve((endX - startX + 1) * (endY - startY + 1));
+	for(int y = startY; y <= endY; y++){
+		for(int x = startX; x <= endX; x++){
+			activeTilesXY.push_back(Point(x, y));
+		}
+	}
+#else
 	pushCtypeValue(os, this);
 	os->getProperty("tiles");
 	while(os->nextIteratorStep()){
@@ -568,6 +495,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 		os->pop(2);
 	}
 	os->pop();
+#endif
 
 	std::vector<Point>::iterator it;
 	for(int i = 0; i < (int)lights.size(); i++){
@@ -615,6 +543,7 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				pushCtypeValue(os, x);
 				pushCtypeValue(os, y);
 				os->callTF(2, 1);
+				os->getProperty("front");
 				os->getProperty("openState");
 				float openState = os->popFloat();
 				if(openState > 0.999f){
@@ -622,6 +551,19 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 				}
 				tileHeight *= 1.0f - openState;
 				isDoor = true;
+			}else{
+				pushCtypeValue(os, this);
+				os->getProperty(-1, "getTile");
+				OX_ASSERT(os->isFunction());
+				pushCtypeValue(os, x);
+				pushCtypeValue(os, y);
+				os->callTF(2, 1);
+				os->getProperty("front");
+				os->getProperty("isFalling");
+				float isFalling = os->popBool();
+				if(isFalling){
+					continue;
+				}
 			}
 			vec2 pos = tileToPos(x, y) - offs;
 			vec2 points[] = {
@@ -1095,324 +1037,6 @@ void BaseGame4X::updateCamera(BaseLightLayer * lightLayer)
 	}
 
 	r.end();
-	return;
-#else
-	{
-		r.begin(shadowMaskTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-
-		IVideoDriver::instance->setShaderProgram(shadowMaskProg);
-
-		Matrix viewProj = r.getViewProjection();
-		IVideoDriver::instance->setUniform("projection", &viewProj);
-		
-		Vector4 color(0.0f, 0.0f, 0.0f, 0.0f);
-		IVideoDriver::instance->setUniform("color", &color, 1);
-		
-		vec2 pos = lightTextureSize * 0.1f;
-		vec2 rectSize = lightTextureSize * 0.4f;
-
-#if 1
-		vec3 points[] = {
-			pos,
-			pos + vec2(0, rectSize.y),
-			pos + vec2(rectSize.x, 0),
-			pos + rectSize,
-		};
-		r.drawPoints(points, 4);
-#else
-		glBegin(GL_QUADS);
-		glVertex2f(pos.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y + rectSize.y);
-		glVertex2f(pos.x, pos.y + rectSize.y);
-		glEnd();
-#endif
-
-		r.end();
-		// return;
-	}
-	{
-		r.begin(lightTexture, viewport, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-		// r.begin(lightTexture, viewport, Vector4(0.1f, 0.1f, 0.1f, 1.0f));
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-		IVideoDriver::instance->setShaderProgram(lightProg);
-		IVideoDriver::instance->setUniformInt("base_texture", 0);
-		IVideoDriver::instance->setUniformInt("shadow_texture", 1);
-
-		Matrix viewProj = r.getViewProjection();
-		IVideoDriver::instance->setUniform("projection", &viewProj);
-
-		RectF shadowSrc = RectF(0, 0, lightTextureSize.x / lightTexture->getWidth(), lightTextureSize.y / lightTexture->getHeight());
-		RectF shadowDest = RectF(vec2(0, 0), lightTextureSize);
-		
-		AffineTransform t; t.identity();
-		r.setMask(shadowMaskTexture, shadowSrc, shadowDest, t, true);
-
-		ResAnim * resAnim = resources->getResAnim("light-02");
-		AnimationFrame frame = resAnim->getFrame(0, 0);
-		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(Color(255, 255, 200));
-
-		IVideoDriver::instance->setTexture(0, frame.getDiffuse().base);
-		IVideoDriver::instance->setTexture(1, shadowMaskTexture);
-
-		float radius = lightTextureSize.x * 0.3f;
-		vec2 pos = vec2(lightTextureSize.x * 0.6f, lightTextureSize.y * 0.5f);
-		// pos.y = lightTextureSize.y - pos.y;
-		r.draw(frame.getSrcRect(), RectF(pos - vec2(radius, radius), vec2(radius*2.0f, radius*2.0f)));
-		r.drawBatch();
-
-		// IVideoDriver::instance->setRenderTarget(NULL);
-		r.end();
-		return;
-	}
-#endif
-
-#if 0
-	{
-		Color color = Color(0, 0, 0, 255);
-		r.begin(lightTexture, viewport, &color);
-	
-		Renderer::transform t;
-		t.identity();
-		
-		RectF maskSrc = RectF(0, 0, lightTextureSize.x / lightTexture->getWidth(), lightTextureSize.y / lightTexture->getHeight());
-		RectF maskDest = RectF(vec2(0, 0), size);
-		r.setMask(shadowMaskTexture, maskSrc, maskDest, t, true);
-
-		// glEnable(GL_BLEND);
-		// glBlendFunc(GL_ONE, GL_ONE);
-		// glUseProgram(0);
-
-		ResAnim * resAnim = resources->getResAnim("light-02");
-		AnimationFrame frame = resAnim->getFrame(0,0);
-		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(Color(255, 255, 200));
-
-		float radius = lightTextureSize.x * 0.3f;
-		vec2 pos = vec2(lightTextureSize.x * 0.6f, lightTextureSize.y * 0.5f);
-		// pos.y = lightTextureSize.y - pos.y;
-		r.draw(frame.getSrcRect(), RectF(pos - vec2(radius, radius), vec2(radius*2.0f, radius*2.0f)));
-
-		r.removeMask();
-		r.end();
-	}
-	return;
-#endif
-	// r.begin(lightTexture, viewport, &color);
-
-#if 0
-
-	rs.renderer->getDriver()->setShaderProgram(prog);
-
-	// Matrix m = Matrix(rs.transform) * rs.renderer->getViewProjection();
-	Matrix m = rs.renderer->getViewProjection();
-	IVideoDriver::instance->setUniform("projection", &m);
-
-	{
-		Vector4 c(1.0f, 1.0f, 1.0f, 1.0f);
-		IVideoDriver::instance->setUniform("color", &c, 1);
-
-		glEnable(GL_STENCIL_TEST);
-
-		// glEnable(GL_BLEND);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilMask(0xFF);
-		// glColorMask(false, false, false, false);
-		// glDepthMask(false);
-		glClear(GL_STENCIL_BUFFER_BIT);
-
-		vec2 pos = size * 0.1f * lightScale;
-		vec2 rectSize = size * 0.4f * lightScale;
-
-		glBegin(GL_QUADS);
-		glVertex2f(pos.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y + rectSize.y);
-		glVertex2f(pos.x, pos.y + rectSize.y);
-		glEnd();
-	}
-
-	{
-		Vector4 c(1.0f, 0.75f, 0.75f, 1.0f);
-		IVideoDriver::instance->setUniform("color", &c, 1);
-
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL, 0, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		glStencilMask(0x00);
-		glColorMask(true, true, true, true);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-		vec2 pos = size * 0.3f * lightScale;
-		vec2 rectSize = size * 0.4f * lightScale;
-
-		glBegin(GL_QUADS);
-		glVertex2f(pos.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y);
-		glVertex2f(pos.x + rectSize.x, pos.y + rectSize.y);
-		glVertex2f(pos.x, pos.y + rectSize.y);
-		glEnd();
-	}
-
-	r.setBlendMode(blend_alpha);
-	r.end();
-	return;
-#endif
-
-#if 0
-	struct LightInfo
-	{
-		vec2 pos;
-		float radius;
-		Color color;
-	};
-
-	LightInfo lights[] = {
-		// { vec2(size.x * 0.2f, size.y * 0.2f), size.x * 0.19f, Color(255, 100, 100) },
-		// { vec2(size.x * 0.7f, size.y * 0.7f), size.x * 0.29f, Color(100, 255, 100) },
-		{ vec2(size.x * 0.5f, size.y * 0.5f), size.x * 0.3f, Color(255, 255, 200) },
-	};
-	int lightSize = sizeof(lights) / sizeof(lights[0]);
-
-	for(int i = 0; i < lightSize; i++){
-		// glClear(GL_STENCIL_BUFFER_BIT);
-		float radius = viewScale.x * lights[i].radius;
-		vec2 pos = lights[i].pos;
-		
-		rs.renderer->getDriver()->setShaderProgram(prog);
-
-		// Matrix m = Matrix(rs.transform) * rs.renderer->getViewProjection();
-		Matrix m = rs.renderer->getViewProjection();
-		IVideoDriver::instance->setUniform("projection", &m);
-
-		Vector4 c(1.0f, 1.0f, 1.0f, 1.0f);
-		IVideoDriver::instance->setUniform("color", &c, 1);
-
-		glEnable(GL_STENCIL_TEST);
-
-		// glDisable(GL_BLEND);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilMask(0xFF);
-		glColorMask(false, false, false, false);
-		glDepthMask(false);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		
-		// Vector2 p1 = pos - radius;
-		vec2 lightSize = vec2(radius * 2, radius * 2);
-#if 0
-		/* Vertex vertices[] = {
-				p1,
-				p1 + Vector2(lightSize.x, 0),
-				p1 + Vector2(lightSize.x, lightSize.y),
-				p1 + Vector2(0, lightSize.y),
-		};
-		r.draw(vertices, sizeof(vertices), VERTEX_POSITION); */
-		glBegin(GL_QUADS);
-		glVertex2f(p1.x, p1.y);
-		glVertex2f(p1.x + lightSize.x, p1.y);
-		glVertex2f(p1.x + lightSize.x, p1.y + lightSize.y);
-		glVertex2f(p1.x, p1.y + lightSize.y);
-		glEnd();
-		continue;
-#else
-		vec2 lightScreenPos = pos; // offs + pos;
-
-		for(int y = startY; y <= endY; y++){
-			for(int x = startX; x <= endX; x++){
-				TileType tileType = getFrontType(x, y);
-				if(!tileType){
-					continue;
-				}
-				vec2 pos = tileToPos(x, y) - offs;
-				vec2 vertices[] = {
-					pos,
-					pos + vec2(TILE_SIZE, 0),
-					pos + vec2(TILE_SIZE, TILE_SIZE),
-					pos + vec2(0, TILE_SIZE)
-				};
-				int count = 4;
-				for(int i = 0; i < count; i++){
-					vec2& p1 = vertices[i];
-					vec2& p2 = vertices[(i+1) % count];
-					vec2 edge = p2 - p1;
-					vec2 normal = vec2(edge.y, -edge.x);
-					vec2 lightToCurrent = p1 - lightScreenPos;
-					if(normal.dot(lightToCurrent) > 0){
-						vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-						vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
-						
-						glBegin(GL_QUADS);
-						glVertex2f(p1.x, p1.y);
-						glVertex2f(p1_target.x, p1_target.y);
-						glVertex2f(p2_target.x, p2_target.y);
-						glVertex2f(p2.x, p2.y);
-						glEnd();
-					}
-				}
-			}
-		}
-		// continue;
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL, 0, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		glStencilMask(0x00);
-		glColorMask(true, true, true, true);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-		glUseProgram(0);
-
-		ResAnim * resAnim = resources->getResAnim("light-02");
-		AnimationFrame frame = resAnim->getFrame(0,0);
-		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(lights[i].color);
-
-		pos.y = size.y - pos.y;
-		r.draw(frame.getSrcRect(), RectF(pos - vec2(radius, radius), lightSize));
-
-		glDisable(GL_BLEND);
-		glUseProgram(0);
-		glClear(GL_STENCIL_BUFFER_BIT);
-#endif
-	}
-	glDisable(GL_STENCIL_TEST);
-
-	r.setBlendMode(blend_alpha);
-	r.end();
-#endif
-
-	/*
-	const char* blend_vs = "\
-		uniform mediump mat4 projection;\
-		attribute vec2 a_position;\
-		void main() {\
-			vec4 position = vec4(a_position, 0.0, 1.0);\
-			gl_Position = projection * position;\
-		}\
-		";
-	const char* blend_fs = "\
-		uniform vec4 lightPos;\
-		uniform vec4 lightColor;\
-		uniform float lightRadius;\
-		void main() {\
-			float distance = length(lightPos.xy - gl_FragCoord.xy) / lightRadius;\
-			float attenuation = 1.0 / distance;\
-			vec4 color = vec4(attenuation, attenuation, attenuation, pow(attenuation, 3)) * lightColor;\
-			gl_FragColor = color;\
-		}\
-		";
-
-	blendProgram = createShaderProgram(blend_vs, blend_fs);
-	*/
 }
 
 ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char * _fs, bvertex_format format)
@@ -1441,7 +1065,7 @@ ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char *
 }
 
 #if 0
-void BaseLightLayer::doRender(const RenderState &rs)
+void BaseLightmap::doRender(const RenderState &rs)
 {
 	rs.renderer->drawBatch();	
 	
@@ -1808,82 +1432,11 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 	}
 }
 
-#if 0
-void BaseGame4X::initMap(const char * _name)
-{
-	std::string name = _name;
-	if(name == "testmap"){
-		OX_ASSERT(!tiles);
-		const Tiledmap * tiledmap = &testmapTiledmap;
-		tiledmapWidth = tiledmap->size.width;
-		tiledmapHeight = tiledmap->size.height;
-		int count = tiledmapWidth * tiledmapHeight;
-		tiles = new Tile[count];
-		std::map<TileType, bool> usedTiles;
-		std::map<ItemType, bool> usedItems;
-		for(int i = 0; i < count; i++){
-			tiles[i].item = tiledmap->items[i];
-			tiles[i].front = tiledmap->front[i];
-			tiles[i].back = tiledmap->back[i];
-			usedTiles[tiles[i].front] = true;
-			usedTiles[tiles[i].back] = true;
-			usedItems[tiles[i].item] = true;
-		}
-		std::map<ItemType, bool>::iterator it = usedTiles.begin();
-		for(; it != usedTiles.end(); ++it){
-			pushCtypeValue(os, this);
-			os->getProperty(-1, "touchTileRes");
-			OX_ASSERT(os->isFunction());
-			pushCtypeValue(os, it->first);
-			os->callTF(1);
-		}
-		it = usedItems.begin();
-		for(; it != usedItems.end(); ++it){
-			pushCtypeValue(os, this);
-			os->getProperty(-1, "touchItemRes");
-			OX_ASSERT(os->isFunction());
-			pushCtypeValue(os, it->first);
-			os->callTF(1);
-		}
-
-		spActor view = getOSChild("view"); OX_ASSERT(view);
-		view->setSize(Vector2(tiledmapWidth * TILE_SIZE, tiledmapHeight * TILE_SIZE));
-
-		pushCtypeValue(os, this);
-		pushCtypeValue(os, tiledmapWidth);
-		os->setProperty("tiledmapWidth");
-		
-		pushCtypeValue(os, this);
-		pushCtypeValue(os, tiledmapHeight);
-		os->setProperty("tiledmapHeight");
-		
-		pushCtypeValue(os, this);
-		pushCtypeValue(os, tiledmap->floor);
-		os->setProperty("tiledmapFloor");
-		
-		// oldViewPos = view->getPosition() + Vector2(100, 100);
-		// view->setPosition(-tileToPos(43, 14));
-		for(int i = 0; i < tiledmap->numEntities; i++){
-			pushCtypeValue(os, this);
-			os->getProperty(-1, "addTiledmapEntity");
-			OX_ASSERT(os->isFunction());
-			pushCtypeValue(os, tiledmap->entities[i].x);
-			pushCtypeValue(os, tiledmap->entities[i].y);
-			pushCtypeValue(os, tiledmap->entities[i].type);
-			pushCtypeValue(os, tiledmap->entities[i].player);
-			os->callTF(4);
-		}
-		return;
-	}
-	os->setException(("level "+name+" is not found").c_str());
-}
-#endif
-
-Actor * BaseGame4X::getLayer(int num)
+Actor * BaseGame4X::getMapLayer(int num)
 {
 	SaveStackSize saveStackSize;
 	pushCtypeValue(os, this);
-	os->getProperty("layers");
+	os->getProperty("mapLayers");
 	pushCtypeValue(os, num);
 	os->getProperty();
 	return CtypeValue<Actor*>::getArg(os, -1);

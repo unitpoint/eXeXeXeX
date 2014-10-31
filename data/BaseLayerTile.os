@@ -31,70 +31,80 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-SafePack = extends Actor {
-	__construct = function(game, entItem){
+BaseLayerTile = extends Sprite {
+	__construct = function(tile){
 		super()
-		// @name = name || "ent-043"
-		@game = game
-		@entItem = entItem
-		@cols = entItem.cols
-		@rows = entItem.rows
-		@pack = entItem.pack
-		@touchEnabled = false
-		@tutorial = null
-		
-		var borderSize, paddingSize = 10, 4
-		
-		@backpack = Backpack(@game).attrs {
-			// pivot = vec2(0, 0),
-			// x = @width + borderSize,
-			parent = this,
-		}
-		
-		var bg = Box9Sprite().attrs {
-			resAnim = res.get("panel"),
-			// priority = 1,
-			color = (Color.fromInt(0x5a5977) * 2.3), // .clamp(),
-			x = @backpack.x + @backpack.width + borderSize,
-			parent = this
-		}
-		bg.setGuides(20, 20, 20, 20)
-		
-		@slots = []
-		for(var x = 0; x < @cols; x++){
-			for(var y = 0; y < @rows; y++){
-				var slot = ItemSlot(@game, this, #@slots).attrs {
-					x = borderSize + (SLOT_SIZE + paddingSize) * x,
-					y = borderSize + (SLOT_SIZE + paddingSize) * (y + 1),
-					parent = bg,
-				}
-				@slots[] = slot
-			}
-		}
-		bg.width = slot.x + slot.width + borderSize
-		bg.height = slot.y + slot.height + borderSize
-		
-		BoxShadow(bg)
-		
-		@title = PanelTitle(bg, _T("Safe"), bg.color) // Color(0.99, 0.99, 0.7))
-		@title.x = bg.width - @title.width
-		
-		@width = bg.x + bg.width
-		@height = math.max(bg.height, @backpack.height)
-		
-		var entIcon = Box9Sprite().attrs {
-			resAnim = res.get(@entItem.name),
-			x = borderSize + (SLOT_SIZE + paddingSize) * (@cols - 1),
-			y = borderSize + (SLOT_SIZE + paddingSize) * 0,
-			size = vec2(SLOT_SIZE, SLOT_SIZE),
-			// scaleX = -1,
-			parent = bg,
-		}
-		
-		@updateItems()
+		@linkTiles = null
+		@cull = true
+		@tile = tile
+		// @type = type
+		@pos = tile.pos
+		@size = Tile.SIZE
+		@touchChildrenEnabled = false
 	},
 	
-	updateItems = function(){
-		@pack.updateActorItems(this)
+	cleanup = function(){
+		var linkTiles = @linkTiles; @linkTiles = null
+		for(var _, linkTile in linkTiles){
+			@tile.game.cleanupActor(linkTile)
+			linkTile.detach()
+		}
+		@detach()
+	},
+	
+	addLinkTile = function(tile){
+		@linkTiles.indexOf(tile) && throw "link tile is already exist"
+		@linkTiles || @linkTiles = []
+		@linkTiles[] = tile
+	},
+	
+	updateLinkTiles = function(){
+		var pos, size = @tile.pos, Tile.SIZE
+		for(var _, linkTile in @linkTiles){
+			linkTile.parent !== this || throw "error link tile parent" 
+			linkTile.pos = pos + size * linkTile.pivot
+		}
+	},
+	
+	__set@pos = function(value){
+		super(value)
+		@updateLinkTiles()
+	},
+	
+	__set@x = function(value){
+		super(value)
+		@updateLinkTiles()
+	},
+	
+	__set@y = function(value){
+		super(value)
+		@updateLinkTiles()
+	},
+	
+	pickByEnt = function(ent){
+	},
+	
+	__get@touchSprite = function(){
+		return this
+	},
+	
+	animateTouch = function(){
+		// print "start animateTouch: ${@tile.tileX}-${@tile.tileY}"
+		var touchSprite = @touchSprite
+		"touchSaveColor" in this || @touchSaveColor = touchSprite.color
+		touchSprite.replaceAction("touch", TweenAction {
+			duration = 0.5,
+			color = Color(1, 0.4, 0.4),
+			ease = Ease.PING_PONG,
+			doneCallback = function(){
+				touchSprite.color = @touchSaveColor
+				delete @touchSaveColor
+				// print "end animateTouch: ${@tile.tileX}-${@tile.tileY}"
+			},
+		})
+	},
+	
+	touch = function(){
+		@animateTouch()
 	},
 }

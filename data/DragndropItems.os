@@ -119,7 +119,7 @@ DragndropItems = extends Actor {
 					slot is ModalView && slot = null
 					if(slot !== @targetSlot){
 						@targetSlot = slot
-						if(slot is Tile){
+						if(slot is BaseLayerTile){
 							slot.touch()
 						}else if(slot){
 							slot.color = Color.WHITE
@@ -446,23 +446,24 @@ DragndropItems = extends Actor {
 	
 	breakHudDragndrop = function(){
 		@itemSlot.updateItem()
-		if(!@moved){ // @targetSlot == @itemSlot){
+		playErrClickSound()
+		/* if(!@moved){ // @targetSlot == @itemSlot){
 			@itemSlot.useItem()
 		}else{
 			playErrClickSound()
-		}
+		} */
 	},
 	
 	findHudTargetSlot = function(actor){
 		if((actor is ItemSlot && actor.owner is Backpack) || actor is HudSlot){
 			return true
 		}
-		if(actor is Tile){
+		if(actor is BaseLayerTile){
 			var type = @itemSlot.type
 			/* if(type == ITEM_TYPE_LADDERS){
 				return @game.player.canUseLaddersAt(actor.tileX, actor.tileY)
 			} */
-			return @game.player.canUseItemAt(type, actor.tileX, actor.tileY)
+			return @game.player.canUseItemAt(type, actor.tile.tileX, actor.tile.tileY)
 		}
 	},
 	
@@ -476,8 +477,8 @@ DragndropItems = extends Actor {
 			// var destType = @targetSlot.type
 			@itemSlot.type = @targetSlot.type
 			@targetSlot.type = srcType
-		}else if(@targetSlot is Tile){
-			var tx, ty = @targetSlot.tileX, @targetSlot.tileY
+		}else if(@targetSlot is BaseLayerTile){
+			var tx, ty = @targetSlot.tile.tileX, @targetSlot.tile.tileY
 			@game.player.useItemAt(@itemSlot.type, tx, ty)
 		}else{
 			assert(@targetSlot is ItemSlot && @targetSlot.owner is Backpack)

@@ -31,32 +31,47 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-Door = extends Tile {
+DoorTile = extends FrontTile {
 	STATE_CLOSED = 0,
 	STATE_OPENING = 1,
 	STATE_OPENED = 2,
 	STATE_CLOSING = 3,
 
-	__construct = function(game, x, y){
-		super(game, x, y)
-		@priority = TILE_PRIORITY_DOOR
-		@front.priority = @PRIORITY_FRONT_DOOR
-		// @front.priority = 5
+	__construct = function(tile, type, itemType){
+		super(tile, type, itemType)
+		@parent = @tile.game.mapLayers[MAP_LAYER_TILE_FRONT_DOOR]
+
+		@door = Sprite().attrs {
+			resAnim = @resAnim, // res.get(resName),
+			// pivot = vec2(0, 0),
+			pos = vec2(0, 0),
+			// size = @size,
+			// scale = @scale,
+			parent = this,
+		}
+		@resAnim = null
+		@size = Tile.SIZE
+		
+		@door.scale = @size / @door.size
+		@door.size = @size
+
+		var type = @tile.frontType
 		@handle = Sprite().attrs {
-			resAnim = res.get(TILES_INFO[@frontType].handle),
+			resAnim = res.get(TILES_INFO[type].handle),
 			pivot = vec2(0.51, 0.51),
 			pos = @size / 2,
 			priority = 2,
-			parent = @front,
+			parent = @door,
 		}
 		@handleShadow = Sprite().attrs {
-			resAnim = res.get(TILES_INFO[@frontType].handleShadow),
+			resAnim = res.get(TILES_INFO[type].handleShadow),
 			pivot = @handle.pivot,
 			pos = @handle.pos + vec2(@width * 0.02, @height * 0.05),
 			opacity = 0.5,
 			priority = 1,
-			parent = @front,
+			parent = @door,
 		}
+		
 		@openY = -@height
 		@handleAction = null
 		@timeoutHandle = null
@@ -64,17 +79,23 @@ Door = extends Tile {
 		@sound = null
 	},
 	
-	__get@openState = function(){
-		return @front.y / @openY
+	createBackTile = function(){
+		var back = BackTile(@tile)
+		back === @tile.back || throw "error init tile.back"
+		@tile.back.visible = false
 	},
 	
-	__get@isEmpty = function(){
+	__get@openState = function(){
+		return @door.y / @openY
+	},
+	
+	__get@isPassable = function(){
 		return @state != @STATE_CLOSED
 	},
 	
 	cleanup = function(){
-		super()
 		@sound.fadeOut(0.5)
+		super()
 	},
 	
 	pause = function(){
@@ -110,9 +131,9 @@ Door = extends Tile {
 				@handleShadow.angle = @handle.angle
 			},
 			doneCallback = function(){
-				@back.visible = true
-				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1, true)
-				@handleAction = @front.addTweenAction {
+				@tile.back.visible = true
+				@tile.game.updateMapTiles(@tile.tileX-1, @tile.tileY-1, @tile.tileX+1, @tile.tileY+1, true)
+				@handleAction = @door.addTweenAction {
 					duration = 1.0, // (1 - @openState) * 1.0,
 					y = @openY,
 					ease = Ease.CUBIC_IN_OUT,
@@ -144,20 +165,20 @@ Door = extends Tile {
 		
 		@timeoutHandle = @addTimeout(0.4, function(){
 			@timeoutHandle = null
-			var ent = @game.getTileEnt(@tileX, @tileY)
+			var ent = @tile.game.getTileEnt(@tile.tileX, @tile.tileY)
 			if(ent){
 				@open()
 			}
 		})
 		
-		@handleAction = @front.addTweenAction {
+		@handleAction = @door.addTweenAction {
 			duration = 1.0,
 			y = 0,
 			ease = Ease.CUBIC_IN_OUT,
 			doneCallback = function(){
-				@back.visible = false
 				@state = @STATE_CLOSED
-				@game.updateTiledmapShadowViewport(@tileX-1, @tileY-1, @tileX+1, @tileY+1, true)
+				@tile.back.visible = false
+				@tile.game.updateMapTiles(@tile.tileX-1, @tile.tileY-1, @tile.tileX+1, @tile.tileY+1, true)
 				@handleAction = @handle.addTweenAction {
 					duration = 1.0,
 					angle = 0,

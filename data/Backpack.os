@@ -84,6 +84,9 @@ Backpack = extends Actor {
 		@height = slot.y + slot.height + borderSize
 		bg.size = @size
 		
+		BoxShadow(bg)
+		// BoxShadow(@title)
+		
 		var icon = Box9Sprite().attrs {
 			resAnim = res.get("backpack"),
 			pivot = vec2(0, 0),

@@ -31,15 +31,6 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-var enumCount = 0
-LAYER_TILES = enumCount++
-LAYER_DECALS = enumCount++
-LAYER_MONSTERS = enumCount++
-LAYER_PLAYER = enumCount++
-LAYER_FALLING_TILES = enumCount++
-LAYER_EXPLODES = enumCount++
-LAYER_COUNT = enumCount
-
 TILE_FADE_SIZE = 32
 
 TILE_TYPE_EMPTY = 0
@@ -51,65 +42,6 @@ TILE_TYPE_ROCK = 9
 TILE_TYPE_DOOR_01 = 16
 TILE_TYPE_LADDERS = 17
 TILE_TYPE_TRADE_STOCK = 24
-
-TILE_PRIORITY_BASE = 2
-TILE_PRIORITY_DOOR = 3
-TILE_PRIORITY_FALLING = 4
-
-GAME_PRIORITY_BG = 1
-GAME_PRIORITY_VIEW = 2
-GAME_PRIORITY_LIGHTMASK = 3
-GAME_PRIORITY_GLOWING = 4
-GAME_PRIORITY_BUBBLES = 5
-GAME_PRIORITY_HUD = 6
-GAME_PRIORITY_DRAGNDROP = 7
-GAME_PRIORITY_MODALVIEW = 8
-GAME_PRIORITY_BLOOD = 9
-GAME_PRIORITY_FADEIN = 10
-
-HUD_ICON_SIZE = 80
-HUD_ICON_INDENT = 10
-
-// HUD_SLOT_SIZE = 80
-// HUD_SLOT_INDENT = 5
-
-SLOT_SIZE = 80
-SLOT_INDENT = 5
-
-TILES_INFO = {
-	[TILE_TYPE_GRASS] = {
-		strength = 3,
-	},
-	[TILE_TYPE_CHERNOZEM] = {
-		variants = 3,
-		strength = 6,
-		// damageDelay = 0.1,
-	},
-	[TILE_TYPE_ROCK] = {
-		// variants = 1,
-	},
-	/* [TILE_TYPE_LADDERS] = {
-		strength = 0,
-	}, */
-	2 = {
-		strength = 50,
-		variants = 2,
-		glowing = true,
-	},
-	3 = {
-		strength = 30,
-		glowing = true,
-	},
-	[TILE_TYPE_DOOR_01] = {
-		class = "Door",
-		// door = true,
-		handle = "door-handle",
-		handleShadow = "door-handle-shadow",
-	},
-	[TILE_TYPE_TRADE_STOCK] = {
-		variants = 4,
-	},
-}
 
 ITEM_TYPE_COAL = 7
 ITEM_TYPE_GOLD = 10
@@ -132,6 +64,132 @@ ITEM_TYPE_ENT_SAFEPACK = 41
 
 // not real items
 ITEM_TYPE_SHOPPING = 1000
+
+/*
+TILE_PRIORITY_BASE = 2
+TILE_PRIORITY_DOOR = 3
+TILE_PRIORITY_FALLING = 4
+
+var enumCount = 0
+LAYER_TILES = enumCount++
+LAYER_DECALS = enumCount++
+LAYER_MONSTERS = enumCount++
+LAYER_PLAYER = enumCount++
+LAYER_FALLING_TILES = enumCount++
+LAYER_EXPLODES = enumCount++
+LAYER_DEBUG = enumCount++
+LAYER_COUNT = enumCount
+*/
+
+var enumCount = 0
+MAP_LAYER_TILES = enumCount++
+MAP_LAYER_TILE_BACK = enumCount++
+MAP_LAYER_TILE_SHADOW = enumCount++
+// MAP_LAYER_TILE_LADDERS = enumCount++
+MAP_LAYER_TILE_ITEM = enumCount++
+MAP_LAYER_ENTITIES = enumCount++
+MAP_LAYER_PLAYER = enumCount++
+MAP_LAYER_TILE_FRONT = enumCount++
+MAP_LAYER_TILE_FRONT_DOOR = enumCount++
+MAP_LAYER_TILE_FRONT_FALLING = enumCount++
+MAP_LAYER_TILE_FRONT_ITEM = enumCount++
+MAP_LAYER_DECALS = enumCount++
+MAP_LAYER_SCREEN_LIGHTMAP = enumCount++
+MAP_LAYER_TILE_GLOWING = enumCount++
+MAP_LAYER_EXPLODES = enumCount++
+MAP_LAYER_BUBBLES = enumCount++
+MAP_LAYER_DEBUG = enumCount++
+MAP_LAYER_COUNT = enumCount
+
+MAP_LAYERS_TOUCH_DISABLED = [
+	// MAP_LAYER_TILE_BACK,
+	MAP_LAYER_TILE_SHADOW,
+	// MAP_LAYER_TILE_ITEM,
+	// MAP_LAYER_TILE_FRONT,
+	// MAP_LAYER_TILE_FRONT_DOOR,
+	MAP_LAYER_TILE_FRONT_FALLING,
+	MAP_LAYER_TILE_FRONT_ITEM,
+	MAP_LAYER_DECALS,
+	MAP_LAYER_SCREEN_LIGHTMAP,
+	MAP_LAYER_TILE_GLOWING,
+	MAP_LAYER_EXPLODES,
+	MAP_LAYER_DEBUG,
+]
+
+var enumCount = 0
+GAME_LAYER_BG = enumCount++
+GAME_LAYER_MAP = enumCount++
+GAME_LAYER_DEBUG = enumCount++
+// GAME_LAYER_MODALVIEW = enumCount++
+GAME_LAYER_HUD = enumCount++
+GAME_LAYER_DRAGNDROP = enumCount++
+GAME_LAYER_MENU_MODALVIEW = enumCount++
+GAME_LAYER_BLOOD = enumCount++
+GAME_LAYER_FADE = enumCount++
+
+/*
+GAME_PRIORITY_LIGHTMASK = enumCount++
+GAME_PRIORITY_GLOWING = enumCount++
+GAME_PRIORITY_BUBBLES = enumCount++
+GAME_PRIORITY_DEBUG = enumCount++
+GAME_PRIORITY_HUD = enumCount++
+GAME_PRIORITY_DRAGNDROP = enumCount++
+GAME_PRIORITY_MODALVIEW = enumCount++
+GAME_PRIORITY_BLOOD = enumCount++
+GAME_PRIORITY_FADEIN = enumCount++
+*/
+
+HUD_ICON_SIZE = 80
+HUD_ICON_INDENT = 10
+
+// HUD_SLOT_SIZE = 80
+// HUD_SLOT_INDENT = 5
+
+SLOT_SIZE = 80
+SLOT_INDENT = 5
+
+TILES_INFO = {
+	[TILE_TYPE_EMPTY] = {
+		// strength = 0,
+		passable = true,
+		transparent = true,
+	},
+	[TILE_TYPE_LADDERS] = {
+		// strength = 0,
+		passable = true,
+		transparent = true,
+		item = ITEM_TYPE_LADDERS,
+	},
+	[TILE_TYPE_GRASS] = {
+		strength = 3,
+	},
+	[TILE_TYPE_CHERNOZEM] = {
+		variants = 3,
+		strength = 6,
+		// damageDelay = 0.1,
+	},
+	[TILE_TYPE_ROCK] = {
+		// variants = 1,
+	},
+	2 = {
+		strength = 50,
+		variants = 2,
+		glowing = true,
+	},
+	3 = {
+		strength = 30,
+		glowing = true,
+	},
+	[TILE_TYPE_DOOR_01] = {
+		class = "DoorTile",
+		// door = true,
+		handle = "door-handle",
+		handleShadow = "door-handle-shadow",
+	},
+	[TILE_TYPE_TRADE_STOCK] = {
+		variants = 4,
+	},
+}
 
 ITEMS_INFO = {
 	1 = {
@@ -472,11 +530,16 @@ Game4X = extends BaseGame4X {
 	__object = {
 		time = 0,
 		dt = 0,
+		/*
+		frontTiles = {},
+		backTiles = {},
+		itemTiles = {},
+		shadowTiles = {},
+		tiles = {},
+		*/
 		tiles = {},
 		tileEnt = {},
 		tileCracks = {},
-		oldViewTilePosX = -1,
-		oldViewTilePosY = -1,
 		player = null,
 		// playerMaxStamina = 300,
 		// playerStamina = 0,
@@ -497,6 +560,7 @@ Game4X = extends BaseGame4X {
 		
 		// @shakeOffs = vec2(0, 0)
 		@shakeUpdateHandle = null
+		@shakeOffs = null
 		
 		@blockSound = null
 		@blockSoundTime = 0
@@ -513,11 +577,43 @@ Game4X = extends BaseGame4X {
 			resAnim = res.get("bg-start"),
 			pivot = vec2(0.5, 0),
 			pos = vec2(@width/2, 0),
-			priority = GAME_PRIORITY_BG,
+			priority = GAME_LAYER_BG,
+			touchEnabled = false,
+			touchChildrenEnabled = false,
 			parent = this,
 		}
 		@bg.scale = @width / @bg.width
 		
+		@map = Actor().attrs {
+			pivot = vec2(0, 0),
+			pos = vec2(0, 0),
+			// scale = 0.7,
+			priority = GAME_LAYER_MAP,			
+			clock = Clock(),
+			parent = this,
+		}
+		
+		@mapLayers = []
+		for(var i = 0; i < MAP_LAYER_COUNT; i++){
+			@mapLayers[] = Actor().attrs {
+				priority = i,
+				parent = @map,
+			}
+		}
+		for(var _, i in MAP_LAYERS_TOUCH_DISABLED){
+			@mapLayers[i].attrs {
+				touchEnabled = false,
+				touchChildrenEnabled = false,
+			}
+		}
+		
+		@lightmap = BaseLightmap().attrs {
+			size = @size,
+			// priority = GAME_PRIORITY_LIGHTMASK,
+			parent = @mapLayers[MAP_LAYER_SCREEN_LIGHTMAP],
+		}
+		
+		/*
 		@glowingTiles = Actor().attrs {
 			priority = GAME_PRIORITY_GLOWING,
 			touchEnabled = false,
@@ -525,46 +621,40 @@ Game4X = extends BaseGame4X {
 			parent = this,
 		}
 		
-		@speechBubbles = Actor().attrs {
-			priority = GAME_PRIORITY_BUBBLES,
+		@debugTiles = Actor().attrs {
+			priority = GAME_PRIORITY_DEBUG,
 			touchEnabled = false,
-			// touchChildrenEnabled = false,
+			touchChildrenEnabled = false,
 			parent = this,
 		}
+		*/
 		
-		// var game = this
-		@view = Actor().attrs {
-			pivot = vec2(0, 0),
-			pos = vec2(0, 0),
-			// scale = 0.7,
-			priority = GAME_PRIORITY_VIEW,			
-			clock = Clock(),
-			parent = this,
+		@speechBubbles = Actor().attrs {
+			// priority = GAME_PRIORITY_BUBBLES,
+			touchEnabled = false,
+			// touchChildrenEnabled = false,
+			parent = @mapLayers[MAP_LAYER_BUBBLES],
+		}
+		
+		@playerTargetTile = ColorRectSprite().attrs {
+			size = vec2(TILE_SIZE, TILE_SIZE),
+			pivot = vec2(0.5, 0.5),
+			color = Color.RED,
+			opacity = 0.2,
+			// parent = DEBUG ? @mapLayers[MAP_LAYER_DEBUG] : null,
+			// parent = @mapLayers[MAP_LAYER_DEBUG],
+			parent = null,
 		}
 		
 		@dragndrop = DragndropItems(this).attrs {
-			priority = GAME_PRIORITY_DRAGNDROP,			
-			parent = this,
-		}
-		
-		@layers = []
-		for(var i = 0; i < LAYER_COUNT; i++){
-			@layers[] = Actor().attrs {
-				priority = i,
-				parent = @view,
-			}
-		}
-		
-		@lightLayer = BaseLightLayer().attrs {
-			size = @size,
-			priority = GAME_PRIORITY_LIGHTMASK,
+			priority = GAME_LAYER_DRAGNDROP,			
 			parent = this,
 		}
 		
 		@hud = Actor().attrs {
 			name = "hud",
 			size = @size,
-			priority = GAME_PRIORITY_HUD,
+			priority = GAME_LAYER_HUD,
 			parent = this,
 			touchEnabled = false,
 		}
@@ -572,6 +662,7 @@ Game4X = extends BaseGame4X {
 		@modalView = ModalView().attrs {
 			name = "modalView",
 			size = @size,
+			// priority = GAME_LAYER_MODALVIEW,			
 			parent = @hud,
 			// touchEnabled = false,
 			visible = false,
@@ -725,8 +816,9 @@ Game4X = extends BaseGame4X {
 		@addUpdate(@update.bind(this))
 		
 		@saveSlotNum && @addEventListener(TouchEvent.CLICK, function(ev){
-			if(ev.target is BaseTile){
-				@pickTile(ev.target.tileX, ev.target.tileY, true)
+			if(ev.target is BaseLayerTile){
+				var layerTile = ev.target
+				@pickTile(layerTile.tile.tileX, layerTile.tile.tileY, true)
 				return
 			}
 			if(ev.target is Entity){
@@ -755,7 +847,7 @@ Game4X = extends BaseGame4X {
 		@dragging = null
 		if(@saveSlotNum){
 			@addEventListener(TouchEvent.START, function(ev){
-				if(ev.target is BaseTile){
+				if(ev.target is BaseLayerTile){
 					@dragging = ev.localPosition
 				}
 			})
@@ -763,8 +855,8 @@ Game4X = extends BaseGame4X {
 			@addEventListener(TouchEvent.MOVE, function(ev){
 				if(@dragging){
 					var offs = ev.localPosition - @dragging
-					@view.pos += offs
-					@glowingTiles.pos = @speechBubbles.pos = @view.pos
+					@mapPos += offs
+					// @glowingTiles.pos = @speechBubbles.pos = @debugTiles.pos = @view.pos
 					@dragging = ev.localPosition
 				}
 			})
@@ -775,7 +867,7 @@ Game4X = extends BaseGame4X {
 		}
 		
 		@hudBlood = Actor().attrs {
-			priority = GAME_PRIORITY_BLOOD,
+			priority = GAME_LAYER_BLOOD,
 			touchEnabled = false,
 			touchChildrenEnabled = false,
 			parent = this,
@@ -830,7 +922,7 @@ Game4X = extends BaseGame4X {
 			@hud.visible = false
 			// @player.visible = false
 			@modalView.parent = this
-			@modalView.priority = GAME_PRIORITY_MODALVIEW
+			@modalView.priority = GAME_LAYER_MENU_MODALVIEW
 			@modalView.color = Color(0.2, 0.23, 0.23, 0),
 			@openLoadGame()
 			playMusic("music-menu")
@@ -840,7 +932,7 @@ Game4X = extends BaseGame4X {
 		ColorRectSprite().attrs {
 			size = @size,
 			color = Color.BLACK,
-			priority = GAME_PRIORITY_FADEIN,
+			priority = GAME_LAYER_FADE,
 			touchEnabled = false,
 			parent = this,
 		}.addTweenAction {
@@ -932,8 +1024,8 @@ Game4X = extends BaseGame4X {
 			@modalView.closeCallback = null
 
 			if(@modalView.pauseGame){
-				@view.clock.resume()
-				@resumeActor(@view)
+				@map.clock.resume()
+				@resumeActor(@map)
 			}
 			
 			closeCallback() // use callback's this instead of @modalView
@@ -945,8 +1037,8 @@ Game4X = extends BaseGame4X {
 		
 		@modalView.pauseGame = !!@saveSlotNum
 		if(@modalView.pauseGame){
-			@view.clock.pause()
-			@pauseActor(@view)
+			@map.clock.pause()
+			@pauseActor(@map)
 		}
 		
 		@modalView.visible = true
@@ -1158,7 +1250,7 @@ Game4X = extends BaseGame4X {
 		var rect = ColorRectSprite().attrs {
 			size = @size,
 			color = Color.BLACK,
-			priority = GAME_PRIORITY_FADEIN,
+			priority = GAME_LAYER_FADE,
 			opacity = 0,
 			parent = this,
 		}
@@ -1252,12 +1344,12 @@ Game4X = extends BaseGame4X {
 	
 	getAutoFrontType = function(tx, ty){
 		var tile = @getTile(tx, ty)
-		tile.openState > 0.7 && return TILE_TYPE_EMPTY
+		tile.front.openState > 0.7 && return TILE_TYPE_EMPTY
 		return @getFrontType(tx, ty)
 	},
 	
 	explodeTileItem = function(tx, ty, radius, wait){
-		@getTile(tx, ty).explodeItem()
+		// @getTile(tx, ty).explodeItem()
 	},
 	
 	playBlockSound = function(){
@@ -1337,13 +1429,13 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
-	removeCrack = function(tx, ty, cleanup){
-		var key = "${tx}-${ty}"
-		var crack = @tileCracks[key]
+	deleteCrack = function(tx, ty){
+		var id = @getTileId(tx, ty) // "${tx}-${ty}"
+		var crack = @tileCracks[id]
 		if(crack){
-			delete @tileCracks[key]
+			delete @tileCracks[id]
 			crack.detach()
-			cleanup && @cleanupActor(crack) // .cleanup()
+			@cleanupActor(crack) // .cleanup()
 		}
 	},
 	
@@ -1394,8 +1486,8 @@ Game4X = extends BaseGame4X {
 			}
 			return
 		}
-		var key = "${tx}-${ty}"
-		var crack = @tileCracks[key] || @{
+		var id = @getTileId(tx, ty) // "${tx}-${ty}"
+		var crack = @tileCracks[id] || @{
 			var pos = @tileToCenterPos(tx, ty)
 			var crack = Sprite().attrs {
 				resAnim = res.get("crack"),
@@ -1407,7 +1499,7 @@ Game4X = extends BaseGame4X {
 				// tileY = ty,
 				// tileType = type,
 				touchEnabled = false,
-				parent = @layers[LAYER_DECALS],
+				parent = @mapLayers[MAP_LAYER_DECALS],
 				damageDelay = tileInfo.damageDelay || 0.3,
 				strength = strength, 
 				damage = -1,				
@@ -1423,14 +1515,14 @@ Game4X = extends BaseGame4X {
 				crack.angle = 90*3
 			}
 			crack.scaleY = math.random() < 0.5 ? -1 : 1
-			@tileCracks[key] = crack
+			@tileCracks[id] = crack
 			return crack
 		}
 		// print "tile ${tx}x${ty} strength: ${crack.damage+1}/${strength} , deep: ${math.round(deepStrength, 2)}, damage: ${damage}"
 		if(byTouch || crack.nextDamageTime <= @time){
 			if(++crack.damage >= crack.strength-1){
 				crack.detach()
-				delete @tileCracks[key]
+				delete @tileCracks[id]
 				@cleanupActor(crack)
 				
 				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
@@ -1439,14 +1531,14 @@ Game4X = extends BaseGame4X {
 						@player.playTakeItemSound()
 					}
 				}
-				@removeTile(tx, ty, true)
-				@updateTile(tx, ty)
-				@updateTiledmapShadowViewport(tx-1, ty-1, tx+1, ty+1, true)
+				@deleteTile(tile)
+				// @updateTile(tx, ty)
+				@updateMapTiles(tx-1, ty-1, tx+1, ty+1, true)
 				@playRockBreakSound()
 				return true
 			}
 			crack.nextDamageTime = @time + crack.damageDelay
-			@player.useStaminaByCrack()
+			@player.useDigStamina()
 			@playDigSound()
 		}
 		crack.resAnimFrameNum = (crack.damage+1) * crack.resAnim.totalFrames / crack.strength
@@ -1464,14 +1556,13 @@ Game4X = extends BaseGame4X {
 			}, Ease.CUBIC_IN_OUT)
 			@backpackIcon.replaceAction("note", action)
 			return true
-		}else{
-			@backpackIcon.color = Color.WHITE
-			@backpackIcon.replaceTweenAction {
-				name = "note",
-				duration = 0.5,
-				color = Color(1, 0, 0),
-				ease = Ease.PING_PONG
-			}
+		}
+		@backpackIcon.color = Color.WHITE
+		@backpackIcon.replaceTweenAction {
+			name = "note",
+			duration = 0.5,
+			color = Color(1, 0, 0),
+			ease = Ease.PING_PONG
 		}
 	},
 	
@@ -1515,10 +1606,6 @@ Game4X = extends BaseGame4X {
 		return @getSlotItemResName(type)
 	},
 	
-	getTile = function(x, y){
-		return @tiles["${x}-${y}"]
-	},
-	
 	touchGroupRes = function(group, type){
 		var variants = null
 		if(group == "tile-item"){
@@ -1549,34 +1636,7 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
-	updateTile = function(x, y){
-		var tile = @getTile(x, y)
-		if(!tile){
-			var type = @getFrontType(x, y)
-			tile = _G[TILES_INFO[type].class || "Tile"](this, x, y)
-			// tile = Tile(this, x, y)
-		}
-		tile.time = @time
-	},
-	
-	updateTiledmapShadowViewport = function(ax, ay, bx, by, recreate){
-		for(var y = ay; y <= by; y++){
-			for(var x = ax; x <= bx; x++){
-				var tile = @getTile(x, y)
-				tile.updateShadow(recreate)
-			}
-		}
-	},
-	
-	updateTiledmapViewport = function(ax, ay, bx, by, recreate){
-		for(var y = ay; y <= by; y++){
-			for(var x = ax; x <= bx; x++){
-				@updateTile(x, y)
-			}
-		}
-		@updateTiledmapShadowViewport(ax, ay, bx, by, recreate)
-	},
-	
+
 	playerDead = function(){
 		@reloadGame()
 		return
@@ -1655,12 +1715,84 @@ Game4X = extends BaseGame4X {
 		throw "unknown entity tiledmap type: ${obj.gid}"
 	},
 	
-	removeTile = function(tx, ty, cleanup){
+	getTileId = function(x, y){
+		return (y|0)*1000000 + (x|0)
+	},
+	
+	getTile = function(x, y){
+		return @tiles[@getTileId(x, y)]
+	},
+	
+	setTile = function(tile){
+		@tiles[tile.tileId] && throw "tile is already exist"
+		@tiles[tile.tileId] = tile
+	},
+	
+	deleteTile = function(x, y){
+		var id = x is Tile ? x.tileId : @getTileId(x, y)
+		@tiles[id].cleanup()
+		delete @tiles[id]
+	},
+
+	/* deleteTileAt = function(x, y){
+		var id = @getTileId(x, y)
+		@tiles[id].cleanup()
+		delete @tiles[id]
+	}, */
+	
+	updateTile = function(x, y){
+		var tile = @getTile(x, y) || @{
+			var tile = Tile(this, x, y)
+			// @setTile(tile)
+			tile === @getTile(x, y) || throw "error set tile"
+			return tile
+		}
+		tile.time = @time
+		return tile
+	},
+	
+	updateMapTiles = function(ax, ay, bx, by, recreate){
+		for(var y = ay; y <= by; y++){
+			for(var x = ax; x <= bx; x++){
+				var tile = @updateTile(x, y)
+				tile.updateShadow(recreate)
+			}
+		}
+	},
+	
+	updateMapTilesViewport = function(ax, ay, bx, by, recreate){
+		for(var y = ay; y <= by; y++){
+			for(var x = ax; x <= bx; x++){
+				@updateTile(x, y)
+			}
+		}
+		// @updateMapTiles(ax, ay, bx, by, recreate)
+		for(var _, tile in @tiles){
+			// @markTileVisibility(tile, tile.time == @time)
+			if(tile.time != @time){
+				@deleteTile(tile)
+			}else{
+				tile.updateShadow(recreate)
+			}
+		}
+		/* for(var _, tile in @tiles){
+			tile.updateShadow(recreate)
+		} */
+	},
+	
+	/* updateViewport = function(startX, startY, endX, endY){
+		@updateTiledmapViewport(startX, startY, endX, endY)
+		for(var _, tile in @tiles){ // @mapLayers[MAP_LAYER_TILES]){
+			@markTileVisibility(tile, tile.time == @time)
+		}
+	}, */
+	
+	/* removeTile = function(tx, ty, cleanup){
 		var key = "${tx}-${ty}"
 		var tile = @tiles[key]
 		if(tile){
 			delete @tiles[key]
-			tile.detach()
+			// tile.detach()
 			cleanup && @cleanupActor(tile) // .cleanup()
 		}
 	},
@@ -1677,51 +1809,21 @@ Game4X = extends BaseGame4X {
 	
 	markEntVisibility = function(ent, visible){
 		
-	},
+	}, */
 	
 	centerViewToTile = function(tx, ty){
-		var pos = @tileToCenterPos(tx, ty) - @centerViewPos / @view.scale
-		@viewPos = -pos * @view.scale
-		// @view.pos = -pos * @view.scale
-		// @glowingTiles.pos = @view.pos
-		// @updateView()
+		var pos = @tileToCenterPos(tx, ty) - @centerViewPos / @map.scale
+		@mapPos = -pos * @map.scale
 	},
 	
-	__get@viewPos = function(){
-		return @view.pos
+	__get@mapPos = function(){
+		return @map.pos
 	},
-	__set@viewPos = function(value){
-		@view.pos = value
-		@glowingTiles.pos = value
-		@speechBubbles.pos = value
+	__set@mapPos = function(value){
+		@map.pos = value
+		@mapLayers[MAP_LAYER_SCREEN_LIGHTMAP].pos = -value
+		// @glowingTiles.pos = @speechBubbles.pos = @debugTiles.pos = value
 	},
-	
-	/* followPlayer = function(){
-		var viewScale = @view.scale
-		var idealPos = (@size / 2 / viewScale - @player.pos) * viewScale
-		var pos = @view.pos
-		pos = pos + (idealPos - pos) * math.min(1, 3.0 * @dt)
-		
-		var maxOffs = @size * 0.3 / viewScale
-		if(idealPos.x - pos.x > maxOffs.x){
-			pos.x = idealPos.x - maxOffs.x
-		}else if(idealPos.x - pos.x < -maxOffs.x){
-			pos.x = idealPos.x + maxOffs.x
-		}
-		if(idealPos.y - pos.y > maxOffs.y){
-			pos.y = idealPos.y - maxOffs.y
-		}else if(idealPos.y - pos.y < -maxOffs.y){
-			pos.y = idealPos.y + maxOffs.y
-		}
-		
-		// pos.x = math.round(pos.x) // * @view.scaleX)
-		// pos.y = math.round(pos.y) // * @view.scaleY)
-		
-		@view.pos = pos
-		@glowingTiles.pos = pos
-		
-		@updateView()
-	}, */
 	
 	tileToCenterPos = function(x, y){
 		return vec2((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
@@ -1743,61 +1845,21 @@ Game4X = extends BaseGame4X {
 		return math.round(pos.x / TILE_SIZE), math.round(pos.y / TILE_SIZE)
 	},
 	
-	updateViewport = function(startX, startY, endX, endY){
-		@updateTiledmapViewport(startX, startY, endX, endY)
-		for(var _, tile in @layers[LAYER_TILES]){
-			@markTileVisibility(tile, tile.time == @time)
-		}
-	},
-	
-	updateView = function(){
-		var offs = -@view.pos / @view.scale
-		var startX, startY = @posToTile(offs)
-		var edge = 0
-		startX, startY = startX - edge-1, startY - edge
-		if(startX != @oldViewTilePosX || startY != @oldViewTilePosY){
-			@oldViewTilePosX, @oldViewTilePosY = startX, startY
-			
-			var endOffs = offs + @size / @view.scale
-			var endX, endY = @posToCeilTile(endOffs)
-			endX, endY = endX + edge+1, endY + edge
-			
-			@updateTiledmapViewport(startX, startY, endX, endY)
-			
-			/* for(var i = @numLights-1; i >= 0; i--){
-				var light = @getLight(i)
-				var startLightX, startLightY = @posToTile(light.pos - light.radius)
-				var endLightX, endLightY = @posToCeilTile(light.pos + light.radius)
-				if(startLightX <= endX && endLightX >= startX
-					&& startLightY <= endY && endLightY >= startY)
-				{
-					@updateTiledmapViewport(startLightX, startLightY, endLightX, endLightY)
-				}
-			} */
-			
-			for(var _, tile in @layers[LAYER_TILES]){
-				@markTileVisibility(tile, tile.time == @time)
-			}
-			// print "alive tiles: ${#@layers[LAYER_TILES]}"
-		}
-	},
-	
 	shakeCamera = function(size, time){
 		time || time = 2
 		size = size * TILE_SIZE
-		@view.removeUpdate(@shakeUpdateHandle)
 		var accumTime = 0
-		@shakeUpdateHandle = @view.addUpdate(function(ev){
+		@map.removeUpdate(@shakeUpdateHandle)
+		@shakeUpdateHandle = @map.addUpdate(function(ev){
 			accumTime += ev.dt
 			if(accumTime > time){
-				@view.removeUpdate(@shakeUpdateHandle)
+				@map.removeUpdate(@shakeUpdateHandle)
 				@shakeUpdateHandle = null
 				return
 			}
 			var t = Ease.run(1 - accumTime / time, Ease.CUBIC_OUT)
 			// var t = 1 - accumTime / time
-			var shakeOffs = vec2(randSign() * size * t, randSign() * size * t)
-			@viewPos += shakeOffs
+			@shakeOffs = vec2(randSign() * size * t, randSign() * size * t)
 		})
 	},
 	
@@ -1814,7 +1876,7 @@ Game4X = extends BaseGame4X {
 				"update" in obj && obj.update()
 			}
 		} */
-		for(var _, sprite in @glowingTiles){
+		for(var _, sprite in @mapLayers[MAP_LAYER_TILE_GLOWING]){
 			if("glowPhase" in sprite == false){
 				sprite.glowPhase = math.random() * 100
 				sprite.glowTimeScale = math.random(0.7, 1.5)
@@ -1831,8 +1893,12 @@ Game4X = extends BaseGame4X {
 		} */
 		
 		// @followPlayer()
-		// @updateLightLayer(@lightLayer)
-		@updateCamera(@lightLayer)
+		// @updateLightLayer(@lightmap)
+		if(@shakeOffs){
+			@mapPos = @mapPos + @shakeOffs
+			@shakeOffs = null
+		}
+		@updateCamera(@lightmap)
 	},
 	
 	/* checkFalling = function(){
