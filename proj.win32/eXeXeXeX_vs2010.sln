@@ -1,14 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eXeXeXeX", "eXeXeXeX_vs2010.vcxproj", "{2B4D7491-A4F8-4606-B0E3-2A1FCE3C46C4}"
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eXeXeXeX_vs2010", "eXeXeXeX_vs2010.vcxproj", "{2B4D7491-A4F8-4606-B0E3-2A1FCE3C46C4}"
 	ProjectSection(ProjectDependencies) = postProject
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851} = {C1065C04-48A8-4F0A-9986-FC07F6DA9851}
 		{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8} = {7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oxygine_vs2010", "..\..\..\oxygine-framework\oxygine\SDL\win32\oxygine_vs2010.vcxproj", "{52411305-CFE1-4FA8-9885-5729BFC816CF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oxygine-sound_vs2010", "..\..\..\oxygine-sound\proj.win32\oxygine-sound_vs2010.vcxproj", "{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Box2D", "..\Box2D\proj.win32\Box2D.vcxproj", "{C1065C04-48A8-4F0A-9986-FC07F6DA9851}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +39,12 @@ Global
 		{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}.Release|Win32.ActiveCfg = Release|Win32
 		{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}.Release|Win32.Build.0 = Release|Win32
 		{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}.Release|x64.ActiveCfg = Release|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Debug|Win32.Build.0 = Debug|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Debug|x64.ActiveCfg = Debug|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Release|Win32.ActiveCfg = Release|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Release|Win32.Build.0 = Release|Win32
+		{C1065C04-48A8-4F0A-9986-FC07F6DA9851}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

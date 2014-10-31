@@ -642,9 +642,12 @@ Game4X = extends BaseGame4X {
 			color = Color.RED,
 			opacity = 0.2,
 			// parent = DEBUG ? @mapLayers[MAP_LAYER_DEBUG] : null,
-			// parent = @mapLayers[MAP_LAYER_DEBUG],
-			parent = null,
+			parent = @mapLayers[MAP_LAYER_DEBUG],
+			// parent = null,
 		}
+		
+		@physDebugDraw = true
+		@createPhysicsWorld()
 		
 		@dragndrop = DragndropItems(this).attrs {
 			priority = GAME_LAYER_DRAGNDROP,			
@@ -1283,6 +1286,7 @@ Game4X = extends BaseGame4X {
 		@removeChildren()
 		@detach()
 		@clear()
+		@destroyPhysicsWorld()
 		gc.full()
 		print "end game cleanup, max alloc: ${gc.allocatedBytes}, used: ${gc.usedBytes}"
 	},

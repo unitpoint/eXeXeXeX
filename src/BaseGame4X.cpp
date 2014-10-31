@@ -24,6 +24,13 @@ static void registerGlobals(OS * os)
 	};
 
 	OS::NumberDef nums[] = {
+		DEF_CONST(TO_PHYS_SCALE),
+		DEF_CONST(PHYS_DEF_FIXED_ROTATION),
+		DEF_CONST(PHYS_DEF_LINEAR_DAMPING),
+		DEF_CONST(PHYS_DEF_ANGULAR_DAMPING),
+		DEF_CONST(PHYS_DEF_DENSITY),
+		DEF_CONST(PHYS_DEF_RESTITUTION),
+		DEF_CONST(PHYS_DEF_FRICTION),
 		DEF_CONST(TILE_SIZE),
 		DEF_CONST(TILE_TYPE_BLOCK),
 		{}
@@ -108,6 +115,71 @@ static bool __registerBaseLightmap = addRegFunc(registerBaseLightmap);
 
 // =====================================================================
 
+static void registerPhysContact(OS * os)
+{
+	struct Lib {
+		/* static PhysContact * __newinstance()
+		{
+			return new PhysContact();
+		} */
+	};
+
+	OS::FuncDef funcs[] = {
+		// def("__newinstance", &Lib::__newinstance),
+		def("getCategoryBits", &PhysContact::getCategoryBits),
+		def("getEntity", &PhysContact::getEntity),
+		def("getIsSensor", &PhysContact::getIsSensor),
+		{}
+	};
+	OS::NumberDef nums[] = {
+		{}
+	};
+	registerOXClass<PhysContact, Object>(os, funcs, nums, true OS_DBG_FILEPOS);
+}
+static bool __registerPhysContact = addRegFunc(registerPhysContact);
+
+// =====================================================================
+
+static void registerBasePhysEntity(OS * os)
+{
+	struct Lib {
+		static BasePhysEntity * __newinstance()
+		{
+			return new BasePhysEntity();
+		}
+
+		static int applyForce(OS * os, int params, int, int, void*)
+		{
+			OS_GET_SELF(BasePhysEntity*);
+			if(params < 1){
+				os->setException("vec2 argument required");
+				os->handleException();
+				return 0;
+			}
+			Vector2 force = CtypeValue<Vector2>::getArg(os, -params+0);
+			self->applyForce(force, params >= 2 ? os->getValueId(-params+1) : 0);
+			return 0;
+		}
+	};
+
+	OS::FuncDef funcs[] = {
+		def("__newinstance", &Lib::__newinstance),
+		{"applyForce", &Lib::applyForce},
+		DEF_PROP("linearVelocity", BasePhysEntity, LinearVelocity),
+		DEF_GET("isAwake", BasePhysEntity, IsAwake),
+		DEF_SET("linearDamping", BasePhysEntity, LinearDamping),
+		DEF_SET("angularDamping", BasePhysEntity, AngularDamping),
+		{}
+	};
+	OS::NumberDef nums[] = {
+		{}
+	};
+	registerOXClass<BasePhysEntity, Sprite>(os, funcs, nums, true OS_DBG_FILEPOS);
+}
+static bool __registerBasePhysEntity = addRegFunc(registerBasePhysEntity);
+
+// =====================================================================
+
 static void registerBaseGame4X(OS * os)
 {
 	struct Lib {
@@ -149,6 +221,12 @@ static void registerBaseGame4X(OS * os)
 		def("setBackType", &BaseGame4X::setBackType),
 		def("getItemType", &BaseGame4X::getItemType),
 		def("setItemType", &BaseGame4X::setItemType),
+		def("createPhysicsWorld", &BaseGame4X::createPhysicsWorld),
+		def("destroyPhysicsWorld", &BaseGame4X::destroyPhysicsWorld),
+		def("updatePhysics", &BaseGame4X::updatePhysics),
+		def("initEntityPhysics", &BaseGame4X::initEntityPhysics),
+		def("destroyEntityPhysics", &BaseGame4X::destroyEntityPhysics),
+		DEF_PROP("physDebugDraw", BaseGame4X, PhysDebugDraw),
 		{}
 	};
 	OS::NumberDef nums[] = {
@@ -165,10 +243,152 @@ static bool __registerBaseGame4X = addRegFunc(registerBaseGame4X);
 // =====================================================================
 // =====================================================================
 
-/* OS2D * getOS()
+float toPhysValue(float a)
 {
-	return ObjectScript::os;
-} */
+	return a * TO_PHYS_SCALE;
+}
+
+float fromPhysValue(float a)
+{
+	return a / TO_PHYS_SCALE;
+}
+
+b2Vec2 toPhysVec(const vec2 &pos)
+{
+	return b2Vec2(toPhysValue(pos.x), toPhysValue(pos.y));
+}
+
+vec2 fromPhysVec(const b2Vec2 &pos)
+{
+	return Vector2(fromPhysValue(pos.x), fromPhysValue(pos.y));
+}
+
+// =====================================================================
+// =====================================================================
+// =====================================================================
+
+void PhysContact::Data::reset()
+{
+	memset(this, 0, sizeof(*this));
+}
+
+PhysContact * PhysContact::with(const Data& d)
+{
+	data = d;
+	return this;
+}
+
+int PhysContact::getCategoryBits(int i) const 
+{
+	OS_ASSERT(i >= 0 && i < 2);
+	if(i >= 0 && i < 2){
+		return data.filter[i].categoryBits;
+	}
+	/* if(contact){
+		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
+		return fixture->GetFilterData().categoryBits;
+	} */
+	return 0;
+}
+
+BasePhysEntity * PhysContact::getEntity(int i) const
+{
+	OS_ASSERT(i >= 0 && i < 2);
+	if(i >= 0 && i < 2){
+		return data.ent[i];
+	}
+	/* if(contact){
+		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
+		return dynamic_cast<BasePhysEntity*>((BasePhysEntity*)fixture->GetBody()->GetUserData());
+	} */
+	return NULL;
+}
+
+bool PhysContact::getIsSensor(int i) const
+{
+	OS_ASSERT(i >= 0 && i < 2);
+	if(i >= 0 && i < 2){
+		return data.isSensor[i];
+	}
+	/* if(contact){
+		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
+		return fixture->IsSensor();
+	} */
+	return false;
+}
+
+// =====================================================================
+// =====================================================================
+// =====================================================================
+
+BasePhysEntity::BasePhysEntity()
+{
+	game = NULL;
+	body = NULL;
+}
+
+BasePhysEntity::~BasePhysEntity()
+{
+	OX_ASSERT(!game && !body);
+}
+
+void BasePhysEntity::applyForce(const vec2& viewForce, int paramsValueId)
+{
+	if(!body){
+		return;
+	}
+	if(viewForce.x || viewForce.y){
+		ObjectScript::SaveStackSize saveStackSize;
+		ObjectScript::OS * os = ObjectScript::os;
+
+		b2Vec2 force = toPhysVec(viewForce);
+		
+		os->pushValueById(paramsValueId);
+		bool noClipForce = (os->getProperty(-1, "noClipForce"), os->popBool(false));
+		if(!noClipForce){
+			float scalarSpeed = toPhysValue((os->getProperty(-1, "maxSpeed"), os->popFloat(getOSChildPhysicsFloat(this, "maxSpeed", 120.0f))));
+			scalarSpeed *= (os->getProperty(-1, "speedScale"), os->popFloat(1.0f));
+			
+			b2Vec2 destSpeed = force;
+			destSpeed.Normalize();
+			destSpeed *= scalarSpeed;
+			
+			b2Vec2 speed = body->GetLinearVelocity();
+			float clip_edge = 0.5f, src, dest;
+			for(int i = 0; i < 2; i++){
+				if(i == 0){
+					src = speed.x;
+					dest = destSpeed.x;
+				}else{
+					src = speed.y;
+					dest = destSpeed.y;
+				}
+				float t = src / (dest ? dest : 0.00001f);
+				if(t >= clip_edge){
+					t = 1 - (t - clip_edge) / (1 - clip_edge);
+					
+					if(t < -1) t = -1;
+					else if(t > 1) t = 1;
+					// t = t*t * (t < 0 ? -1.0f : 1.0f);
+					// t = (1 - (1-t)*(1-t)) * (t < 0 ? -1.0f : 1.0f);
+					
+					if(i == 0){
+						force.x *= t;
+					}else{
+						force.y *= t;
+					}
+				}
+			}
+		}
+		if(force.x || force.y){
+			body->ApplyForce(force, body->GetWorldCenter(), true);
+		}
+	}
+}
+
+// =====================================================================
+// =====================================================================
+// =====================================================================
 
 Actor * getOSChild(Actor * actor, const char * name)
 {
@@ -178,6 +398,44 @@ Actor * getOSChild(Actor * actor, const char * name)
 	os->getProperty(name);
 	return CtypeValue<Actor*>::getArg(os, -1);
 }
+
+float getOSChildFloat(Actor * actor, const char * name, float def)
+{
+	ObjectScript::SaveStackSize saveStackSize;
+	ObjectScript::OS * os = ObjectScript::os;
+	ObjectScript::pushCtypeValue(os, actor);
+	os->getProperty(-1, name);
+	return os->toFloat(-1, def);
+}
+
+float getOSChildPhysicsFloat(Actor * actor, const char * name, float def)
+{
+	ObjectScript::SaveStackSize saveStackSize;
+	ObjectScript::OS * os = ObjectScript::os;
+	ObjectScript::pushCtypeValue(os, actor);
+	os->getProperty(-1, "physics");
+	os->getProperty(-1, name);
+	return os->toFloat(-1, def);
+}
+
+int getOSChildPhysicsInt(Actor * actor, const char * name, int def)
+{
+	return (int)getOSChildPhysicsFloat(actor, name, (float)def);
+}
+
+bool getOSChildPhysicsBool(Actor * actor, const char * name, bool def)
+{
+	ObjectScript::SaveStackSize saveStackSize;
+	ObjectScript::OS * os = ObjectScript::os;
+	ObjectScript::pushCtypeValue(os, actor);
+	os->getProperty(-1, "physics");
+	os->getProperty(-1, name);
+	return os->toBool(-1, def);
+}
+
+// =====================================================================
+// =====================================================================
+// =====================================================================
 
 BaseLightmap::BaseLightmap()
 {
@@ -1064,155 +1322,6 @@ ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char *
 	return program;
 }
 
-#if 0
-void BaseLightmap::doRender(const RenderState &rs)
-{
-	rs.renderer->drawBatch();	
-	
-	if(!blendProgram){
-		init();
-	}
-
-	// _world->SetDebugDraw(this);
-	IVideoDriver * driver = rs.renderer->getDriver();
-	float width = getWidth(), height = getHeight();
-
-	int w = (int)width, h = (int)height;
-	rs.renderer->initCoordinateSystem(w, h, false);
-
-	{
-		Renderer r;
-		RenderState rs;
-		rs.renderer = &r;
-		
-		int w = (int)width, h = (int)height;
-		r.initCoordinateSystem(w, h, false);
-		
-		Rect viewport(Point(0, 0), Point(w, h));
-
-		Color color = Color(0, 0, 0, 255);
-		r.begin(lightTexture, viewport, &color);
-
-#if 1
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-		os->getGlobal("res");
-		spResources resources = CtypeValue<Resources*>::getArg(os, -1);
-		os->pop();
-		OX_ASSERT(resources);
-
-		struct LightInfo
-		{
-			Vector2 pos;
-			float radius;
-			Color color;
-		};
-
-		LightInfo lights[] = {
-			{ Vector2(width * 0.3f, height * 0.3f), width * 0.2f, Color(255, 100, 100) },
-			{ Vector2(width * 0.7f, height * 0.7f), width * 0.4f, Color(100, 255, 100) },
-			// { Vector2(width * 0.5f, height * 0.5f), width * 0.5f, Color(255, 255, 255) },
-		};
-		int lightSize = sizeof(lights) / sizeof(lights[0]);
-		for(int i = 0; i < lightSize; i++){
-			ResAnim * resAnim = resources->getResAnim("light-02");
-			AnimationFrame frame = resAnim->getFrame(0,0);
-			r.setDiffuse(frame.getDiffuse());
-			r.setPrimaryColor(lights[i].color);
-
-			float radius = lights[i].radius;
-			r.draw(frame.getSrcRect(), RectF(lights[i].pos - Vector2(radius, radius), Vector2(radius*2, radius*2)));
-		}
-#endif
-
-		/* ResAnim *brush = resources.getResAnim("brush");
-		AnimationFrame frame = brush->getFrame(0,0);
-		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(color);
-		r.setBlendMode(blend_alpha);
-		float pressure =  1.0f;//te->pressure;
-		//log::messageln("pressure %.2f", pressure);
-		//pressure = pressure * pressure;
-		r.draw(frame.getSrcRect(), RectF(te->localPosition - Vector2(16, 16) * pressure, Vector2(32, 32)  * pressure));
-		*/
-
-		/*
-		driver->setShaderProgram(blendProgram);
-
-		// Matrix m = Matrix(rs.transform) * rs.renderer->getViewProjection();
-		Matrix m = rs.renderer->getViewProjection();
-		driver->setUniform("projection", &m);
-
-		Vector4 lightColor(1, 1, 0, 1);
-		driver->setUniform("lightColor", &lightColor, 1);
-
-		Vector4 lightPos(width * 0.5f, height * 0.5f, 0, 0);
-		driver->setUniform("lightPos", &lightPos, 1);
-
-		float lightRadius = width * 0.25f;
-		driver->setUniform("lightRadius", lightRadius);
-
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-		glBegin(GL_QUADS);
-		glVertex2f(0, 0);
-		glVertex2f(width, 0);
-		glVertex2f(width, height);
-		glVertex2f(0, height);
-		glEnd();
-		*/
-
-		r.setBlendMode(blend_alpha);
-		r.end();
-	}
-
-	Diffuse df;
-	df.base = lightTexture;
-	df.premultiplied = true;
-	rs.renderer->setDiffuse(df);
-	// rs.renderer->setBlendMode(blend_alpha);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_DST_COLOR, GL_ZERO);
-
-	float lightWidth = lightTexture->getWidth();
-	float lightHeight = lightTexture->getHeight();
-	// rs.renderer->draw(RectF(0.1f, 0.1f, 0.8f, 0.8f), RectF(width*0.1f, height*0.1f, width*0.8f, height*0.8f));
-	rs.renderer->draw(RectF(0.0f, 0.0f, width/lightWidth, height/lightHeight), RectF(0, 0, width, height));
-	rs.renderer->drawBatch();
-
-	/*
-	driver->setShaderProgram(blendProgram);
-
-	Matrix m = Matrix(rs.transform) * rs.renderer->getViewProjection();
-	driver->setUniform("projection", &m);
-
-	Vector4 lightColor(1, 1, 0, 1);
-	driver->setUniform("lightColor", &lightColor, 1);
-
-	Vector4 lightPos(width * 0.5f, height * 0.5f, 0, 0);
-	driver->setUniform("lightPos", &lightPos, 1);
-
-	float lightRadius = width * 0.25f;
-	driver->setUniform("lightRadius", lightRadius);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
-
-	glBegin(GL_QUADS);
-	glVertex2f(0, 0);
-	glVertex2f(width, 0);
-	glVertex2f(width, height);
-	glVertex2f(0, height);
-	glEnd();
-	*/
-
-	rs.renderer->resetSettings();
-}
-#endif
-
 // =====================================================================
 // =====================================================================
 // =====================================================================
@@ -1233,10 +1342,18 @@ BaseGame4X::BaseGame4X()
 	endViewX = 0;
 	endViewY = 0;
 	afterDraggingMode = false;
+
+	physAccumTimeSec = 0;
+	physWorld = NULL;
+	physContactShare = new PhysContact;
 }
 
 BaseGame4X::~BaseGame4X()
 {
+	physDebugDraw = NULL;
+	destroyAllBodies();
+	delete physWorld;
+
 	delete [] tiles;
 	delete shadowMaskProg;
 	delete lightProg;
@@ -1442,3 +1559,504 @@ Actor * BaseGame4X::getMapLayer(int num)
 	return CtypeValue<Actor*>::getArg(os, -1);
 }
 
+void BaseGame4X::addEntityPhysicsShapes(BasePhysEntity * ent)
+{
+	ObjectScript::SaveStackSize saveStackSize;
+	ObjectScript::OS * os = ObjectScript::os;
+
+	OX_ASSERT(ent->game && ent->body);
+
+	b2CircleShape circleShape;
+	b2PolygonShape polyShape;
+	b2FixtureDef fixtureDef;
+
+	if(!os->isObject()){
+		os->setException("object required");
+		os->handleException();
+		return;
+	}
+
+	os->getProperty(-1, "shapes");
+	if(!os->isNull()){
+		if(!os->isArray()){
+			os->setException("array required for shapes");
+			os->handleException();
+			return;
+		}
+		while(os->nextIteratorStep()){
+			addEntityPhysicsShapes(ent);
+			os->pop(2);
+		}
+	}else{
+		os->pop(); // pop shapes
+
+		os->getProperty(-1, "radius");
+		if(!os->isNull()){
+			fixtureDef.shape = &circleShape;
+			circleShape.m_radius = toPhysValue(os->popFloat());
+		}else{
+			os->pop(); // pop radius
+			os->getProperty(-1, "radiusScale");
+			if(!os->isNull()){
+				fixtureDef.shape = &circleShape;
+				Vector2 size = ent->getSize();
+				circleShape.m_radius = toPhysValue((size.x > size.y ? size.x : size.y) / 2 * os->popFloat());
+			}else{
+				os->pop(); // pop radiusScale
+				fixtureDef.shape = &polyShape;
+				b2Vec2 halfSize = toPhysVec(ent->getSize() / 2);
+				halfSize.x *= (os->getProperty(-1, "widthScale"), os->popFloat(1.0f));
+				halfSize.y *= (os->getProperty(-1, "heightScale"), os->popFloat(1.0f));
+				polyShape.SetAsBox(halfSize.x, halfSize.y);
+			}
+		}
+		fixtureDef.density = (os->getProperty(-1, "density"), os->popFloat(ent->getPhysicsFloat("density", PHYS_DEF_DENSITY)));
+		fixtureDef.restitution = (os->getProperty(-1, "restitution"), os->popFloat(ent->getPhysicsFloat("restitution", PHYS_DEF_RESTITUTION)));
+		fixtureDef.friction = (os->getProperty(-1, "friction"), os->popFloat(ent->getPhysicsFloat("friction", PHYS_DEF_FRICTION)));
+		fixtureDef.isSensor = (os->getProperty(-1, "sensor"), os->popBool(ent->getPhysicsBool("sensor", false)));
+		fixtureDef.filter.categoryBits = (os->getProperty(-1, "categoryBits"), os->popInt(ent->getPhysicsInt("categoryBits", fixtureDef.filter.categoryBits)));
+		fixtureDef.filter.maskBits = (os->getProperty(-1, "maskBits"), os->popInt(ent->getPhysicsInt("maskBits", fixtureDef.filter.maskBits)));
+		
+		int ignoreBits = (os->getProperty(-1, "ignoreBits"), os->popInt(ent->getPhysicsInt("ignoreBits", 0)));
+		fixtureDef.filter.maskBits &= ~ ignoreBits;
+
+		os->getProperty(-1, "fly");
+		if(os->toBool()){
+			// fixtureDef.filter.maskBits &= ~ PHYS_CAT_BIT_WATER;
+		}
+		os->pop();
+
+		ent->body->CreateFixture(&fixtureDef);
+	}
+}
+
+void BaseGame4X::initEntityPhysics(BasePhysEntity * ent)
+{
+	ObjectScript::SaveStackSize saveStackSize;
+	ObjectScript::OS * os = ObjectScript::os;
+	
+	if(ent->game || ent->body){
+		os->setException("entity physics is already initialized");
+		os->handleException();
+		return;
+	}
+	ent->game = this;
+	// entities.push_back(ent);
+
+	b2BodyDef bodyDef;
+	bodyDef.type = b2_dynamicBody;
+	bodyDef.position = toPhysVec(ent->getPosition());
+	bodyDef.angle = ent->getRotation();
+	bodyDef.fixedRotation = getOSChildPhysicsBool(ent, "fixedRotation", PHYS_DEF_FIXED_ROTATION);
+	bodyDef.linearDamping = getOSChildPhysicsFloat(ent, "linearDamping", PHYS_DEF_LINEAR_DAMPING);
+	bodyDef.angularDamping = getOSChildPhysicsFloat(ent, "angularDamping", PHYS_DEF_ANGULAR_DAMPING);
+
+	ent->body = physWorld->CreateBody(&bodyDef);
+	ent->body->SetUserData(ent);
+
+	ObjectScript::pushCtypeValue(os, ent);
+	os->getProperty(-1, "physics");
+
+	addEntityPhysicsShapes(ent);
+}
+
+void BaseGame4X::destroyEntityPhysics(BasePhysEntity * ent)
+{
+	if(!ent->body){
+		return;
+	}
+	OX_ASSERT(ent->game == this);
+	OX_ASSERT(ent->body);
+	
+	b2Fixture * fixture = ent->body->GetFixtureList();
+	while(fixture){
+		ent->body->DestroyFixture(fixture);
+		fixture = ent->body->GetFixtureList();
+	}
+	/* b2JointEdge * joint = ent->body->GetJointList();
+	while(fixture){
+		physWorld->DestroyJoint(joint);
+		joint = ent->body->GetJointList();
+	} */
+
+	OX_ASSERT(std::find(waitBodiesToDestroy.begin(), waitBodiesToDestroy.end(), ent->body) == waitBodiesToDestroy.end());
+	waitBodiesToDestroy.push_back(ent->body);
+
+	ent->body->SetUserData(NULL);
+	ent->body = NULL;
+	ent->game = NULL;
+}
+
+void BaseGame4X::destroyWaitBodies()
+{
+	if(!waitBodiesToDestroy.size()){
+		return;
+	}
+	OX_ASSERT(physWorld);
+
+	std::vector<b2Body*> waitBodiesToDestroy = this->waitBodiesToDestroy;
+	this->waitBodiesToDestroy.clear();
+
+	std::vector<b2Body*>::iterator it = waitBodiesToDestroy.begin();
+	for(; it != waitBodiesToDestroy.end(); ++it){
+		b2Body * body = *it;
+		OX_ASSERT(!body->GetUserData());
+		physWorld->DestroyBody(body);
+	}
+}
+
+void BaseGame4X::destroyAllBodies()
+{
+	if(!physWorld){
+		return;
+	}
+	b2Body * body = physWorld->GetBodyList(), * next = NULL;
+	for(; body; body = next){
+		next = body->GetNext();
+		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)body->GetUserData());
+		if(ent){
+			OX_ASSERT(ent->game == this);
+			OX_ASSERT(ent->body == body);
+			ent->body->SetUserData(NULL);
+			ent->body = NULL;
+			ent->game = NULL;
+		}
+		physWorld->DestroyBody(body);
+	}
+}
+
+void BaseGame4X::updatePhysics(float dt)
+{
+	if(!physWorld){
+		return;
+	}
+	destroyWaitBodies();
+
+	physAccumTimeSec += dt;
+	dt = 1.0f/30.0f;
+	while(physAccumTimeSec >= dt){ 
+		physWorld->Step(dt, 6, 2);
+		dispatchContacts();
+		physAccumTimeSec -= dt;
+	}
+
+	b2Body * body = physWorld->GetBodyList();
+	for(; body; body = body->GetNext()){
+		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)body->GetUserData());
+		if(ent){
+			OX_ASSERT(ent->body == body && ent->game == this);
+			ent->setPosition(fromPhysVec(body->GetPosition()));
+			ent->setRotation(body->GetAngle());
+		}
+	}
+}
+
+void BaseGame4X::dispatchContacts()
+{
+	ObjectScript::OS * os = ObjectScript::os;
+	std::vector<PhysContact::Data>::iterator it = physContacts.begin();
+	for(; it != physContacts.end(); ++it){
+		PhysContact::Data& c = *it;
+		if(c.ent[0]){
+			ObjectScript::pushCtypeValue(os, c.ent[0]); // this
+			os->getProperty(-1, "onPhysicsContact"); // func
+			OX_ASSERT(os->isFunction());
+			ObjectScript::pushCtypeValue(os, physContactShare->with(c));
+			os->pushNumber(0);
+			os->callTF(2, 1);
+			if(os->popBool()){
+				return;
+			}
+		}
+		if(c.ent[1]){
+			ObjectScript::pushCtypeValue(os, c.ent[1]); // this
+			os->getProperty(-1, "onPhysicsContact"); // func
+			OX_ASSERT(os->isFunction());
+			ObjectScript::pushCtypeValue(os, physContactShare->with(c));
+			os->pushNumber(1);
+			os->callTF(2);
+		}
+	}
+	physContactShare->data.reset();
+	physContacts.clear();
+}
+
+void BaseGame4X::BeginContact(b2Contact* c)
+{
+	PhysContact::Data data;
+	for(int i = 0; i < 2; i++){
+		b2Fixture * fixture = i ? c->GetFixtureB() : c->GetFixtureA();
+		data.ent[i] = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)fixture->GetBody()->GetUserData());
+		data.filter[i] = fixture->GetFilterData();
+		data.isSensor[i] = fixture->IsSensor();
+	}
+	physContacts.push_back(data);
+}
+
+void BaseGame4X::EndContact(b2Contact* contact)
+{
+}
+
+void BaseGame4X::createPhysicsWorld()
+{
+	OX_ASSERT(!physWorld);
+	b2Vec2 gravity = b2Vec2(0, 0);
+	physWorld = new b2World(gravity);
+	physWorld->SetAllowSleeping(true);
+	physWorld->SetDestructionListener(this);
+	physWorld->SetContactListener(this);
+}
+
+void BaseGame4X::destroyPhysicsWorld()
+{
+	destroyAllBodies();
+	delete physWorld; physWorld = NULL;
+	physAccumTimeSec = 0;
+}
+
+bool BaseGame4X::getPhysDebugDraw() const
+{
+	return physDebugDraw;
+}
+
+void BaseGame4X::setPhysDebugDraw(bool value)
+{
+	if((bool)physDebugDraw != value){
+		if(value){
+			Actor * map = getOSChild("map"); OX_ASSERT(map);
+			physDebugDraw = new Box2DDraw(this);
+			physDebugDraw->SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit | b2Draw::e_pairBit | b2Draw::e_centerOfMassBit);
+			physDebugDraw->setPriority(10000);
+			physDebugDraw->attachTo(map);
+			// physDebugDraw->setWorld(1/PHYS_SCALE, physWorld);
+		}else{
+			physDebugDraw->detach();
+			physDebugDraw = NULL;
+		}
+	}
+}
+
+void BaseGame4X::drawPhysShape(b2Fixture* fixture, const b2Transform& xf, const b2Color& color)
+{
+	switch (fixture->GetType())
+	{
+	case b2Shape::e_circle:
+		{
+			b2CircleShape* circle = (b2CircleShape*)fixture->GetShape();
+
+			b2Vec2 center = b2Mul(xf, circle->m_p);
+			float32 radius = circle->m_radius;
+			b2Vec2 axis = b2Mul(xf.q, b2Vec2(1.0f, 0.0f));
+
+			physDebugDraw->DrawSolidCircle(center, radius, axis, color);
+		}
+		break;
+
+	case b2Shape::e_edge:
+		{
+			b2EdgeShape* edge = (b2EdgeShape*)fixture->GetShape();
+			b2Vec2 v1 = b2Mul(xf, edge->m_vertex1);
+			b2Vec2 v2 = b2Mul(xf, edge->m_vertex2);
+			physDebugDraw->DrawSegment(v1, v2, color);
+		}
+		break;
+
+	case b2Shape::e_chain:
+		{
+			b2ChainShape* chain = (b2ChainShape*)fixture->GetShape();
+			int32 count = chain->m_count;
+			const b2Vec2* vertices = chain->m_vertices;
+
+			b2Vec2 v1 = b2Mul(xf, vertices[0]);
+			for (int32 i = 1; i < count; ++i)
+			{
+				b2Vec2 v2 = b2Mul(xf, vertices[i]);
+				physDebugDraw->DrawSegment(v1, v2, color);
+				physDebugDraw->DrawCircle(v1, 0.05f, color);
+				v1 = v2;
+			}
+		}
+		break;
+
+	case b2Shape::e_polygon:
+		{
+			b2PolygonShape* poly = (b2PolygonShape*)fixture->GetShape();
+			int32 vertexCount = poly->m_count;
+			b2Assert(vertexCount <= b2_maxPolygonVertices);
+			b2Vec2 vertices[b2_maxPolygonVertices];
+
+			for (int32 i = 0; i < vertexCount; ++i)
+			{
+				vertices[i] = b2Mul(xf, poly->m_vertices[i]);
+			}
+
+			physDebugDraw->DrawSolidPolygon(vertices, vertexCount, color);
+		}
+		break;
+            
+    default:
+        break;
+	}
+}
+
+void BaseGame4X::drawPhysJoint(b2Joint* joint)
+{
+	b2Body* bodyA = joint->GetBodyA();
+	b2Body* bodyB = joint->GetBodyB();
+	const b2Transform& xf1 = bodyA->GetTransform();
+	const b2Transform& xf2 = bodyB->GetTransform();
+	b2Vec2 x1 = xf1.p;
+	b2Vec2 x2 = xf2.p;
+	b2Vec2 p1 = joint->GetAnchorA();
+	b2Vec2 p2 = joint->GetAnchorB();
+
+	b2Color color(0.5f, 0.8f, 0.8f);
+
+	switch (joint->GetType())
+	{
+	case e_distanceJoint:
+		physDebugDraw->DrawSegment(p1, p2, color);
+		break;
+
+	case e_pulleyJoint:
+		{
+			b2PulleyJoint* pulley = (b2PulleyJoint*)joint;
+			b2Vec2 s1 = pulley->GetGroundAnchorA();
+			b2Vec2 s2 = pulley->GetGroundAnchorB();
+			physDebugDraw->DrawSegment(s1, p1, color);
+			physDebugDraw->DrawSegment(s2, p2, color);
+			physDebugDraw->DrawSegment(s1, s2, color);
+		}
+		break;
+
+	case e_mouseJoint:
+		// don't draw this
+		break;
+
+	default:
+		physDebugDraw->DrawSegment(x1, p1, color);
+		physDebugDraw->DrawSegment(p1, p2, color);
+		physDebugDraw->DrawSegment(x2, p2, color);
+	}
+}
+
+void BaseGame4X::drawPhysics()
+{
+	if(!physDebugDraw){
+		return;
+	}
+
+	uint32 flags = physDebugDraw->GetFlags();
+
+	if (flags & b2Draw::e_shapeBit)
+	{
+		for (b2Body* b = physWorld->GetBodyList(); b; b = b->GetNext())
+		{
+			const b2Transform& xf = b->GetTransform();
+			for (b2Fixture* f = b->GetFixtureList(); f; f = f->GetNext())
+			{
+				b2Filter filter = f->GetFilterData();
+				if (b->IsActive() == false)
+				{
+					drawPhysShape(f, xf, b2Color(0.5f, 0.5f, 0.3f));
+				}
+				else if (b->GetType() == b2_staticBody)
+				{
+					b2Color color(0.6f, 0.65f, 0.6f);
+					/* if(filter.categoryBits & PHYS_CAT_BIT_PLAYER_SPAWN){
+						color = b2Color(0.5f, 0.8f, 0.5f);
+					}else if(filter.categoryBits & PHYS_CAT_BIT_WATER){
+						color = b2Color(0.6f, 0.6f, 0.9f);
+					}else if(filter.categoryBits & PHYS_CAT_BIT_MONSTER_SPAWN){
+						color = b2Color(0.8f, 0.6f, 0.6f);
+					} */
+					drawPhysShape(f, xf, color);
+				}
+				else if (b->GetType() == b2_kinematicBody)
+				{
+					drawPhysShape(f, xf, b2Color(0.5f, 0.5f, 0.9f));
+				}
+				else if (b->IsAwake() == false)
+				{
+					drawPhysShape(f, xf, b2Color(0.6f, 0.6f, 0.6f));
+				}
+				else
+				{
+					drawPhysShape(f, xf, b2Color(0.9f, 0.7f, 0.7f));
+				}
+			}
+		}
+	}
+
+	if (flags & b2Draw::e_jointBit)
+	{
+		for (b2Joint* j = physWorld->GetJointList(); j; j = j->GetNext())
+		{
+			drawPhysJoint(j);
+		}
+	}
+
+	if (flags & b2Draw::e_pairBit)
+	{
+		b2Color color(0.3f, 0.9f, 0.9f);
+		for (b2Contact* c = physWorld->GetContactList(); c; c = c->GetNext())
+		{
+			//b2Fixture* fixtureA = c->GetFixtureA();
+			//b2Fixture* fixtureB = c->GetFixtureB();
+
+			//b2Vec2 cA = fixtureA->GetAABB().GetCenter();
+			//b2Vec2 cB = fixtureB->GetAABB().GetCenter();
+
+			//physDebugDraw->DrawSegment(cA, cB, color);
+		}
+	}
+
+	/* if (flags & b2Draw::e_aabbBit)
+	{
+		b2Color color(0.9f, 0.3f, 0.9f);
+		b2BroadPhase* bp = &physWorld->GetContactManager().m_broadPhase;
+
+		for (b2Body* b = physWorld->GetBodyList(); b; b = b->GetNext())
+		{
+			if (b->IsActive() == false)
+			{
+				continue;
+			}
+
+			for (b2Fixture* f = b->GetFixtureList(); f; f = f->GetNext())
+			{
+				for (int32 i = 0; i < f->m_proxyCount; ++i)
+				{
+					b2FixtureProxy* proxy = f->m_proxies + i;
+					b2AABB aabb = bp->GetFatAABB(proxy->proxyId);
+					b2Vec2 vs[4];
+					vs[0].Set(aabb.lowerBound.x, aabb.lowerBound.y);
+					vs[1].Set(aabb.upperBound.x, aabb.lowerBound.y);
+					vs[2].Set(aabb.upperBound.x, aabb.upperBound.y);
+					vs[3].Set(aabb.lowerBound.x, aabb.upperBound.y);
+
+					physDebugDraw->DrawPolygon(vs, 4, color);
+				}
+			}
+		}
+	} */
+
+	if (flags & b2Draw::e_centerOfMassBit)
+	{
+		for (b2Body* b = physWorld->GetBodyList(); b; b = b->GetNext())
+		{
+			b2Transform xf = b->GetTransform();
+			xf.p = b->GetWorldCenter();
+			physDebugDraw->DrawTransform(xf);
+		}
+	}
+}
+
+
+void BaseGame4X::SayGoodbye(b2Joint* joint)
+{
+}
+
+void BaseGame4X::SayGoodbye(b2Fixture* fixture)
+{
+}

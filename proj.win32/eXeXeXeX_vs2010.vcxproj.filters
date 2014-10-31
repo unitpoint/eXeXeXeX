@@ -159,6 +159,9 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.c">
       <Filter>ext-hashlib</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Box2DDebugDraw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
@@ -196,6 +199,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\crc32\os-crc32.h">
       <Filter>ext-hashlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Box2DDebugDraw.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

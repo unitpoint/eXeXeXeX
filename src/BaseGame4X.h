@@ -5,8 +5,118 @@
 #include <core/gl/ShaderProgramGL.h>
 #include <ox-binder.h>
 #include "MathLib.h"
+#include <Box2D\Box2D.h>
+#include "Box2DDebugDraw.h"
 
 using namespace ObjectScript;
+
+// =====================================================================
+
+#define TO_PHYS_SCALE	(1.0f / 10.0f)
+
+#define PHYS_DEF_FIXED_ROTATION		true
+#define PHYS_DEF_LINEAR_DAMPING		0.98f
+#define PHYS_DEF_ANGULAR_DAMPING	0.98f
+#define PHYS_DEF_DENSITY			1.0f
+#define PHYS_DEF_RESTITUTION		0.0f
+#define PHYS_DEF_FRICTION			0.02f
+
+float toPhysValue(float a);
+float fromPhysValue(float a);
+b2Vec2 toPhysVec(const vec2 &pos);
+vec2 fromPhysVec(const b2Vec2 &pos);
+
+Actor * getOSChild(Actor*, const char * name);
+float getOSChildFloat(Actor * actor, const char * name, float def);
+float getOSChildPhysicsFloat(Actor * actor, const char * name, float def);
+int getOSChildPhysicsInt(Actor * actor, const char * name, int def);
+bool getOSChildPhysicsBool(Actor * actor, const char * name, bool def);
+
+class BasePhysEntity;
+
+DECLARE_SMART(PhysContact, spPhysContact);
+class PhysContact: public Object
+{
+public:
+	OS_DECLARE_CLASSINFO(PhysContact);
+
+	struct Data
+	{
+		BasePhysEntity * ent[2];
+		b2Filter filter[2];
+		bool isSensor[2];
+		
+		Data(){ reset(); }
+		void reset();
+	};
+	Data data;
+
+	PhysContact(){}
+
+	PhysContact * with(const Data& d);
+
+	int getCategoryBits(int i) const;
+	BasePhysEntity * getEntity(int i) const;
+	bool getIsSensor(int i) const;
+};
+
+class BaseGame4X;
+
+DECLARE_SMART(BasePhysEntity, spBasePhysEntity);
+class BasePhysEntity: public oxygine::Sprite
+{
+public:
+	OS_DECLARE_CLASSINFO(BasePhysEntity);
+
+	BaseGame4X * game;
+	b2Body * body;
+
+	BasePhysEntity();
+	~BasePhysEntity();
+
+	void applyForce(const vec2& force, int paramsValueId);
+
+	vec2 getLinearVelocity() const
+	{
+		return body ? fromPhysVec(body->GetLinearVelocity()) : vec2(0, 0);
+	}
+	void setLinearVelocity(const vec2& a)
+	{
+		if(body){
+			body->SetLinearVelocity(toPhysVec(a));
+		}
+	}
+
+	bool getIsAwake() const 
+	{
+		return body ? body->IsAwake() : false;
+	}
+
+	void setLinearDamping(float a)
+	{
+		if(body) body->SetLinearDamping(a);
+	}
+
+	void setAngularDamping(float a)
+	{
+		if(body) body->SetAngularDamping(a);
+	}
+
+	float getPhysicsFloat(const char * name, float def)
+	{
+		return getOSChildPhysicsFloat(this, name, def);
+	}
+	int getPhysicsInt(const char * name, int def)
+	{
+		return getOSChildPhysicsInt(this, name, def);
+	}
+	bool getPhysicsBool(const char * name, bool def)
+	{
+		return getOSChildPhysicsBool(this, name, def);
+	}
+};
+
+// =====================================================================
 
 #define TILE_TYPE_BLOCK 255
 
@@ -52,9 +162,6 @@ struct Tiledmap
 	const OS_BYTE * front;
 	const OS_BYTE * back;
 };
-
-// OS2D * getOS();
-Actor * getOSChild(Actor*, const char * name);
 
 struct LightFormInfo
 {
@@ -153,7 +260,7 @@ protected:
 };
 
 DECLARE_SMART(BaseGame4X, spBaseGame4X);
-class BaseGame4X: public Actor
+class BaseGame4X: public Actor, protected b2DestructionListener, protected b2ContactListener
 {
 public:
 	OS_DECLARE_CLASSINFO(BaseGame4X);
@@ -192,6 +299,21 @@ public:
 
 	void updateCamera(BaseLightmap*);
 
+	void createPhysicsWorld();
+	void destroyPhysicsWorld();
+
+	void drawPhysics();
+
+	void initEntityPhysics(BasePhysEntity * ent);
+	void addEntityPhysicsShapes(BasePhysEntity * ent);
+
+	void destroyEntityPhysics(BasePhysEntity * ent);
+
+	void updatePhysics(float dt);
+
+	bool getPhysDebugDraw() const;
+	void setPhysDebugDraw(bool value);
+
 protected:
 
 	Tile * tiles;
@@ -219,7 +341,12 @@ protected:
 	int endViewX, endViewY;
 	bool afterDraggingMode;
 
-	// std::vector<OS_BYTE> lightVolume;
+	float physAccumTimeSec;
+	b2World * physWorld;
+	std::vector<PhysContact::Data> physContacts;
+	std::vector<b2Body*> waitBodiesToDestroy;
+	spPhysContact physContactShare;
+	spBox2DDraw physDebugDraw;
 
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);
 	void setUniformColor(const char * name, const vec3& color);
@@ -227,6 +354,27 @@ protected:
 	std::vector<Vector2> vertices;
 
 	bool getTileVertices(TileType, std::vector<Vector2>&);
+
+	void destroyWaitBodies();
+	void destroyAllBodies();
+	void dispatchContacts();
+
+	void drawPhysShape(b2Fixture* fixture, const b2Transform& xf, const b2Color& color);
+	void drawPhysJoint(b2Joint* joint);
+
+	/// Called when two fixtures begin to touch.
+	void BeginContact(b2Contact* contact); // override b2ContactListener
+
+	/// Called when two fixtures cease to touch.
+	void EndContact(b2Contact* contact); // override b2ContactListener
+
+	/// Called when any joint is about to be destroyed due
+	/// to the destruction of one of its attached bodies.
+	void SayGoodbye(b2Joint* joint); // override b2DestructionListener
+
+	/// Called when any fixture is about to be destroyed due
+	/// to the destruction of its parent body.
+	void SayGoodbye(b2Fixture* fixture); // override b2DestructionListener
 };
 
 class MyRenderer: public Renderer
@@ -295,6 +443,12 @@ namespace ObjectScript {
 // OS_DECL_CTYPE_ENUM(TileType);
 OS_DECL_CTYPE_NAME(vec2, "vec2");
 template <> struct CtypeValue<vec2>: public CtypeValuePoint<vec2> {};
+
+OS_DECL_CTYPE_NAME(b2Vec2, "vec2");
+template <> struct CtypeValue<b2Vec2>: public CtypeValuePointSub<b2Vec2, float32> {};
+
+OS_DECL_OX_CLASS(PhysContact);
+OS_DECL_OX_CLASS(BasePhysEntity);
 
 OS_DECL_OX_CLASS(BaseLight);
 OS_DECL_OX_CLASS(BaseLightmap);
