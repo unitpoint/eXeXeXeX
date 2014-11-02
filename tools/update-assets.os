@@ -20,7 +20,7 @@ var dir = fs.readdir("..\data_debug\images")
 // print dir
 var buf, count = Buffer(), 0
 for(var _, filename in dir){
-	if(Regexp(`/((tile|item|ent)-\d+(-\d+)?(-glow)?|(flame|explode)(-\d+)+)\.(png)/`).test(filename)){
+	if(Regexp(`/((tile|item|ent)-\d+(-\d+)?(-glow)?|(flame|explode)(-\d+)+)\.(png|jpg)/`).test(filename)){
 		buf << "${indent}<image file=\"${filename}\" />\n"
 		count++
 	}

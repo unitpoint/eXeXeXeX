@@ -164,7 +164,7 @@ FrontTile = extends BaseLayerTile {
 				}
 			}
 			var type = @tile.game.getFrontType(tx, ty + 1)
-			return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS
+			return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER
 		}
 	},
 	

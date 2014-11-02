@@ -149,11 +149,11 @@ Monster = extends Entity {
 		}
 		var maxAreaWidth = 3
 		var sideLocked = [false, false]
-		var startFromLadders = @game.getFrontType(@tileX, @tileY) == TILE_TYPE_LADDERS
+		var startFromLadders = @game.getFrontType(@tileX, @tileY) == TILE_TYPE_LADDER
 		var isTileEmpty = function(tx, ty, allowLadders){
 			var type = @game.getFrontType(tx, ty)
 			if(allowLadders){
-				return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS
+				return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER
 			}
 			 return type == TILE_TYPE_EMPTY
 		}
@@ -209,7 +209,7 @@ Monster = extends Entity {
 			}
 			
 			if(!@fly && @moveDir.x != 0 
-				&& @getAutoFrontType(@tileX, @tileY) == TILE_TYPE_LADDERS
+				&& @getAutoFrontType(@tileX, @tileY) == TILE_TYPE_LADDER
 				&& !@getTileEnt(@tileX, @tileY + 1)
 				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY) == TILE_TYPE_EMPTY
 				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY + 1) == TILE_TYPE_EMPTY)

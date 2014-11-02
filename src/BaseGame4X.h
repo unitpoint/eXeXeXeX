@@ -37,6 +37,8 @@ using namespace ObjectScript;
 #define PHYS_CAT_BIT_ENTITY		(1<<4)
 #define PHYS_CAT_BIT_STATIC_OBJECT	(1<<5)
 #define PHYS_CAT_BIT_DYNAMIC_OBJECT	(1<<6)
+#define PHYS_CAT_BIT_SCREEN		(1<<7)
+#define PHYS_CAT_BIT_PIT		(1<<8)
 
 /*
 float toPhysValue(float a);
@@ -85,6 +87,7 @@ enum EPhysTileType
 {
 	PHYS_EMPTY,
 	PHYS_GROUND,
+	PHYS_PIT,
 	PHYS_LADDER,
 	PHYS_PLATFORM
 };
@@ -96,15 +99,19 @@ public:
 	OS_DECLARE_CLASSINFO(PhysTileArea);
 
 	float time;
+	int ax, ay, bx, by;
 	Bounds2 bounds;
+	Bounds2 physBounds;
 	EPhysTileType type;
 
 	spPhysBody body;
 
 	PhysTileArea()
 	{
-		bounds.b[0] = bounds.b[1] = vec2(0, 0);
 		time = 0;
+		ax = ay = bx = by = 0;
+		bounds.b[0] = bounds.b[1] = vec2(0, 0);
+		physBounds = bounds;
 		type = PHYS_EMPTY;
 		body = NULL;
 	}
@@ -305,7 +312,7 @@ public:
 };
 
 DECLARE_SMART(BaseLightmap, spBaseLightmap);
-class BaseLightmap: public Sprite
+class BaseLightmap: public Box9Sprite
 {
 public:
 	OS_DECLARE_CLASSINFO(BaseLightmap);
@@ -355,7 +362,7 @@ public:
 	spPhysWorld getPhysWorld();
 	void setPhysWorld(spPhysWorld);
 
-	void updateCamera(BaseLightmap*);
+	void updateLightmap(BaseLightmap*);
 
 	// void createPhysicsWorld();
 	// void destroyPhysicsWorld();
@@ -363,6 +370,7 @@ public:
 	void drawPhysics();
 
 	void queryTilePhysics(int ax, int ay, int bx, int by, float time);
+	void addDebugMessage(const char * message);
 
 	/*
 	void initEntityPhysics(BasePhysEntity * ent);
@@ -398,11 +406,11 @@ protected:
 	spResources resources;
 
 	std::vector<spBaseLight> lights;
-	std::vector<Point> activeTilesXY;
+	// std::vector<Point> activeTilesXY;
 
-	int startViewX, startViewY;
-	int endViewX, endViewY;
-	bool afterDraggingMode;
+	int startViewX, startViewY, endViewX, endViewY;
+	int startPhysX, startPhysY, endPhysX, endPhysY;
+	// bool afterDraggingMode;
 
 	/*
 	float physAccumTimeSec;
@@ -417,6 +425,7 @@ protected:
 	spBox2DDraw physDebugDraw;
 	Bounds2 physActiveBounds;
 
+	void initLightmap(BaseLightmap*);
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);
 	void setUniformColor(const char * name, const vec3& color);
 
@@ -431,7 +440,7 @@ protected:
 
 	Bounds2 getTileAreaBounds(int ax, int ay, int bx, int by);
 	void boundsToTileArea(int& ax, int& ay, int& bx, int& by, const Bounds2&);
-	void freePhysTileAreasInBounds(const Bounds2&);
+	bool freePhysTileAreasInBounds(const Bounds2&);
 	void freeAllPhysTileAreas();
 	void freePhysTileArea(spPhysTileArea);
 

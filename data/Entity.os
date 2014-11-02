@@ -179,7 +179,7 @@ Entity = extends Actor {
 		if(newScaleX != @flipX){
 			@flipLayer.replaceTweenAction {
 				name = "scaleX",
-				duration = 0.15 * @moveSpeed,
+				duration = 0.2 * @moveSpeed,
 				scaleX = (@flipX = newScaleX) * @baseScale.x,
 				ease = Ease.CUBIC_IN_OUT,
 			}
@@ -231,7 +231,7 @@ Entity = extends Actor {
 	
 	isTileEmptyToMove = function(tx, ty){
 		var type = @getAutoFrontType(tx, ty)
-		return (type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS) 
+		return (type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER) 
 			&& !@getTileEnt(tx, ty)
 	},
 	
@@ -351,7 +351,7 @@ Entity = extends Actor {
 			// print "  pos: ${pos}, move dir: ${dx}, ${dy}"
 			/* if(!@fly && !@moveAnimatedY && moveDirY > sensorSizeY
 				// && @isTileEmptyToMove(tileX, tileY + 1)
-				&& @getAutoFrontType(tileX, tileY + 1) == TILE_TYPE_LADDERS
+				&& @getAutoFrontType(tileX, tileY + 1) == TILE_TYPE_LADDER
 				&& !@getTileEnt(tileX, tileY + 1))
 			{
 				// print "move down ladders: ${tileX}, ${tileY + 1}"
@@ -400,9 +400,9 @@ Entity = extends Actor {
 				if(@isTileEmptyToMove(tileX + dx, tileY)){
 					// @isPlayer && print("try side move: ${tileX + dx}, ${tileY}, dy: ${dy}")
 					if(dy < 0 
-						&& (!@isPlayer || (!@movingX && !@movingY) || @game.getFrontType(tileX, tileY) == TILE_TYPE_LADDERS)
-						// && @isTileEmptyToMove(tileX, tileY) // == TILE_TYPE_LADDERS
-						&& (@getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDERS
+						&& (!@isPlayer || (!@movingX && !@movingY) || @game.getFrontType(tileX, tileY) == TILE_TYPE_LADDER)
+						// && @isTileEmptyToMove(tileX, tileY) // == TILE_TYPE_LADDER
+						&& (@getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDER
 							|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY)
 						&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
 						&& sideJump())
@@ -430,7 +430,7 @@ Entity = extends Actor {
 					&& !@isPlayer
 					// && (!@isPlayer || (!@movingX && !@movingY))
 					&& (@fly 
-						|| @getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDERS
+						|| @getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDER
 						|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY 
 						|| @getTileEnt(tileX, tileY + 1))
 					&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
@@ -485,8 +485,8 @@ Entity = extends Actor {
 							}
 							return
 						}
-						if(curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDERS){
-							// print "#1 curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDERS"
+						if(curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER){
+							// print "#1 curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER"
 							break
 						}
 						// print "#3 no"
@@ -514,7 +514,7 @@ Entity = extends Actor {
 		var tileX, tileY = @tileX, math.min(tileY, @tileY)
 		if((!@fly || @isDead) && !@moveAnimatedY
 			&& @isTileEmptyToFall(tileX, tileY + 1)
-			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDERS
+			&& @getAutoFrontType(tileX, tileY) != TILE_TYPE_LADDER
 			&& !@blockFalling())
 		{
 			// print "falling move: ${tileX}, ${tileY + 1}"

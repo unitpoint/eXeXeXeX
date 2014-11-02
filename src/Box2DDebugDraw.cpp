@@ -154,14 +154,14 @@ void Box2DDraw::drawPrimitives(bool drawTriangles, bool drawLines, int count, co
 
 	if (drawTriangles)
 	{
-		Vector4 c(color.r, color.g, color.b, 0.5f);
+		Vector4 c(color.r, color.g, color.b, 0.2f);
 		IVideoDriver::instance->setUniform("color", &c, 1);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, count);
 	}
 
 	if (drawLines)
 	{
-		Vector4 c(color.r, color.g, color.b, 1.0f);
+		Vector4 c(color.r, color.g, color.b, 0.5f);
 		IVideoDriver::instance->setUniform("color", &c, 1);
 		glDrawArrays(GL_LINE_LOOP, 0, count);
 	}

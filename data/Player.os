@@ -121,7 +121,8 @@ Player = extends Entity {
 		@lightTileRadiusScale = 1.5 // dependence on light name
 		@light = Light().attrs {
 			name = "light-01",
-			shadowColor = Color(0.1, 0.1, 0.1),
+			// shadowColor = Color(0.1, 0.1, 0.1),
+			shadowColor = Color(0.3, 0.3, 0.3),
 			radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
 			color = Color(0.8, 1.0, 1.0),
 			// tileRadius = @lightTileRadius,
@@ -324,15 +325,15 @@ Player = extends Entity {
 					|| leftTileType != TILE_TYPE_EMPTY
 					|| rightTileType != TILE_TYPE_EMPTY
 					)
-				&& leftTileType != TILE_TYPE_LADDERS
-				&& rightTileType != TILE_TYPE_LADDERS
+				&& leftTileType != TILE_TYPE_LADDER
+				&& rightTileType != TILE_TYPE_LADDER
 				/* && (upTileType != TILE_TYPE_EMPTY
 					|| downTileType != TILE_TYPE_EMPTY
-					|| (leftTileType != TILE_TYPE_LADDERS && leftTileType != TILE_TYPE_EMPTY)
-					|| (rightTileType != TILE_TYPE_LADDERS && rightTileType != TILE_TYPE_EMPTY)
+					|| (leftTileType != TILE_TYPE_LADDER && leftTileType != TILE_TYPE_EMPTY)
+					|| (rightTileType != TILE_TYPE_LADDER && rightTileType != TILE_TYPE_EMPTY)
 					) */
-				// && (upTileType != TILE_TYPE_LADDERS && upTileType != TILE_TYPE_EMPTY)
-				// 	!= (downTileType != TILE_TYPE_LADDERS && downTileType != TILE_TYPE_EMPTY)
+				// && (upTileType != TILE_TYPE_LADDER && upTileType != TILE_TYPE_EMPTY)
+				// 	!= (downTileType != TILE_TYPE_LADDER && downTileType != TILE_TYPE_EMPTY)
 				)
 			{
 				if(tx == @tileX && ty == @tileY-1){
@@ -357,7 +358,7 @@ Player = extends Entity {
 			)
 		{
 			var type = @game.getFrontType(tx, ty)
-			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
 				return @game.getItemType(tx, ty) == ITEM_TYPE_EMPTY
 					|| ITEMS_INFO[type].stamina
 					|| ITEMS_INFO[type].addMaxStamina
@@ -378,7 +379,7 @@ Player = extends Entity {
 			if(Backpack.pack.subItem(ITEM_TYPE_LADDERS)){
 				@playUseItemSound(ITEMS_INFO[ITEM_TYPE_LADDERS].useSounds)
 				@game.updateHudItems()
-				@game.setFrontType(tx, ty, TILE_TYPE_LADDERS)
+				@game.setFrontType(tx, ty, TILE_TYPE_LADDER)
 				@game.deleteTile(tx, ty)
 				// @game.updateTile(tx, ty)
 				@game.updateMapTiles(tx-1, ty-1, tx+1, ty+1, true)
@@ -458,7 +459,7 @@ Player = extends Entity {
 		tile.checkStartFalling()
 		
 		var type = @game.getFrontType(tx, ty)
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
 			var type = @game.getItemType(tx, ty)
 			if(type != ITEM_TYPE_EMPTY && type != ITEM_TYPE_STAND_FLAME_01){
 				if(@game.takeTileItem(type, tx, ty)){

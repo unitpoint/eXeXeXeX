@@ -40,7 +40,7 @@ TILE_TYPE_GRASS = 1
 TILE_TYPE_CHERNOZEM = 8
 TILE_TYPE_ROCK = 9
 TILE_TYPE_DOOR_01 = 16
-TILE_TYPE_LADDERS = 17
+TILE_TYPE_LADDER = 17
 TILE_TYPE_TRADE_STOCK = 24
 
 ITEM_TYPE_COAL = 7
@@ -126,6 +126,7 @@ GAME_LAYER_DRAGNDROP = enumCount++
 GAME_LAYER_MENU_MODALVIEW = enumCount++
 GAME_LAYER_BLOOD = enumCount++
 GAME_LAYER_FADE = enumCount++
+GAME_LAYER_DEBUG_MESSAGED = enumCount++
 
 /*
 GAME_PRIORITY_LIGHTMASK = enumCount++
@@ -154,7 +155,7 @@ TILES_INFO = {
 		passable = true,
 		transparent = true,
 	},
-	[TILE_TYPE_LADDERS] = {
+	[TILE_TYPE_LADDER] = {
 		// strength = 0,
 		passable = true,
 		transparent = true,
@@ -587,11 +588,12 @@ Game4X = extends BaseGame4X {
 		@map = Actor().attrs {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			// scale = 0.7,
+			// scale = 0.5,
 			priority = GAME_LAYER_MAP,			
 			clock = Clock(),
 			parent = this,
 		}
+		@initialMapScale = @map.scale
 		
 		@mapLayers = []
 		for(var i = 0; i < MAP_LAYER_COUNT; i++){
@@ -606,28 +608,16 @@ Game4X = extends BaseGame4X {
 				touchChildrenEnabled = false,
 			}
 		}
+		// @mapLayers[MAP_LAYER_SCREEN_LIGHTMAP].scale = vec2(1, 1) / @map.scale
 		
+		@lightmapLayer = @mapLayers[MAP_LAYER_SCREEN_LIGHTMAP]
 		@lightmap = BaseLightmap().attrs {
-			size = @size,
+			// size = @size / @map.scale,
+			// scale = vec2(1, 1) / @map.scale,
 			// priority = GAME_PRIORITY_LIGHTMASK,
 			parent = @mapLayers[MAP_LAYER_SCREEN_LIGHTMAP],
+			// visible = false,
 		}
-		
-		/*
-		@glowingTiles = Actor().attrs {
-			priority = GAME_PRIORITY_GLOWING,
-			touchEnabled = false,
-			touchChildrenEnabled = false,
-			parent = this,
-		}
-		
-		@debugTiles = Actor().attrs {
-			priority = GAME_PRIORITY_DEBUG,
-			touchEnabled = false,
-			touchChildrenEnabled = false,
-			parent = this,
-		}
-		*/
 		
 		@speechBubbles = Actor().attrs {
 			// priority = GAME_PRIORITY_BUBBLES,
@@ -647,9 +637,9 @@ Game4X = extends BaseGame4X {
 		}
 		
 		@physWorld = PhysWorld()
-		@physWorld.toPhysScale = 2 / 128
-		@physWorld.gravity = vec2(0, 10) / @physWorld.toPhysScale
-		@physDebugDraw = true
+		@physWorld.toPhysScale = 2 / 128 * 0.5
+		@physWorld.gravity = vec2(0, 20) / @physWorld.toPhysScale
+		@physDebugDraw = PLATFORM == "windows"
 		// @createPhysicsWorld()
 		
 		@dragndrop = DragndropItems(this).attrs {
@@ -663,6 +653,15 @@ Game4X = extends BaseGame4X {
 			priority = GAME_LAYER_HUD,
 			parent = this,
 			touchEnabled = false,
+		}
+		
+		@debugMessages = Actor().attrs {
+			name = "debugMessages",
+			size = @size,
+			priority = GAME_LAYER_DEBUG_MESSAGED,
+			parent = this,
+			touchEnabled = false,
+			touchChildrenEnabled = false,
 		}
 		
 		@modalView = ModalView().attrs {
@@ -851,6 +850,7 @@ Game4X = extends BaseGame4X {
 		})
 		
 		@dragging = null
+		@afterDraggingMode = false
 		if(@saveSlotNum){
 			@addEventListener(TouchEvent.START, function(ev){
 				if(ev.target is BaseLayerTile){
@@ -945,7 +945,81 @@ Game4X = extends BaseGame4X {
 			duration = 2.0,
 			opacity = 0,
 			detachTarget = true,
+			doneCallback = function(){
+				@addDebugMessage("game started game started")
+			},
 		}
+	},
+	
+	addDebugMessage = function(params){
+		if(params.prototype !== Object){
+			params = {message = params}
+		}
+		var reposMessages = function(time){
+			for(var i, messageField in @debugMessages){
+				if(time <= 0){
+					messageField.removeActionsByName("repos")
+					messageField.pos = messagePosForIndex(i)
+				}else{
+					messageField.replaceTweenAction {
+						name = "repos",
+						duration = time || 0.5,
+						pos = messagePosForIndex(i),
+						ease = Ease.CUBIC_IN_OUT,
+					}
+				}
+			}
+		}
+		var startTimeout = function(messageField){
+			if("timeoutHandle" in messageField){
+				messageField.removeTimeout(messageField.timeoutHandle)
+				// messageField.pos = messagePosForIndex(@debugMessages.numChildren)
+				// messageField.detach()
+				// reposMessages()
+			}
+			messageField.timeoutHandle = messageField.addTimeout(params.time || 10, function(){
+				messageField.addTweenAction {
+					duration = 1,
+					opacity = 0,
+					detachTarget = true,
+					doneCallback = reposMessages,
+				}
+			})
+		}
+		if(params.id){
+			for(var i, messageField in @debugMessages){
+				if(messageField.messageId === params.id){
+					messageField.text = params.message
+					startTimeout(messageField)
+					return
+				}
+			}
+		}
+		var maxNumMessages, messageHeight, border = 7, 30, 50
+		var messagePosForIndex = function(i){
+			return vec2(@width * 0.1, @height - border - i * messageHeight)
+		}
+		var numMessages = @debugMessages.numChildren
+		if(numMessages > maxNumMessages){
+			while(numMessages > maxNumMessages){
+				@debugMessages.firstChild.detach()
+				numMessages--
+			}
+			reposMessages(0)
+		}
+		var messageField = TextField().attrs {
+			resFont = res.get("test"),
+			vAlign = TEXT_VALIGN_BOTTOM,
+			hAlign = TEXT_HALIGN_CENTER,
+			text = params.message,
+			pos = messagePosForIndex(numMessages),
+			color = Color(0.7, 0.7, 0.7),
+			// borderColor = Color.BLACK,
+			// borderVisible = false,
+			parent = @debugMessages,
+			messageId = params.id || null,
+		}
+		startTimeout(messageField)
 	},
 	
 	createBlood = function(value){
@@ -1121,6 +1195,32 @@ Game4X = extends BaseGame4X {
 		}
 	},
 	
+	createLevelPhysBorder = function(){
+		var bodyDef = PhysBodyDef()
+		bodyDef.type = PHYS_BODY_STATIC
+		// bodyDef.pos = @pos
+		// bodyDef.linearDamping = 0.99
+		// bodyDef.angularDamping = 0.99
+		// bodyDef.isSleepingAllowed = false
+		@borderBody = @physWorld.createBody(bodyDef)
+		
+		var createBoundsFixture = function(a, b){
+			var halfSize = (b - a) / 2
+			var center = (a + b) / 2
+			var fixtureDef = PhysFixtureDef()
+			fixtureDef.type = PHYS_SHAPE_POLYGON
+			fixtureDef.setPolygonAsBox(halfSize, center, 0)
+			fixtureDef.categoryBits = PHYS_CAT_BIT_GROUND
+			fixtureDef.friction = 0.99
+			@borderBody.createFixture(fixtureDef)
+		}
+		var borderTileSize = 2
+		createBoundsFixture(@tileToPos(-borderTileSize, -borderTileSize), @tileToPos(0, @tiledmapHeight+borderTileSize))
+		createBoundsFixture(@tileToPos(@tiledmapWidth, -borderTileSize), @tileToPos(@tiledmapWidth+borderTileSize, @tiledmapHeight+borderTileSize))
+		createBoundsFixture(@tileToPos(0, -borderTileSize), @tileToPos(@tiledmapWidth, 0))
+		createBoundsFixture(@tileToPos(0, @tiledmapHeight), @tileToPos(@tiledmapWidth, @tiledmapHeight+borderTileSize))
+	},
+	
 	initLevel = function(){
 		if(@saveSlotNum){
 			var saveSlot = GAME_SETTINGS.saveSlots[@saveSlotNum]
@@ -1156,6 +1256,7 @@ Game4X = extends BaseGame4X {
 		@tiledmapWidth = level.width
 		@tiledmapHeight = level.height
 		@tiledmapFloor = level.floor
+		@createLevelPhysBorder()
 		
 		// load
 		var saveJsonFilename = "save-${@saveSlotNum}-${levelNum}-${xor}.json"
@@ -1188,7 +1289,12 @@ Game4X = extends BaseGame4X {
 				print "game level is loaded"
 				return true
 			}catch(e){
-				print "exception: ${e.message}"
+				// do print exception info
+				if(e is CompilerException){
+					print "Exception: '${e.message}' in ${e.file}(${e.line},${e.pos}), token: ${e.token}\n${e.lineString.trim()}"
+				}else{
+					print "Exception: '${e.message}'"
+				}
 				printBackTrace(e.trace)
 				return notLoaded(e.message)
 			}
@@ -1830,12 +1936,30 @@ Game4X = extends BaseGame4X {
 	},
 	__set@mapPos = function(value){
 		@map.pos = value
-		@mapLayers[MAP_LAYER_SCREEN_LIGHTMAP].pos = -value
-		// @glowingTiles.pos = @speechBubbles.pos = @debugTiles.pos = value
+		@lightmapLayer.pos = -value / @map.scale
+		@lightmapLayer.scale = vec2(1, 1) / @map.scale
+	},
+	
+	__get@mapScale = function(){
+		return @map.scale
+	},
+	__set@mapScale = function(value){
+		@setMapScale(value)
+	},
+	
+	setMapScale = function(scale, pos){
+		pos || pos = @player.pos
+		var posScreenScale = (pos + @map.pos / @map.scale) / (@size / @map.scale)
+		@map.scale = scale
+		@mapPos = (posScreenScale * (@size / @map.scale) - pos) * @map.scale
 	},
 	
 	tileToCenterPos = function(x, y){
 		return vec2((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
+	},
+	
+	tileToCenterValue = function(x){
+		return (x + 0.5) * TILE_SIZE
 	},
 	
 	tileToPos = function(x, y){
@@ -1844,6 +1968,10 @@ Game4X = extends BaseGame4X {
 	
 	posToTile = function(pos){
 		return math.floor(pos.x / TILE_SIZE), math.floor(pos.y / TILE_SIZE)
+	},
+	
+	singlePosToTile = function(pos){
+		return math.floor(pos / TILE_SIZE)
 	},
 	
 	posToCeilTile = function(pos){
@@ -1870,6 +1998,53 @@ Game4X = extends BaseGame4X {
 			// var t = 1 - accumTime / time
 			@shakeOffs = vec2(randSign() * size * t, randSign() * size * t)
 		})
+	},
+	
+	followPlayer = function(){
+		if(!@dragging){
+			var mapPos, mapScale = @mapPos, @mapScale
+			var idealPos = (@size / 2 / mapScale - @player.pos) * mapScale
+			idealPos.x = math.round(idealPos.x)
+			idealPos.y = math.round(idealPos.y)
+			if(idealPos != mapPos){
+				var maxOffs = @size * vec2(0.3, 0.1) / mapScale
+				// var maxOffs = @size * vec2(0.0, 0.0) / mapScale
+				if(@afterDraggingMode){
+					mapPos = mapPos + (idealPos - mapPos) * 0.1
+
+					var validPos = 0
+					if(idealPos.x - mapPos.x > maxOffs.x){
+					}else if(idealPos.x - mapPos.x < -maxOffs.x){
+					}else{
+						validPos++
+					}
+					if(idealPos.y - mapPos.y > maxOffs.y){
+					}else if(idealPos.y - mapPos.y < -maxOffs.y){
+					}else{
+						validPos++
+					}
+					if(validPos == 2){
+						@afterDraggingMode = false
+					}
+				}else{
+					mapPos = mapPos + (idealPos - mapPos) * math.min(1, 3 * @dt)
+
+					if(idealPos.x - mapPos.x > maxOffs.x){
+						mapPos.x = idealPos.x - maxOffs.x
+					}else if(idealPos.x - mapPos.x < -maxOffs.x){
+						mapPos.x = idealPos.x + maxOffs.x
+					}
+					if(idealPos.y - mapPos.y > maxOffs.y){
+						mapPos.y = idealPos.y - maxOffs.y
+					}else if(idealPos.y - mapPos.y < -maxOffs.y){
+						mapPos.y = idealPos.y + maxOffs.y
+					}
+				}
+				@mapPos = mapPos
+			}
+		}else{
+			@afterDraggingMode = true
+		}	
 	},
 	
 	update = function(ev){
@@ -1907,9 +2082,15 @@ Game4X = extends BaseGame4X {
 			@mapPos = @mapPos + @shakeOffs
 			@shakeOffs = null
 		}
-		@updateCamera(@lightmap)
+		// @mapScale = ((math.sin(math.PI * 2 * @time / 10) + 1) / 2 * 0.95 + 0.05) * @initialMapScale
+		@physWorld.persistentDeltaTime = 1 / 60
+		// @physWorld.persistentDeltaTime = clamp(@dt, 1 / 60, 1 / 10)
+		@physWorld.update(@dt, 1, 1)
 		
-		@physWorld.update(@dt, 6, 2)
+		@player.updatePos()
+		@followPlayer()
+		@updateLightmap(@lightmap)
+		
 		/* for(var _, physBody in @physWorld.bodyList){
 			// TODO: apply body pos and angle to actor
 		} */

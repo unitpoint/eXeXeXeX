@@ -31,6 +31,8 @@ static void registerGlobals(OS * os)
 		DEF_CONST(PHYS_CAT_BIT_ENTITY),
 		DEF_CONST(PHYS_CAT_BIT_STATIC_OBJECT),
 		DEF_CONST(PHYS_CAT_BIT_DYNAMIC_OBJECT),
+		DEF_CONST(PHYS_CAT_BIT_SCREEN),
+		DEF_CONST(PHYS_CAT_BIT_PIT),
 		/*
 		DEF_CONST(TO_PHYS_SCALE),
 		DEF_CONST(PHYS_DEF_FIXED_ROTATION),
@@ -230,7 +232,7 @@ static void registerBaseGame4X(OS * os)
 		def("getLight", &BaseGame4X::getLight),
 		def("addLight", &BaseGame4X::addLight),
 		def("removeLight", &BaseGame4X::removeLight),
-		def("updateCamera", &BaseGame4X::updateCamera),
+		def("updateLightmap", &BaseGame4X::updateLightmap),
 		def("getTileRandom", &BaseGame4X::getTileRandom),
 		def("getFrontType", &BaseGame4X::getFrontType),
 		def("setFrontType", &BaseGame4X::setFrontType),
@@ -507,9 +509,8 @@ void BaseGame4X::setPhysWorld(spPhysWorld value)
 	physWorld = value;
 }
 
-void BaseGame4X::updateCamera(BaseLightmap * lightmap)
+void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 {
-	vec2 size = getSize();
 	if(!lightProg){
 		Point displaySize = core::getDisplaySize();
 		float displayWidthScale = (float)displaySize.x / getWidth();
@@ -521,7 +522,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 #else
 		lightScale *= 1.0f / 3.0f;
 #endif
-
+		vec2 size = getSize();
 		lightTextureWidth = (int)(size.x * lightScale);
 		lightTextureHeight = (int)(size.y * lightScale);
 		
@@ -644,7 +645,12 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		os->pop();
 		OX_ASSERT(resources);
 	}
+}
 
+void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
+{
+	initLightmap(lightmap);
+	
 	pushCtypeValue(os, this);
 	float time = (os->getProperty(-1, "time"), os->popFloat());
 	float dt = (os->getProperty(-1, "dt"), os->popFloat());
@@ -657,61 +663,18 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	vec2 mapPos = map->getPosition();
 	vec2 mapScale = map->getScale();
 
-	// followPlayer
-	bool dragging = (pushCtypeValue(os, this), os->getProperty("dragging"), os->popBool());
-	if(!dragging){
-		vec2 idealPos = (vec2(getSize()) / 2.0f / mapScale - playerPos) * mapScale;
-		idealPos.x = floorf(idealPos.x + 0.5f); // (float)OS::Utils::round(idealPos.x);
-		idealPos.y = floorf(idealPos.y + 0.5f); // (float)OS::Utils::round(idealPos.y);
-		if(idealPos != mapPos){
-			float dt = (pushCtypeValue(os, this), os->getProperty("dt"), os->popFloat());
-			vec2 maxOffs = vec2(getSize()) * 0.3f / mapScale;
-			if(afterDraggingMode){
-				mapPos = mapPos + (idealPos - mapPos) * 0.1f;
-
-				int validPos = 0;
-				if(idealPos.x - mapPos.x > maxOffs.x){
-				}else if(idealPos.x - mapPos.x < -maxOffs.x){
-				}else{
-					validPos++;
-				}
-				if(idealPos.y - mapPos.y > maxOffs.y){
-				}else if(idealPos.y - mapPos.y < -maxOffs.y){
-				}else{
-					validPos++;
-				}
-				if(validPos == 2){
-					afterDraggingMode = false;
-				}
-			}else{
-				mapPos = mapPos + (idealPos - mapPos) * MathLib::min(1.0f, 3.0f * dt);
-
-				if(idealPos.x - mapPos.x > maxOffs.x){
-					mapPos.x = idealPos.x - maxOffs.x;
-				}else if(idealPos.x - mapPos.x < -maxOffs.x){
-					mapPos.x = idealPos.x + maxOffs.x;
-				}
-				if(idealPos.y - mapPos.y > maxOffs.y){
-					mapPos.y = idealPos.y - maxOffs.y;
-				}else if(idealPos.y - mapPos.y < -maxOffs.y){
-					mapPos.y = idealPos.y + maxOffs.y;
-				}
-			}
-			pushCtypeValue(os, this);
-			pushCtypeValue(os, mapPos);
-			os->setProperty("mapPos");
-		}
-	}else{
-		afterDraggingMode = true;
-	}
-
 	int startX, startY;
 	vec2 offs = -mapPos / mapScale;
 	posToTile(offs, startX, startY);
 
 	int endX, endY;
+	vec2 size = getSize();
 	vec2 endOffs = offs + size / mapScale;
 	posToCeilTile(endOffs, endX, endY);
+
+	int physEdge = 0;
+	int startPhysX = startX+physEdge, endPhysX = endX-physEdge;
+	int startPhysY = startY+physEdge, endPhysY = endY-physEdge;
 
 #if 1 || defined _WIN32 && 1
 	startX -= 2; startY -= 1;
@@ -724,12 +687,11 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		for(; it != physTilesChanged.end(); ++it){
 			int x, y, id = it->first;
 			tileIdToTilePos(x, y, id);
-
-			Bounds2 b = getTileAreaBounds(x, y, x, y);
-			freePhysTileAreasInBounds(b);
+			if(freePhysTileAreasInBounds(getTileAreaBounds(x, y, x, y))){
+				physChanged = true;
+			}
 		}
 		physTilesChanged.clear();
-		physChanged = true;
 	}
 
 	if(startX != startViewX || startY != startViewY || endX != endViewX || endY != endViewY){
@@ -745,12 +707,22 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		pushCtypeValue(os, endX);
 		pushCtypeValue(os, endY);
 		os->callTF(4);
-
-		physActiveBounds = getTileAreaBounds(startX-1, startY-1, endX+1, endY+1);
-		physChanged = true;
 	}
-	if(physChanged){
-		queryTilePhysics(startX, startY, endX, endY, time);
+	
+	physEdge = 4;
+	startPhysX = (startPhysX / physEdge) * physEdge;
+	startPhysY = (startPhysY / physEdge) * physEdge;
+	endPhysX = ((endPhysX + physEdge-1) / physEdge) * physEdge;
+	endPhysY = ((endPhysY + physEdge-1) / physEdge) * physEdge;
+	// endPhysX = (endPhysX / physEdge + 1) * physEdge;
+	// endPhysY = (endPhysY / physEdge + 1) * physEdge;
+	if(physChanged || startPhysX != this->startPhysX || startPhysY != this->startPhysY || endPhysX != this->endPhysX || endPhysY != this->endPhysY){
+		this->startPhysX = startPhysX;
+		this->startPhysY = startPhysY;
+		this->endPhysX = endPhysX;
+		this->endPhysY = endPhysY;
+		physActiveBounds = getTileAreaBounds(startPhysX, startPhysY, endPhysX, endPhysY);
+		queryTilePhysics(startPhysX, startPhysY, endPhysX, endPhysY, time);
 	}
 
 	vec2 lightTextureSize((float)lightTextureWidth, (float)lightTextureHeight);
@@ -761,6 +733,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	Matrix viewProj = r.getViewProjection();
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
+#if 0
 	activeTilesXY.clear();
 
 #if 1
@@ -781,15 +754,18 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	}
 	os->pop();
 #endif
+#endif // 0
 
 	std::vector<Point>::iterator it;
 	for(int i = 0; i < (int)lights.size(); i++){
 		spBaseLight light = lights[i];
-		float radius = light->radius; // tileRadius * light->tileRadiusScale * TILE_SIZE;
-		if(radius <= 0.0f){
+		// float radius = light->radius; // tileRadius * light->tileRadiusScale * TILE_SIZE;
+		if(light->radius <= 0.0f){
 			continue;
 		}
-		vec2 lightScreenPos = light->pos - offs;
+		vec2 lightScreenRadius = vec2(light->radius, light->radius) * mapScale;
+		float lightScreenRadiusMax = MathLib::max(lightScreenRadius.x, lightScreenRadius.y);
+		vec2 lightScreenPos = (light->pos - offs) * mapScale;
 
 		r.begin(shadowMaskTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -806,114 +782,115 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 			light->validPos = light->pos;
 		}else{
 			posToTile(light->validPos, tx, ty);
-			lightScreenPos = light->validPos - offs;
+			lightScreenPos = (light->validPos - offs) * mapScale;
 		}
-		it = activeTilesXY.begin();
+		/* it = activeTilesXY.begin();
 		for(; it != activeTilesXY.end(); ++it){
 			const Point& p = *it;
 			int x = p.x;
-			int y = p.y;
-	// for(int y = startY; y <= endY; y++){
-		// for(int x = startX; x <= endX; x++){
-			TileType type = getFrontType(x, y);
-			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
-				continue;
-			}
-			bool isDoor = false;
-			float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
-			if(type == TILE_TYPE_DOOR_01){
-				pushCtypeValue(os, this);
-				os->getProperty(-1, "getTile");
-				OX_ASSERT(os->isFunction());
-				pushCtypeValue(os, x);
-				pushCtypeValue(os, y);
-				os->callTF(2, 1);
-				os->getProperty("front");
-				os->getProperty("openState");
-				float openState = os->popFloat();
-				if(openState > 0.999f){
+			int y = p.y; */
+		for(int y = startY; y <= endY; y++){
+			for(int x = startX; x <= endX; x++){
+				TileType type = getFrontType(x, y);
+				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
 					continue;
 				}
-				tileHeight *= 1.0f - openState;
-				isDoor = true;
-			}else{
-				pushCtypeValue(os, this);
-				os->getProperty(-1, "getTile");
-				OX_ASSERT(os->isFunction());
-				pushCtypeValue(os, x);
-				pushCtypeValue(os, y);
-				os->callTF(2, 1);
-				os->getProperty("front");
-				os->getProperty("isFalling");
-				float isFalling = os->popBool();
-				if(isFalling){
-					continue;
+				bool isDoor = false;
+				float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
+				if(type == TILE_TYPE_DOOR_01){
+					pushCtypeValue(os, this);
+					os->getProperty(-1, "getTile");
+					OX_ASSERT(os->isFunction());
+					pushCtypeValue(os, x);
+					pushCtypeValue(os, y);
+					os->callTF(2, 1);
+					os->getProperty("front");
+					os->getProperty("openState");
+					float openState = os->popFloat();
+					if(openState > 0.999f){
+						continue;
+					}
+					tileHeight *= 1.0f - openState;
+					isDoor = true;
+				}else{
+					pushCtypeValue(os, this);
+					os->getProperty(-1, "getTile");
+					OX_ASSERT(os->isFunction());
+					pushCtypeValue(os, x);
+					pushCtypeValue(os, y);
+					os->callTF(2, 1);
+					os->getProperty("front");
+					os->getProperty("isFalling");
+					float isFalling = os->popBool();
+					if(isFalling){
+						continue;
+					}
 				}
-			}
-			vec2 pos = tileToPos(x, y) - offs;
-			vec2 points[] = {
-				pos,
-				pos + vec2(tileWidth, 0),
-				pos + vec2(tileWidth, tileHeight),
-				pos + vec2(0, tileHeight)
-			};
-			static Point tileSideOffs[] = {
-				Point(0, -1),
-				Point(1, 0),
-				Point(0, 1),
-				Point(-1, 0),
-			};
-			int count = 4;
-			for(int i = 0; i < count; i++){
-				const vec2& p1 = points[i];
-				const vec2& p2 = points[(i+1) % count];
-				vec2 edge = p2 - p1;
-				vec2 normal = vec2(edge.y, -edge.x).norm();
-				float dist = normal.dot(p1) - normal.dot(lightScreenPos);
-				if(dist <= 0 || dist > radius){
-					continue;
-				}
+				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
+				vec2 points[] = {
+					pos,
+					pos + vec2(tileWidth, 0) * mapScale,
+					pos + vec2(tileWidth, tileHeight) * mapScale,
+					pos + vec2(0, tileHeight) * mapScale
+				};
+				static Point tileSideOffs[] = {
+					Point(0, -1),
+					Point(1, 0),
+					Point(0, 1),
+					Point(-1, 0),
+				};
+				int count = 4;
+				for(int i = 0; i < count; i++){
+					const vec2& p1 = points[i];
+					const vec2& p2 = points[(i+1) % count];
+					vec2 edge = p2 - p1;
+					vec2 normal = vec2(edge.y, -edge.x).norm();
+					float dist = normal.dot(p1) - normal.dot(lightScreenPos);
+					if(dist <= 0 || dist > lightScreenRadiusMax){
+						continue;
+					}
 
-				vec2 lightToCurrent = p1 - lightScreenPos;
-				OX_ASSERT(normal.dot(lightToCurrent) > 0);
-				type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
-					vec2 p1_target = p1 + lightToCurrent * (radius * 100);
-					vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
+					vec2 lightToCurrent = p1 - lightScreenPos;
+					OX_ASSERT(normal.dot(lightToCurrent) > 0);
+					type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
+						vec2 p1_target = p1 + lightToCurrent * (lightScreenRadius * 100);
+						vec2 p2_target = p2 + (p2 - lightScreenPos) * (lightScreenRadius * 100);
 						
-					r.drawPoly(p1 * lightScale, 
-							p1_target * lightScale, 
-							p2_target * lightScale, 
-							p2 * lightScale);
+						r.drawPoly(p1 * lightScale, 
+								p1_target * lightScale, 
+								p2_target * lightScale, 
+								p2 * lightScale);
+					}
 				}
 			}
 		}
 		r.drawBatch();
 
 		setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
-		it = activeTilesXY.begin();
+		/* it = activeTilesXY.begin();
 		for(; it != activeTilesXY.end(); ++it){
 			const Point& p = *it;
 			int x = p.x;
-			int y = p.y;
-		// for(int y = startY; y <= endY; y++){
-			// for(int x = startX; x <= endX; x++){
+			int y = p.y; */
+		for(int y = startY; y <= endY; y++){
+			for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
 				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){ // || type == TILE_TYPE_DOOR_01){
 					continue;
 				}
-				vec2 pos = tileToPos(x, y) - offs;
+				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
 				vec2 points[] = {
 					pos,
-					pos + vec2(TILE_SIZE, 0),
-					pos + vec2(TILE_SIZE, TILE_SIZE),
-					pos + vec2(0, TILE_SIZE)
+					pos + vec2(TILE_SIZE, 0) * mapScale,
+					pos + vec2(TILE_SIZE, TILE_SIZE) * mapScale,
+					pos + vec2(0, TILE_SIZE) * mapScale
 				};
 				r.drawPoly(points[0] * lightScale, 
 					points[1] * lightScale, 
 					points[2] * lightScale, 
 					points[3] * lightScale);
-			// }
+			}
 		}
 		r.end();
 
@@ -949,11 +926,11 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		IVideoDriver::instance->setTexture(0, frame.getDiffuse().base);
 		IVideoDriver::instance->setTexture(1, shadowMaskTexture);
 
-		radius = radius * lightScale;
+		vec2 radius = lightScreenRadius * lightScale;
 		vec2 pos = lightScreenPos * lightScale;
 
 		// pos.y = lightTextureSize.y - pos.y;
-		r.draw(frame.getSrcRect(), RectF(pos - vec2(radius, radius), vec2(radius*2.0f, radius*2.0f)));
+		r.draw(frame.getSrcRect(), RectF(pos - radius, radius * 2.0f));
 		r.drawBatch();
 
 		r.end();
@@ -971,13 +948,13 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	IVideoDriver::instance->setUniform("projection", &viewProj);
 		
 	vec3 color, prevColor(0, 0, 0);
-	it = activeTilesXY.begin();
+	/* it = activeTilesXY.begin();
 	for(; it != activeTilesXY.end(); ++it){
 		const Point& p = *it;
 		int x = p.x;
-		int y = p.y;
-	// for(int y = startY; y <= endY; y++){
-		// for(int x = startX; x <= endX; x++){
+		int y = p.y; */
+	for(int y = startY; y <= endY; y++){
+		for(int x = startX; x <= endX; x++){
 			TileType type = getBackType(x, y);
 			if(type != TILE_TYPE_TRADE_STOCK){
 				// continue;
@@ -1006,18 +983,18 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 				r.drawBatch();
 				setUniformColor("color", color);
 			}
-			vec2 pos = tileToPos(x, y) - offs;
+			vec2 pos = (tileToPos(x, y) - offs) * mapScale;
 			vec2 points[] = {
 				pos,
-				pos + vec2(TILE_SIZE, 0),
-				pos + vec2(TILE_SIZE, TILE_SIZE),
-				pos + vec2(0, TILE_SIZE)
+				pos + vec2(TILE_SIZE, 0) * mapScale,
+				pos + vec2(TILE_SIZE, TILE_SIZE) * mapScale,
+				pos + vec2(0, TILE_SIZE) * mapScale
 			};
 			r.drawPoly(points[0] * lightScale, 
 				points[1] * lightScale, 
 				points[2] * lightScale, 
 				points[3] * lightScale);
-		// }
+		}
 	}
 	r.drawBatch();
 
@@ -1046,277 +1023,273 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 
 	const float TILE_LIGHT_SIZE = TILE_SIZE * 0.5f;
 
-	it = activeTilesXY.begin();
+	// if(false) // TODO: fix pos & scale using mapScale
+	/* it = activeTilesXY.begin();
 	for(; it != activeTilesXY.end(); ++it){
 		const Point& p = *it;
 		int x = p.x;
-		int y = p.y;
-		
-		struct Lib {
-			static bool isEmptyLightTile(BaseGame4X * game, int x, int y)
-			{
-				TileType type = game->getFrontType(x, y);
-				return type != TILE_TYPE_LIGHT_ROCK_01 && type != TILE_TYPE_LIGHT_ROCK_02;
-			}
-			static void render(RenderState& rs, Sprite * lightSprite, const vec2& pos, float scale)
-			{
-				lightSprite->setPosition((pos + lightSprite->getPosition()) * scale);
-				lightSprite->setScale(lightSprite->getScale() * scale);
-				lightSprite->render(rs);
-			}
-		};
+		int y = p.y; */
+	for(int y = startY; y <= endY; y++){
+		for(int x = startX; x <= endX; x++){
+			struct Lib {
+				static bool isEmptyLightTile(BaseGame4X * game, int x, int y)
+				{
+					TileType type = game->getFrontType(x, y);
+					return type != TILE_TYPE_LIGHT_ROCK_01 && type != TILE_TYPE_LIGHT_ROCK_02;
+				}
+				static void render(RenderState& rs, Sprite * lightSprite, const vec2& pos, const vec2& mapScale, float scale)
+				{
+					lightSprite->setPosition((pos + mapScale * lightSprite->getPosition()) * scale);
+					lightSprite->setScale(mapScale * lightSprite->getScale() * scale);
+					lightSprite->render(rs);
+				}
+			};
 
-		TileType type = getFrontType(x, y);
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
-			vec2 pos = tileToPos(x, y) - offs;
+			TileType type = getFrontType(x, y);
+			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
+				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
 			
-			/* AffineTransform t;
-			t.identity();
-			t.translate(pos);
-			t.scale(vec2(lightScale, lightScale));
+				bool top = Lib::isEmptyLightTile(this, x, y-1);
+				bool bottom = Lib::isEmptyLightTile(this, x, y+1);
+				bool left = Lib::isEmptyLightTile(this, x-1, y);
+				bool right = Lib::isEmptyLightTile(this, x+1, y);
+				bool leftTop = Lib::isEmptyLightTile(this, x-1, y-1);
+				bool rightTop = Lib::isEmptyLightTile(this, x+1, y-1);
+				bool leftBottom = Lib::isEmptyLightTile(this, x-1, y+1);
+				bool rightBottom = Lib::isEmptyLightTile(this, x+1, y+1);
 
-			rs.transform = t; */
-
-			bool top = Lib::isEmptyLightTile(this, x, y-1);
-			bool bottom = Lib::isEmptyLightTile(this, x, y+1);
-			bool left = Lib::isEmptyLightTile(this, x-1, y);
-			bool right = Lib::isEmptyLightTile(this, x+1, y);
-			bool leftTop = Lib::isEmptyLightTile(this, x-1, y-1);
-			bool rightTop = Lib::isEmptyLightTile(this, x+1, y-1);
-			bool leftBottom = Lib::isEmptyLightTile(this, x-1, y+1);
-			bool rightBottom = Lib::isEmptyLightTile(this, x+1, y+1);
-
-			if(!top){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-left"),
-					angle = 90,
-					// pos = vec2(0, 0),
-					pivot = vec2(0, 1),
-					opacity = opacity,
-					parent = @shadow
-				} */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
-				lightSprite->setRotationDegrees(90.0f);
-				lightSprite->setAnchor(0.0f, 1.0f);
-				lightSprite->setY(0);
-				float x = 0, size = TILE_SIZE;
+				if(!top){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-left"),
+						angle = 90,
+						// pos = vec2(0, 0),
+						pivot = vec2(0, 1),
+						opacity = opacity,
+						parent = @shadow
+					} */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+					lightSprite->setRotationDegrees(90.0f);
+					lightSprite->setAnchor(0.0f, 1.0f);
+					lightSprite->setY(0);
+					float x = 0, size = TILE_SIZE;
+					if(!left){
+						x = TILE_LIGHT_SIZE;
+						size = size - TILE_LIGHT_SIZE;
+					}
+					if(!right){
+						size = size - TILE_LIGHT_SIZE;
+					}
+					lightSprite->setX(x);
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}		
+				if(!bottom){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-left"),
+						angle = -90,
+						// pos = vec2(0, 0),
+						y = TILE_SIZE,
+						pivot = vec2(0, 0),
+						opacity = opacity,
+						parent = @shadow
+					} */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+					lightSprite->setRotationDegrees(-90.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setY(TILE_SIZE);
+					float x = 0.0f, size = TILE_SIZE;
+					if(!left){
+						x = TILE_LIGHT_SIZE;
+						size = size - TILE_LIGHT_SIZE;
+					}
+					if(!right){
+						size = size - TILE_LIGHT_SIZE;
+					}
+					lightSprite->setX(x);
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}
 				if(!left){
-					x = TILE_LIGHT_SIZE;
-					size = size - TILE_LIGHT_SIZE;
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-left"),
+						angle = 0,
+						// pos = vec2(0, 0),
+						pivot = vec2(0, 0),
+						opacity = opacity,
+						parent = @shadow
+					} */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+					lightSprite->setRotationDegrees(0.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setX(0);
+					float y = 0.0f, size = TILE_SIZE;
+					if(!top){
+						y = TILE_LIGHT_SIZE;
+						size = size - TILE_LIGHT_SIZE;
+					}
+					if(!bottom){
+						size = size - TILE_LIGHT_SIZE;
+					}
+					lightSprite->setY(y);
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
 				if(!right){
-					size = size - TILE_LIGHT_SIZE;
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-left"),
+						angle = 180,
+						// pos = vec2(0, 0),
+						x = TILE_SIZE,
+						pivot = vec2(0, 1),
+						opacity = opacity,
+						parent = @shadow
+					} */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
+					lightSprite->setRotationDegrees(180.0f);
+					lightSprite->setAnchor(0.0f, 1.0f);
+					lightSprite->setX(TILE_SIZE);
+					float y = 0.0f, size = TILE_SIZE;
+					if(!top){
+						y = TILE_LIGHT_SIZE;
+						size = size - TILE_LIGHT_SIZE;
+					}
+					if(!bottom){
+						size = size - TILE_LIGHT_SIZE;
+					}
+					lightSprite->setY(y);
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
-				lightSprite->setX(x);
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}		
-			if(!bottom){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-left"),
-					angle = -90,
-					// pos = vec2(0, 0),
-					y = TILE_SIZE,
-					pivot = vec2(0, 0),
-					opacity = opacity,
-					parent = @shadow
-				} */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
-				lightSprite->setRotationDegrees(-90.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setY(TILE_SIZE);
-				float x = 0.0f, size = TILE_SIZE;
-				if(!left){
-					x = TILE_LIGHT_SIZE;
-					size = size - TILE_LIGHT_SIZE;
+				if(left && top && !leftTop){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-outer-left-top"),
+						// pivot = vec2(0, 0),
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+					lightSprite->setRotationDegrees(0.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(0.0f, 0.0f));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}else if(!left && !top){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-inner-left-top"),
+						// pivot = vec2(0, 0),
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+					lightSprite->setRotationDegrees(0.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(0.0f, 0.0f));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
-				if(!right){
-					size = size - TILE_LIGHT_SIZE;
+				if(right && top && !rightTop){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-outer-left-top"),
+						pivot = vec2(0, 0),
+						angle = 90,
+						x = TILE_SIZE,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+					lightSprite->setRotationDegrees(90.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}else if(!right && !top){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-inner-left-top"),
+						pivot = vec2(0, 0),
+						angle = 90,
+						x = TILE_SIZE,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+					lightSprite->setRotationDegrees(90.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
-				lightSprite->setX(x);
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(!left){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-left"),
-					angle = 0,
-					// pos = vec2(0, 0),
-					pivot = vec2(0, 0),
-					opacity = opacity,
-					parent = @shadow
-				} */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
-				lightSprite->setRotationDegrees(0.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setX(0);
-				float y = 0.0f, size = TILE_SIZE;
-				if(!top){
-					y = TILE_LIGHT_SIZE;
-					size = size - TILE_LIGHT_SIZE;
+				if(left && bottom && !leftBottom){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-outer-left-top"),
+						// pivot = vec2(0, 0),
+						y = TILE_SIZE,
+						angle = -90,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+					lightSprite->setRotationDegrees(-90.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}else if(!left && !bottom){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-inner-left-top"),
+						// pivot = vec2(0, 0),
+						y = TILE_SIZE,
+						angle = -90,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+					lightSprite->setRotationDegrees(-90.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
-				if(!bottom){
-					size = size - TILE_LIGHT_SIZE;
+				if(right && bottom && !rightBottom){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-outer-left-top"),
+						// pivot = vec2(0, 0),
+						x = TILE_SIZE,
+						y = TILE_SIZE,
+						angle = 180,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
+					lightSprite->setRotationDegrees(180.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
+				}else if(!right && !bottom){
+					/* var fade = Sprite().attrs {
+						resAnim = res.get("tile-fade-inner-left-top"),
+						// pivot = vec2(0, 0),
+						x = TILE_SIZE,
+						y = TILE_SIZE,
+						angle = 180,
+						opacity = opacity,
+						parent = @shadow,
+					}
+					fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
+					lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
+					lightSprite->setRotationDegrees(180.0f);
+					lightSprite->setAnchor(0.0f, 0.0f);
+					lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
+					lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
+					Lib::render(rs, lightSprite, pos, mapScale, lightScale);
 				}
-				lightSprite->setY(y);
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(!right){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-left"),
-					angle = 180,
-					// pos = vec2(0, 0),
-					x = TILE_SIZE,
-					pivot = vec2(0, 1),
-					opacity = opacity,
-					parent = @shadow
-				} */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-left"));
-				lightSprite->setRotationDegrees(180.0f);
-				lightSprite->setAnchor(0.0f, 1.0f);
-				lightSprite->setX(TILE_SIZE);
-				float y = 0.0f, size = TILE_SIZE;
-				if(!top){
-					y = TILE_LIGHT_SIZE;
-					size = size - TILE_LIGHT_SIZE;
-				}
-				if(!bottom){
-					size = size - TILE_LIGHT_SIZE;
-				}
-				lightSprite->setY(y);
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, size) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(left && top && !leftTop){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-outer-left-top"),
-					// pivot = vec2(0, 0),
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
-				lightSprite->setRotationDegrees(0.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(0.0f, 0.0f));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}else if(!left && !top){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-inner-left-top"),
-					// pivot = vec2(0, 0),
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
-				lightSprite->setRotationDegrees(0.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(0.0f, 0.0f));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(right && top && !rightTop){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-outer-left-top"),
-					pivot = vec2(0, 0),
-					angle = 90,
-					x = TILE_SIZE,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
-				lightSprite->setRotationDegrees(90.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}else if(!right && !top){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-inner-left-top"),
-					pivot = vec2(0, 0),
-					angle = 90,
-					x = TILE_SIZE,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
-				lightSprite->setRotationDegrees(90.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(TILE_SIZE, 0.0f));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(left && bottom && !leftBottom){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-outer-left-top"),
-					// pivot = vec2(0, 0),
-					y = TILE_SIZE,
-					angle = -90,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
-				lightSprite->setRotationDegrees(-90.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}else if(!left && !bottom){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-inner-left-top"),
-					// pivot = vec2(0, 0),
-					y = TILE_SIZE,
-					angle = -90,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
-				lightSprite->setRotationDegrees(-90.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(0.0f, TILE_SIZE));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}
-			if(right && bottom && !rightBottom){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-outer-left-top"),
-					// pivot = vec2(0, 0),
-					x = TILE_SIZE,
-					y = TILE_SIZE,
-					angle = 180,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-outer-left-top"));
-				lightSprite->setRotationDegrees(180.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
-			}else if(!right && !bottom){
-				/* var fade = Sprite().attrs {
-					resAnim = res.get("tile-fade-inner-left-top"),
-					// pivot = vec2(0, 0),
-					x = TILE_SIZE,
-					y = TILE_SIZE,
-					angle = 180,
-					opacity = opacity,
-					parent = @shadow,
-				}
-				fade.scale = vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / fade.size */
-				lightSprite->setResAnim(resources->getResAnim("tile-light-inner-left-top"));
-				lightSprite->setRotationDegrees(180.0f);
-				lightSprite->setAnchor(0.0f, 0.0f);
-				lightSprite->setPosition(vec2(TILE_SIZE, TILE_SIZE));
-				lightSprite->setScale(vec2(TILE_LIGHT_SIZE, TILE_LIGHT_SIZE) / lightSprite->getSize());
-				Lib::render(rs, lightSprite, pos, lightScale);
 			}
 		}
 	}
@@ -1368,11 +1341,9 @@ BaseGame4X::BaseGame4X()
 	lightTextureWidth = 0;
 	lightTextureHeight = 0;
 	lightScale = 0.0f;
-	startViewX = 0;
-	startViewY = 0;
-	endViewX = 0;
-	endViewY = 0;
-	afterDraggingMode = false;
+	startViewX = startViewY = endViewX = endViewY = 0;
+	startPhysX = startPhysY = endPhysX = endPhysY = 0;
+	// afterDraggingMode = false;
 
 	/*
 	physAccumTimeSec = 0;
@@ -1417,6 +1388,10 @@ float BaseGame4X::getTileRandom(int x, int y)
 
 Tile * BaseGame4X::getTile(int x, int y)
 {
+	/* x %= tiledmapWidth;
+	if(x < 0){
+		x = (x + tiledmapWidth) % tiledmapWidth;
+	} */
 	if(x >= 0 && x < tiledmapWidth
 		&& y >= 0 && y < tiledmapHeight)
 	{
@@ -1427,9 +1402,10 @@ Tile * BaseGame4X::getTile(int x, int y)
 
 Bounds2 BaseGame4X::getTileAreaBounds(int ax, int ay, int bx, int by)
 {
+	float edge = 0.000001f;
 	return Bounds2(
-				vec2((float)ax * TILE_SIZE, (float)ay * TILE_SIZE), 
-				vec2((float)(bx+1) * TILE_SIZE, (float)(by+1) * TILE_SIZE));
+				vec2((float)ax * TILE_SIZE + edge, (float)ay * TILE_SIZE + edge), 
+				vec2((float)(bx+1) * TILE_SIZE - edge, (float)(by+1) * TILE_SIZE - edge));
 }
 
 void BaseGame4X::boundsToTileArea(int& ax, int& ay, int& bx, int& by, const Bounds2& bounds)
@@ -1444,7 +1420,9 @@ void BaseGame4X::freePhysTileArea(spPhysTileArea physTileArea)
 	physTileArea->body = NULL;
 
 	int ax, ay, bx, by;
-	boundsToTileArea(ax, ay, bx, by, physTileArea->bounds);
+	// boundsToTileArea(ax, ay, bx, by, physTileArea->bounds);
+	ax = physTileArea->ax, bx = physTileArea->bx;
+	ay = physTileArea->ay, by = physTileArea->by;
 	for(int x = ax; x <= bx; x++){
 		for(int y = ay; y <= by; y++){
 			getTile(x, y)->physCreated = false;
@@ -1452,8 +1430,9 @@ void BaseGame4X::freePhysTileArea(spPhysTileArea physTileArea)
 	}
 }
 
-void BaseGame4X::freePhysTileAreasInBounds(const Bounds2& bounds)
+bool BaseGame4X::freePhysTileAreasInBounds(const Bounds2& bounds)
 {
+	bool changed = false;
 	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin(), next_it;
 	for(; it != physTileAreas.end(); it = next_it){
 		next_it = it + 1;
@@ -1461,8 +1440,10 @@ void BaseGame4X::freePhysTileAreasInBounds(const Bounds2& bounds)
 		if(physTileArea->bounds.intersectsBounds(bounds)){
 			freePhysTileArea(physTileArea);
 			next_it = physTileAreas.erase(it);
+			changed = true;
 		}
 	}
+	return changed;
 }
 
 void BaseGame4X::freeAllPhysTileAreas()
@@ -1759,8 +1740,33 @@ b2BodyDef BaseGame4X::getPlayerWheelDef(const vec2& pos)
 }
 */
 
+void BaseGame4X::addDebugMessage(const char * message)
+{
+	pushCtypeValue(os, this);
+	os->getProperty(-1, "addDebugMessage");
+	pushCtypeValue(os, message);
+	os->callTF(1);
+}
+
 void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 {
+	struct Lib
+	{
+		static bool isTileEmpty(BaseGame4X * game, int x, int y)
+		{
+			Tile * tile = game->getTile(x, y);
+			if(tile){
+				EPhysTileType physTileType = tile->getPhysType();
+				switch(physTileType){
+				case PHYS_GROUND:
+					return false;
+				}
+				return true;
+			}
+			return false;
+		}
+	};
+
 	if(ax < 0) ax = 0; else if(ax >= tiledmapWidth) ax = tiledmapWidth-1;
 	if(bx < 0) bx = 0; else if(bx >= tiledmapWidth) bx = tiledmapWidth-1;
 
@@ -1771,7 +1777,33 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		for(int x = ax; x <= bx; x++){
 			Tile * tile = getTile(x, y);
 			EPhysTileType physTileType = tile->getPhysType();
-			if(tile->physCreated || physTileType == PHYS_EMPTY){
+			if(tile->physCreated){
+				continue;
+			}
+			if(physTileType == PHYS_EMPTY){
+				if(Lib::isTileEmpty(this, x-1, y) && Lib::isTileEmpty(this, x+1, y)
+					&& !Lib::isTileEmpty(this, x-1, y+1) && !Lib::isTileEmpty(this, x+1, y+1)
+					&& Lib::isTileEmpty(this, x, y+1))
+				{
+					spPhysTileArea block = new PhysTileArea();
+					block->time = time;
+					block->type = PHYS_PIT;
+					block->ax = x-1, block->ay = y;
+					block->bx = x+1, block->by = y+1;
+					block->bounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
+					block->physBounds = Bounds2(
+						vec2(((float)x - 0.0f) * TILE_SIZE, ((float)y + 1.0f) * TILE_SIZE), 
+						vec2((float)(x + 1.0f) * TILE_SIZE, ((float)y + 1.5f) * TILE_SIZE));
+					physTileAreas.push_back(block);
+					for(int ax = block->ax; ax <= block->bx; ax++){
+						for(int ay = block->ay; ay <= block->by; ay++){
+							Tile * tile = getTile(ax, ay);
+							if(tile && tile->getPhysType() == PHYS_EMPTY){
+								tile->physCreated = true;
+							}
+						}
+					}
+				}				
 				continue;
 			}
 			int max_x = bx, max_y = by;
@@ -1781,6 +1813,9 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					max_x = ax-1;
 					break;
 				}
+			}
+			if(physTileType == PHYS_CAT_BIT_LADDER){
+				max_y = tiledmapHeight-1;
 			}
 			for(int ay = y+1; ay <= max_y; ay++){
 				bool isOk = true;
@@ -1796,14 +1831,34 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					break;
 				}
 			}
+			int tx = x, ty = y;
+			if(physTileType == PHYS_CAT_BIT_LADDER){
+				for(ty = y-1; ty >= 0; ty--){
+					bool isOk = true;
+					for(int ax = x; ax <= max_x; ax++){
+						Tile * ac = getTile(ax, ty);
+						if(ac->physCreated || ac->getPhysType() != physTileType){
+							isOk = false;
+							break;
+						}
+					}
+					if(!isOk){
+						// ay++;
+						break;
+					}
+				}
+				ty++;
+			}
 			spPhysTileArea block = new PhysTileArea();
 			block->time = time;
 			block->type = physTileType;
-			block->bounds = getTileAreaBounds(x, y, max_x, max_y);
+			block->ax = tx, block->ay = ty;
+			block->bx = max_x, block->by = max_y;
+			block->bounds = block->physBounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
 			physTileAreas.push_back(block);
 			
-			for(int ax = x; ax <= max_x; ax++){
-				for(int ay = y; ay <= max_y; ay++){
+			for(int ax = tx; ax <= max_x; ax++){
+				for(int ay = ty; ay <= max_y; ay++){
 					getTile(ax, ay)->physCreated = true;
 				}
 			}
@@ -1812,6 +1867,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 	
 	Bounds2 bounds = getTileAreaBounds(ax, ay, bx, by);
 
+	int numDeletedByBounds = 0, numCreated = 0;
 	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin(), next_it;
 	for(; it != physTileAreas.end(); it = next_it){
 		next_it = it + 1;
@@ -1819,41 +1875,53 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		if(physTileArea->body){
 			if(bounds.intersectsBounds(physTileArea->bounds)){
 				physTileArea->time = time;
-			}else if(time - physTileArea->time > 2.0f){
-				freePhysTileArea(physTileArea);
-				next_it = physTileAreas.erase(it);
 			}else if(!physActiveBounds.intersectsBounds(physTileArea->bounds)){
 				freePhysTileArea(physTileArea);
 				next_it = physTileAreas.erase(it);
+				numDeletedByBounds++;
+				// addDebugMessage("delete phys area by bounds");
 			}
 			continue;
 		}
 		
 		spPhysBodyDef bodyDef = new PhysBodyDef();
 		bodyDef->setType(b2_staticBody);
-		bodyDef->setPos((physTileArea->bounds.b[0] + physTileArea->bounds.b[1]) / 2);
-
+		bodyDef->setPos((physTileArea->physBounds.b[0] + physTileArea->physBounds.b[1]) / 2);
 		physTileArea->body = physWorld->createBody(bodyDef);
 		
+		float sub = 0.0f;
 		spPhysFixtureDef fixtureDef = new PhysFixtureDef();
-		fixtureDef->setType(b2Shape::e_polygon);
-		fixtureDef->setPolygonAsBox((physTileArea->bounds.b[1] - physTileArea->bounds.b[0]) / 2);
-		fixtureDef->setFriction(0.99f);
-		
 		switch(physTileArea->type){
 		case PHYS_LADDER:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_LADDER);
+			fixtureDef->setIsSensor(true);
+			sub = 0.4f;
 			break;
 
 		case PHYS_PLATFORM:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PLATFORM);
 			break;
 
+		case PHYS_PIT:
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PIT);
+			fixtureDef->setIsSensor(true);
+			break;
+
 		default:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_GROUND);
 			break;
 		}
+		fixtureDef->setType(b2Shape::e_polygon);
+		fixtureDef->setPolygonAsBox((physTileArea->physBounds.b[1] - physTileArea->physBounds.b[0]) / 2 - TILE_SIZE * sub);
+		fixtureDef->setFriction(0.99f);
 		physTileArea->body->createFixture(fixtureDef);
+		numCreated++;
+		// addDebugMessage("add phys area");
+	}
+	if(numDeletedByBounds || numCreated){
+		char buf[1024];
+		sprintf(buf, "phys area: +%d -%d", numCreated, numDeletedByBounds);
+		addDebugMessage(buf);
 	}
 }
 
@@ -2212,6 +2280,8 @@ void BaseGame4X::drawPhysics()
 						color = b2Color(0.68f, 0.46f, 0.12f);
 					}else if(filter.categoryBits & PHYS_CAT_BIT_PLATFORM){
 						color = b2Color(0.68f, 0.46f, 0.12f);
+					}else if(filter.categoryBits & PHYS_CAT_BIT_PIT){
+						color = b2Color(0.48f, 0.46f, 0.68f);
 					}
 					drawPhysShape(f, xf, color);
 				}

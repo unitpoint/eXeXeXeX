@@ -5,19 +5,74 @@ If you just started you don't need to understand it exactly you could check it l
 You could start from example.cpp and example.h it has main functions being called from there
 */
 #include <stdio.h>
+#include "oxygine-framework.h"
 #include "core/Renderer.h"
 #include "Stage.h"
 #include "DebugActor.h"
 
 #include "example.h"
-
-
+#include <ext-datetime/os-datetime.h>
 
 using namespace oxygine;
 
 Renderer renderer;
 Rect viewport;
 
+bool useThreadForUpdate = false;
+Mutex updateThreadMutex;
+pthread_t updateThread;
+bool updateThreadStarted = false;
+bool updateThreadWaitExit = false;
+float updateThreadDeltaTime = 1.0f / 60.0f;
+
+static void * updateThreadFunc(void * p)
+{
+	double prevTime = ObjectScript::getTimeSec();
+	timeMS sleepTimeMS = 0;
+	for(;;){
+		{
+			MutexAutoLock autoLock(updateThreadMutex);
+			if(updateThreadWaitExit){
+				updateThreadStarted = false;
+				return NULL;
+			}
+			getStage()->update();
+			double curTime = ObjectScript::getTimeSec();
+			double dt = curTime - prevTime;
+			double nextTime = prevTime + updateThreadDeltaTime;
+			prevTime = curTime;
+			double sleepTime = nextTime - curTime;
+			sleepTimeMS = (timeMS)(sleepTime * 1000);
+			if(sleepTimeMS < 10) sleepTimeMS = 10;
+		}
+		sleep(sleepTimeMS);
+	}
+	return NULL;
+}
+
+static void startUpdateThread()
+{
+	OX_ASSERT(!updateThreadStarted);
+	updateThreadStarted = true;
+	pthread_create(&updateThread, 0, updateThreadFunc, NULL);
+}
+
+static void stopUpdateThread()
+{
+	{
+		MutexAutoLock autoLock(updateThreadMutex);
+		updateThreadWaitExit = true;
+	}
+	for(;;){
+		{
+			MutexAutoLock autoLock(updateThreadMutex);
+			if(!updateThreadStarted){
+				return;
+			}
+		}
+		sleep(10);
+	}
+}
 
 class ExampleRootActor : public Stage
 {
@@ -44,10 +99,15 @@ public:
 //called each frame
 int mainloop()
 {
+	MutexAutoLock autoLock(updateThreadMutex);
+
 	example_update();
 	//update our rootActor
 	//Actor::update would be called also for children
-	getStage()->update();
+	if(!useThreadForUpdate){
+		getStage()->update();
+	}else{
+	}
 
 	Color clear(33, 33, 33, 255);
 	//start rendering and clear viewport
@@ -60,7 +120,6 @@ int mainloop()
 
 		core::swapDisplayBuffers();
 	}
-
 
 	//update internal components
 	//all input events would be passed to RootActor::instance.handleEvent
@@ -112,7 +171,7 @@ void run()
 	DebugActor::initialize();
 
 	//create and add new DebugActor to root actor as child
-#if defined OS_DEBUG || 0
+#if defined OS_DEBUG || 1
 	getStage()->addChild(new DebugActor());
 #endif
 
@@ -141,8 +200,11 @@ void run()
 	return;
 #endif
 
-	bool done = false;
+	if(useThreadForUpdate){
+		startUpdateThread();
+	}
 
+	bool done = false;
 	//here is main game loop
 	while (1)
 	{
@@ -151,6 +213,9 @@ void run()
 			break;
 	}
 	//so user want to leave application...
+	if(useThreadForUpdate){
+		stopUpdateThread();
+	}
 
 	//lets dump all created objects into log
 	//all created and not freed resources would be displayed
