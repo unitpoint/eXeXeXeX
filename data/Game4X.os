@@ -646,8 +646,11 @@ Game4X = extends BaseGame4X {
 			// parent = null,
 		}
 		
+		@physWorld = PhysWorld()
+		@physWorld.toPhysScale = 2 / 128
+		@physWorld.gravity = vec2(0, 10) / @physWorld.toPhysScale
 		@physDebugDraw = true
-		@createPhysicsWorld()
+		// @createPhysicsWorld()
 		
 		@dragndrop = DragndropItems(this).attrs {
 			priority = GAME_LAYER_DRAGNDROP,			
@@ -1286,7 +1289,9 @@ Game4X = extends BaseGame4X {
 		@removeChildren()
 		@detach()
 		@clear()
-		@destroyPhysicsWorld()
+		// @destroyPhysicsWorld()
+		@physWorld.destroy()
+		@physWorld = null
 		gc.full()
 		print "end game cleanup, max alloc: ${gc.allocatedBytes}, used: ${gc.usedBytes}"
 	},
@@ -1655,7 +1660,7 @@ Game4X = extends BaseGame4X {
 		// @unsetEntTile(@player)
 		// @initEntTile(@player, Player.saveTileX, Player.saveTileY)
 		
-		@player = Player(this, Player.saveType)
+		@player = NewPlayer(this, Player.saveType)
 		@initEntTile(@player, Player.saveTileX, Player.saveTileY)
 		@centerViewToTile(Player.saveTileX, Player.saveTileY)
 		
@@ -1687,7 +1692,7 @@ Game4X = extends BaseGame4X {
 		var entInfo = ENTITIES_INFO[obj.gid]
 		if(entInfo.class === "Player"){
 			@player && throw "player is already exist"
-			@player = Player(this, obj.gid)
+			@player = NewPlayer(this, obj.gid)
 			if(state){
 				@player.loadState(state)
 			}else{
@@ -1903,6 +1908,16 @@ Game4X = extends BaseGame4X {
 			@shakeOffs = null
 		}
 		@updateCamera(@lightmap)
+		
+		@physWorld.update(@dt, 6, 2)
+		/* for(var _, physBody in @physWorld.bodyList){
+			// TODO: apply body pos and angle to actor
+		} */
+		
+		/* var offs = -@mapPos
+		@physWorld.queryAABB(PhysAABB(offs, offs + @lightmap.size), function(fixture, body){
+			print "queryAABB, body: ${body.pos}, ${fixture.body.pos}"
+		}) */
 	},
 	
 	/* checkFalling = function(){

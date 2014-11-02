@@ -40,9 +40,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>eXeXeXeX</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>eXeXeXeX</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -51,7 +53,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>OX_WITH_OBJECTSCRIPT;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../Box2D;../../../objectscript/src;../../../oxygine-framework/oxygine/src;../../../oxygine-sound/src;../../../SDL/include;../../../oxygine-framework/oxygine/third_party/win32/pthreads/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Box2D;../../../objectscript/src;../../../oxygine-framework/oxygine/src;../../../oxygine-sound/src;../../../SDL/include;../../../oxygine-framework/oxygine/third_party/win32/pthreads/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -70,7 +72,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>OX_WITH_OBJECTSCRIPT;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../Box2D;../../../objectscript/src;../../../oxygine-framework/oxygine/src;../../../oxygine-sound/src;../../../SDL/include;../../../oxygine-framework/oxygine/third_party/win32/pthreads/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Box2D;../../../objectscript/src;../../../oxygine-framework/oxygine/src;../../../oxygine-sound/src;../../../SDL/include;../../../oxygine-framework/oxygine/third_party/win32/pthreads/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -116,13 +118,14 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\trees.c" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\uncompr.c" />
     <ClCompile Include="..\..\..\objectscript\src\ext-zlib\zlib\zutil.c" />
+    <ClCompile Include="..\..\..\objectscript\src\MathLib.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\objectscript.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\os-heap.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ox-binder.cpp" />
+    <ClCompile Include="..\..\..\objectscript\src\ox-physics.cpp" />
     <ClCompile Include="..\..\..\objectscript\src\ox-sound-binder.cpp" />
     <ClCompile Include="..\src\BaseGame4X.cpp" />
     <ClCompile Include="..\src\Box2DDebugDraw.cpp" />
-    <ClCompile Include="..\src\MathLib.cpp" />
     <ClCompile Include="..\src\RandomValue.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -133,22 +136,23 @@
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha-private.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\sha\sha.h" />
     <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h" />
+    <ClInclude Include="..\..\..\objectscript\src\MathLib.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-binder.h" />
+    <ClInclude Include="..\..\..\objectscript\src\ox-physics.h" />
     <ClInclude Include="..\..\..\objectscript\src\ox-sound-binder.h" />
     <ClInclude Include="..\src\BaseGame4X.h" />
     <ClInclude Include="..\src\Box2DDebugDraw.h" />
-    <ClInclude Include="..\src\MathLib.h" />
     <ClInclude Include="..\src\RandomValue.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Box2D\proj.win32\Box2D.vcxproj">
+      <Project>{c1065c04-48a8-4f0a-9986-fc07f6da9851}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\oxygine-framework\oxygine\SDL\win32\oxygine_vs2010.vcxproj">
       <Project>{52411305-cfe1-4fa8-9885-5729bfc816cf}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\oxygine-sound\proj.win32\oxygine-sound_vs2010.vcxproj">
       <Project>{7fd3eb10-bd3e-459a-82d2-7de937e4f3f8}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Box2D\proj.win32\Box2D.vcxproj">
-      <Project>{c1065c04-48a8-4f0a-9986-fc07f6da9851}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

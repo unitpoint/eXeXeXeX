@@ -100,6 +100,7 @@ Player = extends Entity {
 		@damageValue = math.max(0, toNumber(state.damage))
 		@updateHealthBar()
 	},
+	
 	__construct = function(game, name){
 		super(game, name)
 		@parent = game.mapLayers[MAP_LAYER_PLAYER]

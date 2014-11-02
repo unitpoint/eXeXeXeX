@@ -31,7 +31,7 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-BaseLayerTile = extends BasePhysEntity {
+BaseLayerTile = extends Sprite {
 	__construct = function(tile){
 		super()
 		@linkTiles = null
@@ -44,7 +44,7 @@ BaseLayerTile = extends BasePhysEntity {
 	},
 	
 	cleanup = function(){
-		@tile.game.destroyEntityPhysics(this)
+		// @tile.game.destroyEntityPhysics(this)
 		var linkTiles = @linkTiles; @linkTiles = null
 		for(var _, linkTile in linkTiles){
 			@tile.game.cleanupActor(linkTile)

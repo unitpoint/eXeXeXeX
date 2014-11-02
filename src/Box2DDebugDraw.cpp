@@ -93,10 +93,10 @@ void Box2DDraw::DrawSolidCircle(const b2Vec2& center, float32 aRadius, const b2V
 /// Draw a line segment.
 void Box2DDraw::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color)
 {
-	mVertices[0].x = fromPhysValue(p1.x);
-	mVertices[0].y = fromPhysValue(p1.y);
-	mVertices[1].x = fromPhysValue(p2.x);
-	mVertices[1].y = fromPhysValue(p2.y);
+	mVertices[0].x = PhysWorld::fromPhysValue(p1.x);
+	mVertices[0].y = PhysWorld::fromPhysValue(p1.y);
+	mVertices[1].x = PhysWorld::fromPhysValue(p2.x);
+	mVertices[1].y = PhysWorld::fromPhysValue(p2.y);
 	drawPrimitives(false, true, 2, color);
 }
 
@@ -105,7 +105,7 @@ void Box2DDraw::DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& c
 void Box2DDraw::DrawTransform(const b2Transform& xf)
 {
 	b2Vec2 p1 = xf.p, p2;
-	const float32 k_axisScale = toPhysValue(10.0f);
+	const float32 k_axisScale = PhysWorld::toPhysValue(10.0f);
 
 	p2 = p1 + k_axisScale * xf.q.GetXAxis();
 	DrawSegment(p1, p2, b2Color(1, 0, 0));
@@ -123,8 +123,8 @@ void Box2DDraw::createCircleVertices(const b2Vec2& center, float32 aRadius)
 	for (int32 i = 0; i < CIRCLE_SEGMENTS; ++i)
 	{
 		b2Vec2 v = center + aRadius * b2Vec2(scalar::cos(theta), scalar::sin(theta));
-		mVertices[i].x = fromPhysValue(v.x);
-		mVertices[i].y = fromPhysValue(v.y);
+		mVertices[i].x = PhysWorld::fromPhysValue(v.x);
+		mVertices[i].y = PhysWorld::fromPhysValue(v.y);
 		theta += k_increment;
 	}
 }
@@ -140,8 +140,8 @@ void Box2DDraw::createPolygonVertices(const b2Vec2* vertices, int32 vertexCount)
 	// convert vertices to screen resolution
 	for (int i = 0; i < vertexCount; i++)
 	{
-		mVertices[i].x = fromPhysValue(vertices[i].x);
-		mVertices[i].y = fromPhysValue(vertices[i].y);
+		mVertices[i].x = PhysWorld::fromPhysValue(vertices[i].x);
+		mVertices[i].y = PhysWorld::fromPhysValue(vertices[i].y);
 	}
 }
 

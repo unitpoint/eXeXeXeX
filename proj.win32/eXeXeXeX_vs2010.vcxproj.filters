@@ -129,9 +129,6 @@
     <ClCompile Include="..\..\..\objectscript\src\ext-url\os-url.cpp">
       <Filter>ext-url</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MathLib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\objectscript\src\ext-hashlib\des\des.cpp">
       <Filter>ext-hashlib</Filter>
     </ClCompile>
@@ -162,6 +159,12 @@
     <ClCompile Include="..\src\Box2DDebugDraw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\MathLib.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\ox-physics.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../src/example.h">
@@ -182,9 +185,6 @@
     <ClInclude Include="..\..\..\objectscript\src\ext-url\os-url.h">
       <Filter>ext-url</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MathLib.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\objectscript\src\ext-hashlib\md5\md5.h">
       <Filter>ext-hashlib</Filter>
     </ClInclude>
@@ -202,6 +202,12 @@
     </ClInclude>
     <ClInclude Include="..\src\Box2DDebugDraw.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\MathLib.h">
+      <Filter>objectscript</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\objectscript\src\ox-physics.h">
+      <Filter>objectscript</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

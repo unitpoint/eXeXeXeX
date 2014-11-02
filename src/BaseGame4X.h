@@ -4,16 +4,18 @@
 #include <oxygine-framework.h>
 #include <core/gl/ShaderProgramGL.h>
 #include <ox-binder.h>
+#include <ox-physics.h>
 #include "MathLib.h"
-#include <Box2D\Box2D.h>
+// #include <Box2D\Box2D.h>
 #include "Box2DDebugDraw.h"
 
 using namespace ObjectScript;
 
 // =====================================================================
 
-#define TO_PHYS_SCALE	(1.0f / 10.0f)
+// #define GAME_TO_PHYS_SCALE	(2.0f / 128.0f)
 
+/*
 #define PHYS_DEF_FIXED_ROTATION		true
 #define PHYS_DEF_LINEAR_DAMPING		0.98f
 #define PHYS_DEF_ANGULAR_DAMPING	0.98f
@@ -21,10 +23,27 @@ using namespace ObjectScript;
 #define PHYS_DEF_RESTITUTION		0.0f
 #define PHYS_DEF_FRICTION			0.02f
 
+#define PHYS_PLAYER_ANGULAR_DAMPING	0.8f
+#define PHYS_PLAYER_LINEAR_DAMPING	0.9f
+#define PHYS_PLAYER_DENSITY			0.5f
+#define PHYS_PLAYER_FRICTION		0.99f
+#define PHYS_PLAYER_RESTITUTION		0.0f
+*/
+
+#define PHYS_CAT_BIT_GROUND		(1<<0)
+#define PHYS_CAT_BIT_LADDER		(1<<1)
+#define PHYS_CAT_BIT_PLATFORM	(1<<2)
+#define PHYS_CAT_BIT_PLAYER		(1<<3)
+#define PHYS_CAT_BIT_ENTITY		(1<<4)
+#define PHYS_CAT_BIT_STATIC_OBJECT	(1<<5)
+#define PHYS_CAT_BIT_DYNAMIC_OBJECT	(1<<6)
+
+/*
 float toPhysValue(float a);
 float fromPhysValue(float a);
 b2Vec2 toPhysVec(const vec2 &pos);
 vec2 fromPhysVec(const b2Vec2 &pos);
+*/
 
 Actor * getOSChild(Actor*, const char * name);
 float getOSChildFloat(Actor * actor, const char * name, float def);
@@ -32,6 +51,7 @@ float getOSChildPhysicsFloat(Actor * actor, const char * name, float def);
 int getOSChildPhysicsInt(Actor * actor, const char * name, int def);
 bool getOSChildPhysicsBool(Actor * actor, const char * name, bool def);
 
+/*
 class BasePhysEntity;
 
 DECLARE_SMART(PhysContact, spPhysContact);
@@ -42,7 +62,7 @@ public:
 
 	struct Data
 	{
-		BasePhysEntity * ent[2];
+		spBasePhysEntity ent[2];
 		b2Filter filter[2];
 		bool isSensor[2];
 		
@@ -59,7 +79,46 @@ public:
 	BasePhysEntity * getEntity(int i) const;
 	bool getIsSensor(int i) const;
 };
+*/
 
+enum EPhysTileType
+{
+	PHYS_EMPTY,
+	PHYS_GROUND,
+	PHYS_LADDER,
+	PHYS_PLATFORM
+};
+
+DECLARE_SMART(PhysTileArea, spPhysTileArea);
+class PhysTileArea: public Object
+{
+public:
+	OS_DECLARE_CLASSINFO(PhysTileArea);
+
+	float time;
+	Bounds2 bounds;
+	EPhysTileType type;
+
+	spPhysBody body;
+
+	PhysTileArea()
+	{
+		bounds.b[0] = bounds.b[1] = vec2(0, 0);
+		time = 0;
+		type = PHYS_EMPTY;
+		body = NULL;
+	}
+	~PhysTileArea()
+	{
+		// OX_ASSERT(!body || !body->getCore());
+	}
+
+	// vec2 getPos() const { return pos; }
+	// vec2 getSize() const { return size; }
+	EPhysTileType getType() const { return type; }
+};
+
+/*
 class BaseGame4X;
 
 DECLARE_SMART(BasePhysEntity, spBasePhysEntity);
@@ -115,6 +174,7 @@ public:
 		return getOSChildPhysicsBool(this, name, def);
 	}
 };
+*/
 
 // =====================================================================
 
@@ -128,18 +188,22 @@ struct Tile
 	ItemType item;
 	TileType front;
 	TileType back;
+	bool physCreated;
+
+	EPhysTileType getPhysType() const;
 };
 
 #define TILE_SIZE 128.0f
 #define LEVEL_BIN_DATA_PREFIX "level-layers:front:back:items."
 
-#define TILE_TYPE_EMPTY		0
+#define TILE_TYPE_EMPTY			0
 #define TILE_TYPE_LIGHT_ROCK_01 2
 #define TILE_TYPE_LIGHT_ROCK_02 3
-#define TILE_TYPE_DOOR_01	16
-#define TILE_TYPE_LADDERS	17
+#define TILE_TYPE_DOOR_01		16
+#define TILE_TYPE_LADDER		17
 #define TILE_TYPE_TRADE_STOCK	24
 
+/*
 struct Tiledmap
 {
 	struct Size
@@ -162,6 +226,7 @@ struct Tiledmap
 	const OS_BYTE * front;
 	const OS_BYTE * back;
 };
+*/
 
 struct LightFormInfo
 {
@@ -247,20 +312,10 @@ public:
 
 	BaseLightmap();
 	~BaseLightmap();
-
-	// void init();
-
-protected:
-
-	// ShaderProgramGL * lightProgram;
-	// ShaderProgramGL * blendProgram;
-	// ShaderProgramGL * createShaderProgram(const char * vs, const char * fs);
-	
-	// void doRender(const RenderState &rs);
 };
 
 DECLARE_SMART(BaseGame4X, spBaseGame4X);
-class BaseGame4X: public Actor, protected b2DestructionListener, protected b2ContactListener
+class BaseGame4X: public Actor
 {
 public:
 	OS_DECLARE_CLASSINFO(BaseGame4X);
@@ -297,28 +352,36 @@ public:
 	void addLight(spBaseLight light);
 	void removeLight(spBaseLight light);
 
+	spPhysWorld getPhysWorld();
+	void setPhysWorld(spPhysWorld);
+
 	void updateCamera(BaseLightmap*);
 
-	void createPhysicsWorld();
-	void destroyPhysicsWorld();
+	// void createPhysicsWorld();
+	// void destroyPhysicsWorld();
 
 	void drawPhysics();
 
+	void queryTilePhysics(int ax, int ay, int bx, int by, float time);
+
+	/*
 	void initEntityPhysics(BasePhysEntity * ent);
 	void addEntityPhysicsShapes(BasePhysEntity * ent);
 
 	void destroyEntityPhysics(BasePhysEntity * ent);
 
 	void updatePhysics(float dt);
+	*/
 
 	bool getPhysDebugDraw() const;
 	void setPhysDebugDraw(bool value);
 
 protected:
 
-	Tile * tiles;
+	std::vector<Tile> tiles;
 	int tiledmapWidth;	// in tiles
 	int tiledmapHeight;	// in tiles
+	std::map<int, bool> physTilesChanged;
 
 	spNativeTexture shadowMaskTexture;
 	ShaderProgramGL * shadowMaskProg;
@@ -341,12 +404,18 @@ protected:
 	int endViewX, endViewY;
 	bool afterDraggingMode;
 
+	/*
 	float physAccumTimeSec;
 	b2World * physWorld;
 	std::vector<PhysContact::Data> physContacts;
 	std::vector<b2Body*> waitBodiesToDestroy;
 	spPhysContact physContactShare;
+	*/
+	spPhysWorld physWorld;
+	
+	std::vector<spPhysTileArea> physTileAreas;
 	spBox2DDraw physDebugDraw;
+	Bounds2 physActiveBounds;
 
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);
 	void setUniformColor(const char * name, const vec3& color);
@@ -355,12 +424,26 @@ protected:
 
 	bool getTileVertices(TileType, std::vector<Vector2>&);
 
-	void destroyWaitBodies();
-	void destroyAllBodies();
-	void dispatchContacts();
+	Tile * getTile(int x, int y);
+	int getTileId(int x, int y);
+	void tileIdToTilePos(int& x, int& y, int id);
+	void worldPosToPos(int& x, int& y, const vec2&);
+
+	Bounds2 getTileAreaBounds(int ax, int ay, int bx, int by);
+	void boundsToTileArea(int& ax, int& ay, int& bx, int& by, const Bounds2&);
+	void freePhysTileAreasInBounds(const Bounds2&);
+	void freeAllPhysTileAreas();
+	void freePhysTileArea(spPhysTileArea);
 
 	void drawPhysShape(b2Fixture* fixture, const b2Transform& xf, const b2Color& color);
 	void drawPhysJoint(b2Joint* joint);
+
+	/*
+	static b2BodyDef getPlayerWheelDef(const vec2& pos);
+
+	void destroyWaitBodies();
+	void destroyAllBodies();
+	void dispatchContacts();
 
 	/// Called when two fixtures begin to touch.
 	void BeginContact(b2Contact* contact); // override b2ContactListener
@@ -375,6 +458,7 @@ protected:
 	/// Called when any fixture is about to be destroyed due
 	/// to the destruction of its parent body.
 	void SayGoodbye(b2Fixture* fixture); // override b2DestructionListener
+	*/
 };
 
 class MyRenderer: public Renderer
@@ -441,14 +525,17 @@ namespace ObjectScript {
 
 // OS_DECL_CTYPE_ENUM(TileType);
 // OS_DECL_CTYPE_ENUM(TileType);
+
+/*
 OS_DECL_CTYPE_NAME(vec2, "vec2");
 template <> struct CtypeValue<vec2>: public CtypeValuePoint<vec2> {};
 
 OS_DECL_CTYPE_NAME(b2Vec2, "vec2");
-template <> struct CtypeValue<b2Vec2>: public CtypeValuePointSub<b2Vec2, float32> {};
+template <> struct CtypeValue<b2Vec2>: public CtypeValuePointOf<b2Vec2, float32> {};
 
 OS_DECL_OX_CLASS(PhysContact);
 OS_DECL_OX_CLASS(BasePhysEntity);
+*/
 
 OS_DECL_OX_CLASS(BaseLight);
 OS_DECL_OX_CLASS(BaseLightmap);

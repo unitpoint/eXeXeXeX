@@ -42,7 +42,7 @@ Logo = extends ColorRectSprite {
 			spriteRes.unload()
 			sound.stop()
 			@detach()
-			Game4X()
+			Game4X(0)
 		}
 		
 		if(!logoEnabled){

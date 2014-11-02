@@ -11,7 +11,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oxygine_vs2010", "..\..\..\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "oxygine-sound_vs2010", "..\..\..\oxygine-sound\proj.win32\oxygine-sound_vs2010.vcxproj", "{7FD3EB10-BD3E-459A-82D2-7DE937E4F3F8}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Box2D", "..\Box2D\proj.win32\Box2D.vcxproj", "{C1065C04-48A8-4F0A-9986-FC07F6DA9851}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Box2D", "..\..\..\Box2D\proj.win32\Box2D.vcxproj", "{C1065C04-48A8-4F0A-9986-FC07F6DA9851}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -24,6 +24,14 @@ static void registerGlobals(OS * os)
 	};
 
 	OS::NumberDef nums[] = {
+		DEF_CONST(PHYS_CAT_BIT_GROUND),
+		DEF_CONST(PHYS_CAT_BIT_LADDER),
+		DEF_CONST(PHYS_CAT_BIT_PLATFORM),
+		DEF_CONST(PHYS_CAT_BIT_PLAYER),
+		DEF_CONST(PHYS_CAT_BIT_ENTITY),
+		DEF_CONST(PHYS_CAT_BIT_STATIC_OBJECT),
+		DEF_CONST(PHYS_CAT_BIT_DYNAMIC_OBJECT),
+		/*
 		DEF_CONST(TO_PHYS_SCALE),
 		DEF_CONST(PHYS_DEF_FIXED_ROTATION),
 		DEF_CONST(PHYS_DEF_LINEAR_DAMPING),
@@ -31,6 +39,7 @@ static void registerGlobals(OS * os)
 		DEF_CONST(PHYS_DEF_DENSITY),
 		DEF_CONST(PHYS_DEF_RESTITUTION),
 		DEF_CONST(PHYS_DEF_FRICTION),
+		*/
 		DEF_CONST(TILE_SIZE),
 		DEF_CONST(TILE_TYPE_BLOCK),
 		{}
@@ -114,14 +123,10 @@ static void registerBaseLightmap(OS * os)
 static bool __registerBaseLightmap = addRegFunc(registerBaseLightmap);
 
 // =====================================================================
-
+/*
 static void registerPhysContact(OS * os)
 {
 	struct Lib {
-		/* static PhysContact * __newinstance()
-		{
-			return new PhysContact();
-		} */
 	};
 
 	OS::FuncDef funcs[] = {
@@ -177,6 +182,7 @@ static void registerBasePhysEntity(OS * os)
 	registerOXClass<BasePhysEntity, Sprite>(os, funcs, nums, true OS_DBG_FILEPOS);
 }
 static bool __registerBasePhysEntity = addRegFunc(registerBasePhysEntity);
+*/
 
 // =====================================================================
 
@@ -186,6 +192,17 @@ static void registerBaseGame4X(OS * os)
 		static BaseGame4X * __newinstance()
 		{
 			return new BaseGame4X();
+		}
+
+		static int setPhysWorld(OS * os, int params, int, int need_ret_values, void*)
+		{
+			OS_GET_SELF(BaseGame4X*);
+			if(os->isNull(-params+0)){
+				self->setPhysWorld(NULL);
+			}else{
+				self->setPhysWorld(CtypeValue<PhysWorld*>::getArg(os, -params+0));
+			}
+			return 0;
 		}
 
 		/* static int posToTile(OS * os, int params, int, int need_ret_values, void*)
@@ -221,11 +238,16 @@ static void registerBaseGame4X(OS * os)
 		def("setBackType", &BaseGame4X::setBackType),
 		def("getItemType", &BaseGame4X::getItemType),
 		def("setItemType", &BaseGame4X::setItemType),
-		def("createPhysicsWorld", &BaseGame4X::createPhysicsWorld),
-		def("destroyPhysicsWorld", &BaseGame4X::destroyPhysicsWorld),
+		// def("createPhysicsWorld", &BaseGame4X::createPhysicsWorld),
+		// def("destroyPhysicsWorld", &BaseGame4X::destroyPhysicsWorld),
+		DEF_GET("physWorld", BaseGame4X, PhysWorld),
+		{"__set@physWorld", &Lib::setPhysWorld},
+		def("queryTilePhysics", &BaseGame4X::queryTilePhysics),
+		/*
 		def("updatePhysics", &BaseGame4X::updatePhysics),
 		def("initEntityPhysics", &BaseGame4X::initEntityPhysics),
 		def("destroyEntityPhysics", &BaseGame4X::destroyEntityPhysics),
+		*/
 		DEF_PROP("physDebugDraw", BaseGame4X, PhysDebugDraw),
 		{}
 	};
@@ -243,30 +265,11 @@ static bool __registerBaseGame4X = addRegFunc(registerBaseGame4X);
 // =====================================================================
 // =====================================================================
 
-float toPhysValue(float a)
-{
-	return a * TO_PHYS_SCALE;
-}
-
-float fromPhysValue(float a)
-{
-	return a / TO_PHYS_SCALE;
-}
-
-b2Vec2 toPhysVec(const vec2 &pos)
-{
-	return b2Vec2(toPhysValue(pos.x), toPhysValue(pos.y));
-}
-
-vec2 fromPhysVec(const b2Vec2 &pos)
-{
-	return Vector2(fromPhysValue(pos.x), fromPhysValue(pos.y));
-}
-
 // =====================================================================
 // =====================================================================
 // =====================================================================
 
+/*
 void PhysContact::Data::reset()
 {
 	memset(this, 0, sizeof(*this));
@@ -284,10 +287,6 @@ int PhysContact::getCategoryBits(int i) const
 	if(i >= 0 && i < 2){
 		return data.filter[i].categoryBits;
 	}
-	/* if(contact){
-		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
-		return fixture->GetFilterData().categoryBits;
-	} */
 	return 0;
 }
 
@@ -297,10 +296,6 @@ BasePhysEntity * PhysContact::getEntity(int i) const
 	if(i >= 0 && i < 2){
 		return data.ent[i];
 	}
-	/* if(contact){
-		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
-		return dynamic_cast<BasePhysEntity*>((BasePhysEntity*)fixture->GetBody()->GetUserData());
-	} */
 	return NULL;
 }
 
@@ -310,10 +305,6 @@ bool PhysContact::getIsSensor(int i) const
 	if(i >= 0 && i < 2){
 		return data.isSensor[i];
 	}
-	/* if(contact){
-		b2Fixture * fixture = i ? contact->GetFixtureB() : contact->GetFixtureA();
-		return fixture->IsSensor();
-	} */
 	return false;
 }
 
@@ -385,6 +376,7 @@ void BasePhysEntity::applyForce(const vec2& viewForce, int paramsValueId)
 		}
 	}
 }
+*/
 
 // =====================================================================
 // =====================================================================
@@ -503,6 +495,16 @@ void BaseGame4X::removeLight(spBaseLight light)
 	std::vector<spBaseLight>::iterator it = std::find(lights.begin(), lights.end(), light);
 	OX_ASSERT(it != lights.end());
 	lights.erase(it);
+}
+
+spPhysWorld BaseGame4X::getPhysWorld()
+{
+	return physWorld;
+}
+
+void BaseGame4X::setPhysWorld(spPhysWorld value)
+{
+	physWorld = value;
 }
 
 void BaseGame4X::updateCamera(BaseLightmap * lightmap)
@@ -643,6 +645,11 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		OX_ASSERT(resources);
 	}
 
+	pushCtypeValue(os, this);
+	float time = (os->getProperty(-1, "time"), os->popFloat());
+	float dt = (os->getProperty(-1, "dt"), os->popFloat());
+	os->pop();
+
 	Actor * player = getOSChild("player"); OX_ASSERT(player);
 	vec2 playerPos = player->getPosition();
 
@@ -677,7 +684,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 					afterDraggingMode = false;
 				}
 			}else{
-				mapPos = mapPos + (idealPos - mapPos) * MathLib::min(1, 3.0f * dt);
+				mapPos = mapPos + (idealPos - mapPos) * MathLib::min(1.0f, 3.0f * dt);
 
 				if(idealPos.x - mapPos.x > maxOffs.x){
 					mapPos.x = idealPos.x - maxOffs.x;
@@ -711,6 +718,20 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	endX += 1; endY += 1;
 #endif
 
+	bool physChanged = false;
+	if(physTilesChanged.size() > 0){
+		std::map<int, bool>::iterator it = physTilesChanged.begin();
+		for(; it != physTilesChanged.end(); ++it){
+			int x, y, id = it->first;
+			tileIdToTilePos(x, y, id);
+
+			Bounds2 b = getTileAreaBounds(x, y, x, y);
+			freePhysTileAreasInBounds(b);
+		}
+		physTilesChanged.clear();
+		physChanged = true;
+	}
+
 	if(startX != startViewX || startY != startViewY || endX != endViewX || endY != endViewY){
 		startViewX = startX;
 		startViewY = startY;
@@ -724,6 +745,12 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		pushCtypeValue(os, endX);
 		pushCtypeValue(os, endY);
 		os->callTF(4);
+
+		physActiveBounds = getTileAreaBounds(startX-1, startY-1, endX+1, endY+1);
+		physChanged = true;
+	}
+	if(physChanged){
+		queryTilePhysics(startX, startY, endX, endY, time);
 	}
 
 	vec2 lightTextureSize((float)lightTextureWidth, (float)lightTextureHeight);
@@ -775,7 +802,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		int tx, ty;
 		posToTile(light->pos, tx, ty);
 		TileType type = getFrontType(tx, ty);
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
 			light->validPos = light->pos;
 		}else{
 			posToTile(light->validPos, tx, ty);
@@ -789,7 +816,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	// for(int y = startY; y <= endY; y++){
 		// for(int x = startX; x <= endX; x++){
 			TileType type = getFrontType(x, y);
-			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
 				continue;
 			}
 			bool isDoor = false;
@@ -850,7 +877,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 				vec2 lightToCurrent = p1 - lightScreenPos;
 				OX_ASSERT(normal.dot(lightToCurrent) > 0);
 				type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS || type == TILE_TYPE_DOOR_01){
+				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
 					vec2 p1_target = p1 + lightToCurrent * (radius * 100);
 					vec2 p2_target = p2 + (p2 - lightScreenPos) * (radius * 100);
 						
@@ -872,7 +899,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		// for(int y = startY; y <= endY; y++){
 			// for(int x = startX; x <= endX; x++){
 				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){ // || type == TILE_TYPE_DOOR_01){
+				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){ // || type == TILE_TYPE_DOOR_01){
 					continue;
 				}
 				vec2 pos = tileToPos(x, y) - offs;
@@ -1040,7 +1067,7 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 		};
 
 		TileType type = getFrontType(x, y);
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDERS){
+		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
 			vec2 pos = tileToPos(x, y) - offs;
 			
 			/* AffineTransform t;
@@ -1295,6 +1322,8 @@ void BaseGame4X::updateCamera(BaseLightmap * lightmap)
 	}
 
 	r.end();
+
+	// updatePhysics(dt);
 }
 
 ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char * _fs, bvertex_format format)
@@ -1328,7 +1357,9 @@ ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char *
 
 BaseGame4X::BaseGame4X()
 {
-	tiles = NULL;
+	// PhysWorld::setToPhysScale(GAME_TO_PHYS_SCALE);
+
+	// tiles = NULL;
 	tiledmapWidth = 0;
 	tiledmapHeight = 0;
 	shadowMaskProg = NULL;
@@ -1343,18 +1374,23 @@ BaseGame4X::BaseGame4X()
 	endViewY = 0;
 	afterDraggingMode = false;
 
+	/*
 	physAccumTimeSec = 0;
 	physWorld = NULL;
 	physContactShare = new PhysContact;
+	*/
 }
 
 BaseGame4X::~BaseGame4X()
 {
+	// destroyPhysicsWorld();
+	/*
 	physDebugDraw = NULL;
 	destroyAllBodies();
 	delete physWorld;
+	*/
 
-	delete [] tiles;
+	// delete [] tiles;
 	delete shadowMaskProg;
 	delete lightProg;
 	delete lightTileProg;
@@ -1379,60 +1415,136 @@ float BaseGame4X::getTileRandom(int x, int y)
 #endif
 }
 
-TileType BaseGame4X::getFrontType(int x, int y)
+Tile * BaseGame4X::getTile(int x, int y)
 {
 	if(x >= 0 && x < tiledmapWidth
 		&& y >= 0 && y < tiledmapHeight)
 	{
-		return tiles[y * tiledmapWidth + x].front;
+		return &tiles[y * tiledmapWidth + x];
 	}
-	return TILE_TYPE_BLOCK;
+	return NULL;
+}
+
+Bounds2 BaseGame4X::getTileAreaBounds(int ax, int ay, int bx, int by)
+{
+	return Bounds2(
+				vec2((float)ax * TILE_SIZE, (float)ay * TILE_SIZE), 
+				vec2((float)(bx+1) * TILE_SIZE, (float)(by+1) * TILE_SIZE));
+}
+
+void BaseGame4X::boundsToTileArea(int& ax, int& ay, int& bx, int& by, const Bounds2& bounds)
+{
+	worldPosToPos(ax, ay, bounds.b[0]);
+	worldPosToPos(bx, by, bounds.b[1]); bx--, by--;
+}
+
+void BaseGame4X::freePhysTileArea(spPhysTileArea physTileArea)
+{
+	physWorld->destroyBody(physTileArea->body);
+	physTileArea->body = NULL;
+
+	int ax, ay, bx, by;
+	boundsToTileArea(ax, ay, bx, by, physTileArea->bounds);
+	for(int x = ax; x <= bx; x++){
+		for(int y = ay; y <= by; y++){
+			getTile(x, y)->physCreated = false;
+		}
+	}
+}
+
+void BaseGame4X::freePhysTileAreasInBounds(const Bounds2& bounds)
+{
+	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin(), next_it;
+	for(; it != physTileAreas.end(); it = next_it){
+		next_it = it + 1;
+		spPhysTileArea physTileArea = *it;
+		if(physTileArea->bounds.intersectsBounds(bounds)){
+			freePhysTileArea(physTileArea);
+			next_it = physTileAreas.erase(it);
+		}
+	}
+}
+
+void BaseGame4X::freeAllPhysTileAreas()
+{
+	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin();
+	for(; it != physTileAreas.end(); ++it){
+		spPhysTileArea physTileArea = *it;
+		freePhysTileArea(physTileArea);
+	}
+	physTileAreas.clear();
+}
+
+#define TILE_WORLD_ID_WIDTH 1000000
+
+int BaseGame4X::getTileId(int x, int y)
+{
+	return y * TILE_WORLD_ID_WIDTH + x;
+}
+
+void BaseGame4X::tileIdToTilePos(int& x, int& y, int id)
+{
+	x = id % TILE_WORLD_ID_WIDTH;
+	y = id / TILE_WORLD_ID_WIDTH;
+}
+
+void BaseGame4X::worldPosToPos(int& x, int& y, const vec2& pos)
+{
+	x = (int)(pos.x / TILE_SIZE + 0.5f);
+	y = (int)(pos.y / TILE_SIZE + 0.5f);
+}
+
+TileType BaseGame4X::getFrontType(int x, int y)
+{
+	Tile * tile = getTile(x, y);
+	return tile ? tile->front : TILE_TYPE_BLOCK;
 }
 
 void BaseGame4X::setFrontType(int x, int y, TileType type)
 {
-	if(x >= 0 && x < tiledmapWidth
-		&& y >= 0 && y < tiledmapHeight)
-	{
-		tiles[y * tiledmapWidth + x].front = type;
+	Tile * tile = getTile(x, y);
+	if(tile){
+		EPhysTileType prevPhysType = tile->getPhysType();
+		tile->front = type;
+		if(prevPhysType != tile->getPhysType()){
+			physTilesChanged[getTileId(x, y)] = true;
+		}
 	}
 }
 
 TileType BaseGame4X::getBackType(int x, int y)
 {
-	if(x >= 0 && x < tiledmapWidth
-		&& y >= 0 && y < tiledmapHeight)
-	{
-		return tiles[y * tiledmapWidth + x].back;
-	}
-	return TILE_TYPE_BLOCK;
+	Tile * tile = getTile(x, y);
+	return tile ? tile->back : TILE_TYPE_BLOCK;
 }
 
 void BaseGame4X::setBackType(int x, int y, TileType type)
 {
-	if(x >= 0 && x < tiledmapWidth
-		&& y >= 0 && y < tiledmapHeight)
-	{
-		tiles[y * tiledmapWidth + x].back = type;
+	Tile * tile = getTile(x, y);
+	if(tile){
+		EPhysTileType prevPhysType = tile->getPhysType();
+		tile->back = type;
+		if(prevPhysType != tile->getPhysType()){
+			physTilesChanged[getTileId(x, y)] = true;
+		}
 	}
 }
 
 ItemType BaseGame4X::getItemType(int x, int y)
 {
-	if(x >= 0 && x < tiledmapWidth
-		&& y >= 0 && y < tiledmapHeight)
-	{
-		return tiles[y * tiledmapWidth + x].item;
-	}
-	return 0;
+	Tile * tile = getTile(x, y);
+	return tile ? tile->item : 0;
 }
 
 void BaseGame4X::setItemType(int x, int y, ItemType type)
 {
-	if(x >= 0 && x < tiledmapWidth
-		&& y >= 0 && y < tiledmapHeight)
-	{
-		tiles[y * tiledmapWidth + x].item = type;
+	Tile * tile = getTile(x, y);
+	if(tile){
+		EPhysTileType prevPhysType = tile->getPhysType();
+		tile->item = type;
+		if(prevPhysType != tile->getPhysType()){
+			physTilesChanged[getTileId(x, y)] = true;
+		}
 	}
 }
 
@@ -1502,34 +1614,39 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 		}
 	};
 
-	delete [] tiles;
+	// delete [] tiles;
+	tiles.clear();
 	OS_BYTE * data = (OS_BYTE*)p_data.toChar();
 	const char * dataPrefix = LEVEL_BIN_DATA_PREFIX;
 	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
 	int count = p_tiledmapWidth * p_tiledmapHeight;
 	if(count*2*3 + dataPrefixLen != p_data.getDataSize() || OS_STRNCMP((char*)data, dataPrefix, dataPrefixLen) != 0){
 		os->setException("error layer data");
-		tiles = NULL;
+		// tiles = NULL;
 		tiledmapWidth = tiledmapHeight = 0;
 		return;
 	}
 	tiledmapWidth = p_tiledmapWidth;
 	tiledmapHeight = p_tiledmapHeight;
-	tiles = new Tile[count];
+	// tiles = new Tile[count];
+	tiles.reserve(count);
 
 	OS_BYTE * front = data + dataPrefixLen;
 	OS_BYTE * back = front + count*2;
 	OS_BYTE * items = back + count*2;
 
+	Tile tile;
 	std::map<TileType, bool> usedTiles;
 	std::map<ItemType, bool> usedItems;
 	for(int i = 0; i < count; i++){
-		tiles[i].front = (TileType)Lib::decode(front, i);
-		tiles[i].back = (TileType)Lib::decode(back, i);
-		tiles[i].item = (ItemType)Lib::decode(items, i);
-		usedTiles[tiles[i].front] = true;
-		usedTiles[tiles[i].back] = true;
-		usedItems[tiles[i].item] = true;
+		tile.front = (TileType)Lib::decode(front, i);
+		tile.back = (TileType)Lib::decode(back, i);
+		tile.item = (ItemType)Lib::decode(items, i);
+		tile.physCreated = false;
+		usedTiles[tile.front] = true;
+		usedTiles[tile.back] = true;
+		usedItems[tile.item] = true;
+		tiles.push_back(tile);
 	}
 	std::map<ItemType, bool>::iterator it = usedTiles.begin();
 	for(; it != usedTiles.end(); ++it){
@@ -1559,6 +1676,7 @@ Actor * BaseGame4X::getMapLayer(int num)
 	return CtypeValue<Actor*>::getArg(os, -1);
 }
 
+/*
 void BaseGame4X::addEntityPhysicsShapes(BasePhysEntity * ent)
 {
 	ObjectScript::SaveStackSize saveStackSize;
@@ -1599,7 +1717,7 @@ void BaseGame4X::addEntityPhysicsShapes(BasePhysEntity * ent)
 			os->getProperty(-1, "radiusScale");
 			if(!os->isNull()){
 				fixtureDef.shape = &circleShape;
-				Vector2 size = ent->getSize();
+				vec2 size = ent->getSize();
 				circleShape.m_radius = toPhysValue((size.x > size.y ? size.x : size.y) / 2 * os->popFloat());
 			}else{
 				os->pop(); // pop radiusScale
@@ -1630,6 +1748,126 @@ void BaseGame4X::addEntityPhysicsShapes(BasePhysEntity * ent)
 	}
 }
 
+b2BodyDef BaseGame4X::getPlayerWheelDef(const vec2& pos)
+{
+	b2BodyDef bodyDef;
+	bodyDef.position = toPhysVec(pos);
+	bodyDef.linearDamping = PHYS_PLAYER_LINEAR_DAMPING;
+	bodyDef.angularDamping = PHYS_PLAYER_ANGULAR_DAMPING;
+	bodyDef.allowSleep = false;
+	return bodyDef;
+}
+*/
+
+void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
+{
+	if(ax < 0) ax = 0; else if(ax >= tiledmapWidth) ax = tiledmapWidth-1;
+	if(bx < 0) bx = 0; else if(bx >= tiledmapWidth) bx = tiledmapWidth-1;
+
+	if(ay < 0) ay = 0; else if(ay >= tiledmapHeight) ay = tiledmapHeight-1;
+	if(by < 0) by = 0; else if(by >= tiledmapHeight) by = tiledmapHeight-1;
+
+	for(int y = ay; y <= by; y++){
+		for(int x = ax; x <= bx; x++){
+			Tile * tile = getTile(x, y);
+			EPhysTileType physTileType = tile->getPhysType();
+			if(tile->physCreated || physTileType == PHYS_EMPTY){
+				continue;
+			}
+			int max_x = bx, max_y = by;
+			for(int ax = x+1; ax <= max_x; ax++){
+				Tile * ac = getTile(ax, y);
+				if(ac->physCreated || ac->getPhysType() != physTileType){
+					max_x = ax-1;
+					break;
+				}
+			}
+			for(int ay = y+1; ay <= max_y; ay++){
+				bool isOk = true;
+				for(int ax = x; ax <= max_x; ax++){
+					Tile * ac = getTile(ax, ay);
+					if(ac->physCreated || ac->getPhysType() != physTileType){
+						isOk = false;
+						break;
+					}
+				}
+				if(!isOk){
+					max_y = ay-1;
+					break;
+				}
+			}
+			spPhysTileArea block = new PhysTileArea();
+			block->time = time;
+			block->type = physTileType;
+			block->bounds = getTileAreaBounds(x, y, max_x, max_y);
+			physTileAreas.push_back(block);
+			
+			for(int ax = x; ax <= max_x; ax++){
+				for(int ay = y; ay <= max_y; ay++){
+					getTile(ax, ay)->physCreated = true;
+				}
+			}
+		}
+	}
+	
+	Bounds2 bounds = getTileAreaBounds(ax, ay, bx, by);
+
+	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin(), next_it;
+	for(; it != physTileAreas.end(); it = next_it){
+		next_it = it + 1;
+		spPhysTileArea physTileArea = *it;
+		if(physTileArea->body){
+			if(bounds.intersectsBounds(physTileArea->bounds)){
+				physTileArea->time = time;
+			}else if(time - physTileArea->time > 2.0f){
+				freePhysTileArea(physTileArea);
+				next_it = physTileAreas.erase(it);
+			}else if(!physActiveBounds.intersectsBounds(physTileArea->bounds)){
+				freePhysTileArea(physTileArea);
+				next_it = physTileAreas.erase(it);
+			}
+			continue;
+		}
+		
+		spPhysBodyDef bodyDef = new PhysBodyDef();
+		bodyDef->setType(b2_staticBody);
+		bodyDef->setPos((physTileArea->bounds.b[0] + physTileArea->bounds.b[1]) / 2);
+
+		physTileArea->body = physWorld->createBody(bodyDef);
+		
+		spPhysFixtureDef fixtureDef = new PhysFixtureDef();
+		fixtureDef->setType(b2Shape::e_polygon);
+		fixtureDef->setPolygonAsBox((physTileArea->bounds.b[1] - physTileArea->bounds.b[0]) / 2);
+		fixtureDef->setFriction(0.99f);
+		
+		switch(physTileArea->type){
+		case PHYS_LADDER:
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_LADDER);
+			break;
+
+		case PHYS_PLATFORM:
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PLATFORM);
+			break;
+
+		default:
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_GROUND);
+			break;
+		}
+		physTileArea->body->createFixture(fixtureDef);
+	}
+}
+
+EPhysTileType Tile::getPhysType() const
+{
+	switch(front){
+	case TILE_TYPE_DOOR_01:
+	case TILE_TYPE_EMPTY: return PHYS_EMPTY;
+	case TILE_TYPE_LADDER: return PHYS_LADDER;
+	}
+	return PHYS_GROUND;
+}
+
+/*
 void BaseGame4X::initEntityPhysics(BasePhysEntity * ent)
 {
 	ObjectScript::SaveStackSize saveStackSize;
@@ -1673,11 +1911,13 @@ void BaseGame4X::destroyEntityPhysics(BasePhysEntity * ent)
 		ent->body->DestroyFixture(fixture);
 		fixture = ent->body->GetFixtureList();
 	}
-	/* b2JointEdge * joint = ent->body->GetJointList();
+#if 0
+	b2JointEdge * joint = ent->body->GetJointList();
 	while(fixture){
 		physWorld->DestroyJoint(joint);
 		joint = ent->body->GetJointList();
-	} */
+	}
+#endif
 
 	OX_ASSERT(std::find(waitBodiesToDestroy.begin(), waitBodiesToDestroy.end(), ent->body) == waitBodiesToDestroy.end());
 	waitBodiesToDestroy.push_back(ent->body);
@@ -1713,16 +1953,23 @@ void BaseGame4X::destroyAllBodies()
 	b2Body * body = physWorld->GetBodyList(), * next = NULL;
 	for(; body; body = next){
 		next = body->GetNext();
-		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)body->GetUserData());
+		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((Object*)body->GetUserData());
 		if(ent){
 			OX_ASSERT(ent->game == this);
 			OX_ASSERT(ent->body == body);
 			ent->body->SetUserData(NULL);
 			ent->body = NULL;
 			ent->game = NULL;
+		}else{
+			PhysTileArea * area = dynamic_cast<PhysTileArea*>((Object*)body->GetUserData());
+			if(area){
+				area->body->SetUserData(NULL);
+				area->body = NULL;
+			}
 		}
 		physWorld->DestroyBody(body);
 	}
+	freeAllPhysTileAreas();
 }
 
 void BaseGame4X::updatePhysics(float dt)
@@ -1742,7 +1989,7 @@ void BaseGame4X::updatePhysics(float dt)
 
 	b2Body * body = physWorld->GetBodyList();
 	for(; body; body = body->GetNext()){
-		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)body->GetUserData());
+		BasePhysEntity * ent = dynamic_cast<BasePhysEntity*>((Object*)body->GetUserData());
 		if(ent){
 			OX_ASSERT(ent->body == body && ent->game == this);
 			ent->setPosition(fromPhysVec(body->GetPosition()));
@@ -1762,7 +2009,7 @@ void BaseGame4X::dispatchContacts()
 			os->getProperty(-1, "onPhysicsContact"); // func
 			OX_ASSERT(os->isFunction());
 			ObjectScript::pushCtypeValue(os, physContactShare->with(c));
-			os->pushNumber(0);
+			os->pushNumber(1);
 			os->callTF(2, 1);
 			if(os->popBool()){
 				return;
@@ -1773,7 +2020,7 @@ void BaseGame4X::dispatchContacts()
 			os->getProperty(-1, "onPhysicsContact"); // func
 			OX_ASSERT(os->isFunction());
 			ObjectScript::pushCtypeValue(os, physContactShare->with(c));
-			os->pushNumber(1);
+			os->pushNumber(0);
 			os->callTF(2);
 		}
 	}
@@ -1786,7 +2033,7 @@ void BaseGame4X::BeginContact(b2Contact* c)
 	PhysContact::Data data;
 	for(int i = 0; i < 2; i++){
 		b2Fixture * fixture = i ? c->GetFixtureB() : c->GetFixtureA();
-		data.ent[i] = dynamic_cast<BasePhysEntity*>((BasePhysEntity*)fixture->GetBody()->GetUserData());
+		data.ent[i] = dynamic_cast<BasePhysEntity*>((Object*)fixture->GetBody()->GetUserData());
 		data.filter[i] = fixture->GetFilterData();
 		data.isSensor[i] = fixture->IsSensor();
 	}
@@ -1799,20 +2046,18 @@ void BaseGame4X::EndContact(b2Contact* contact)
 
 void BaseGame4X::createPhysicsWorld()
 {
-	OX_ASSERT(!physWorld);
-	b2Vec2 gravity = b2Vec2(0, 0);
-	physWorld = new b2World(gravity);
-	physWorld->SetAllowSleeping(true);
-	physWorld->SetDestructionListener(this);
-	physWorld->SetContactListener(this);
+
+	physWorld = new PhysWorld();
 }
 
 void BaseGame4X::destroyPhysicsWorld()
 {
-	destroyAllBodies();
-	delete physWorld; physWorld = NULL;
-	physAccumTimeSec = 0;
+	if(physWorld){
+		physWorld->destroy();
+		physWorld = NULL;
+	}
 }
+*/
 
 bool BaseGame4X::getPhysDebugDraw() const
 {
@@ -1942,7 +2187,7 @@ void BaseGame4X::drawPhysJoint(b2Joint* joint)
 
 void BaseGame4X::drawPhysics()
 {
-	if(!physDebugDraw){
+	if(!physDebugDraw || !physWorld){
 		return;
 	}
 
@@ -1950,7 +2195,7 @@ void BaseGame4X::drawPhysics()
 
 	if (flags & b2Draw::e_shapeBit)
 	{
-		for (b2Body* b = physWorld->GetBodyList(); b; b = b->GetNext())
+		for (b2Body* b = physWorld->getCore()->GetBodyList(); b; b = b->GetNext())
 		{
 			const b2Transform& xf = b->GetTransform();
 			for (b2Fixture* f = b->GetFixtureList(); f; f = f->GetNext())
@@ -1962,14 +2207,12 @@ void BaseGame4X::drawPhysics()
 				}
 				else if (b->GetType() == b2_staticBody)
 				{
-					b2Color color(0.6f, 0.65f, 0.6f);
-					/* if(filter.categoryBits & PHYS_CAT_BIT_PLAYER_SPAWN){
-						color = b2Color(0.5f, 0.8f, 0.5f);
-					}else if(filter.categoryBits & PHYS_CAT_BIT_WATER){
-						color = b2Color(0.6f, 0.6f, 0.9f);
-					}else if(filter.categoryBits & PHYS_CAT_BIT_MONSTER_SPAWN){
-						color = b2Color(0.8f, 0.6f, 0.6f);
-					} */
+					b2Color color(0.4f, 0.65f, 0.4f);
+					if(filter.categoryBits & PHYS_CAT_BIT_LADDER){
+						color = b2Color(0.68f, 0.46f, 0.12f);
+					}else if(filter.categoryBits & PHYS_CAT_BIT_PLATFORM){
+						color = b2Color(0.68f, 0.46f, 0.12f);
+					}
 					drawPhysShape(f, xf, color);
 				}
 				else if (b->GetType() == b2_kinematicBody)
@@ -1990,7 +2233,7 @@ void BaseGame4X::drawPhysics()
 
 	if (flags & b2Draw::e_jointBit)
 	{
-		for (b2Joint* j = physWorld->GetJointList(); j; j = j->GetNext())
+		for (b2Joint* j = physWorld->getCore()->GetJointList(); j; j = j->GetNext())
 		{
 			drawPhysJoint(j);
 		}
@@ -1999,7 +2242,7 @@ void BaseGame4X::drawPhysics()
 	if (flags & b2Draw::e_pairBit)
 	{
 		b2Color color(0.3f, 0.9f, 0.9f);
-		for (b2Contact* c = physWorld->GetContactList(); c; c = c->GetNext())
+		for (b2Contact* c = physWorld->getCore()->GetContactList(); c; c = c->GetNext())
 		{
 			//b2Fixture* fixtureA = c->GetFixtureA();
 			//b2Fixture* fixtureB = c->GetFixtureB();
@@ -2043,7 +2286,7 @@ void BaseGame4X::drawPhysics()
 
 	if (flags & b2Draw::e_centerOfMassBit)
 	{
-		for (b2Body* b = physWorld->GetBodyList(); b; b = b->GetNext())
+		for (b2Body* b = physWorld->getCore()->GetBodyList(); b; b = b->GetNext())
 		{
 			b2Transform xf = b->GetTransform();
 			xf.p = b->GetWorldCenter();
@@ -2052,7 +2295,7 @@ void BaseGame4X::drawPhysics()
 	}
 }
 
-
+/*
 void BaseGame4X::SayGoodbye(b2Joint* joint)
 {
 }
@@ -2060,3 +2303,4 @@ void BaseGame4X::SayGoodbye(b2Joint* joint)
 void BaseGame4X::SayGoodbye(b2Fixture* fixture)
 {
 }
+*/
