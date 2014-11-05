@@ -12,11 +12,20 @@ NewPlayer = extends Player {
 		
 		@waddleStarted = false
 		@body = null
-		@wheelRadius = TILE_SIZE / 2 * 0.96
+		@wheelRadius = TILE_SIZE / 2 * 0.8
+		@posShift = vec2(0, -(TILE_SIZE / 2 - @wheelRadius))
 		@maxSpeed = TILE_SIZE * 4
 		
 		@destPosX = @snapPos(@x, 0)
 		@destPosY = null
+		
+		@dir = Sprite().attrs {
+			resAnim = res.get("dir"),
+			pivot = vec2(-6, 0.5),
+			// pos = @size / 2,
+			visible = false,
+			parent = @game.mapLayers[MAP_LAYER_PLAYER_DIR],
+		}
 		
 		@addTimeout(0.1, function(){
 			var bodyDef = PhysBodyDef()
@@ -92,8 +101,8 @@ NewPlayer = extends Player {
 	
 	cleanup = function(){
 		// @game.physWorld.destroyBody(@body)
-		@body.destroy()
-		@body = null
+		@body.destroy()	// @body = null
+		@dir.detach()
 		
 		super()
 	},
@@ -122,7 +131,7 @@ NewPlayer = extends Player {
 	},
 	
 	snapPos = function(x, dx){
-		return (math.floor(x / SNAP_SIZE) + (dx || 0) + SNAP_SHIFT) * SNAP_SIZE
+		return (math.floor(x / SNAP_SIZE + (dx || 0)) + SNAP_SHIFT) * SNAP_SIZE
 	},
 	
 	applyDestX = function(){
@@ -167,8 +176,10 @@ NewPlayer = extends Player {
 			if(!@ladderContact){
 				ignorePosX = true
 			}
-			// var x = @body.linearVelocity.x / SNAP_SIZE
-			@destPosX = @snapPos(@x) // , x > 0.1 ? 1 : x < -0.1 ? -1 : 0)
+			var x = @body.linearVelocity.x / SNAP_SIZE
+			// @game.addDebugMessage("fix pos by speed: ${x}")
+			var edge = 2.7
+			@destPosX = @snapPos(@x, x > edge ? 0.5 : x < -edge ? -0.5 : 0)
 		}
 		if(!ignorePosX && @destPosX){
 			@applyDestX()
@@ -183,9 +194,6 @@ NewPlayer = extends Player {
 			return
 		}
 		@updateContacts()
-		/* var tileX, tileY = @game.posToTile(@pos)
-		var type = @game.getFrontType(tileX, tileY)
-		var onLadder = type == TILE_TYPE_LADDER */
 		if(@ladderContact){
 			@body.gravityScale = 0
 			@destPosY = @snapPos(@y)
@@ -197,36 +205,26 @@ NewPlayer = extends Player {
 			// @destPosY = null
 			@moveDir = @game.moveJoystick.dir
 			
+			@dir.visible = true
+			@dir.angle = @moveDir.normalize().angle
+			
 			var groundContact = @groundContact
 			if(math.abs(@moveDir.x) > 0.25){
 				var side = @moveDir.x > 0 ? 1 : -1
 				@destPosX = @snapPos(@x, side)
 				@setSideFlip(-side)
-				if(!@ladderContact){
-					if(@pitContact){
+				if(!@ladderContact && @pitContact){
+					var speedK = math.abs(@body.linearVelocity.x) / @maxSpeed
+					if(speedK > 0.7){
 						@body.gravityScale = 0.1
 					}
-					/* 
-					// TODO: add sensor for this area?
-					var tileX, tileY = @game.posToTile(@pos)
-					var type = @game.getFrontType(tileX, tileY+1)
-					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
-						var type = @game.getFrontType(tileX - side, tileY+1)
-						if(type != TILE_TYPE_EMPTY && type != TILE_TYPE_LADDER){
-							var type = @game.getFrontType(tileX + side, tileY+1)
-							if(type != TILE_TYPE_EMPTY && type != TILE_TYPE_LADDER){
-								@body.gravityScale = 0.1
-								// @game.addDebugMessage("fix gravityScale")
-							}
-						}
-					} */
 				}
 				@applyDestX()
 			}
 			if(@moveDir.y < -0.5 && groundContact && @game.time - @jumpTime > 0.1){
 				@destPosY = null
 				@jumpTime = @game.time
-				var jumpForce = 430 / @game.physWorld.toPhysScale
+				var jumpForce = 400*0.8 / @game.physWorld.toPhysScale
 				var tileX, tileY = @game.posToTile(@pos)
 				var type = @game.getFrontType(tileX, tileY-1)
 				if(type != TILE_TYPE_LADDER){
@@ -256,6 +254,7 @@ NewPlayer = extends Player {
 				@applyDestY()
 			}
 		}else{
+			@dir.visible = false
 			@updateDestPos()
 		}
 		// super()
@@ -289,7 +288,7 @@ NewPlayer = extends Player {
 	
 	updatePos = function(){
 		if(@body){
-			@pos = @body.pos - vec2(0, TILE_SIZE / 2 * 0.04)
+			@dir.pos = @pos = @body.pos + @posShift
 			var run = #@body.linearVelocity > TILE_SIZE
 			if(run){
 				if(!@waddleStarted){

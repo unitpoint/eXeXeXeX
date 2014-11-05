@@ -97,6 +97,7 @@ MAP_LAYER_DECALS = enumCount++
 MAP_LAYER_SCREEN_LIGHTMAP = enumCount++
 MAP_LAYER_TILE_GLOWING = enumCount++
 MAP_LAYER_EXPLODES = enumCount++
+MAP_LAYER_PLAYER_DIR = enumCount++
 MAP_LAYER_BUBBLES = enumCount++
 MAP_LAYER_DEBUG = enumCount++
 MAP_LAYER_COUNT = enumCount
