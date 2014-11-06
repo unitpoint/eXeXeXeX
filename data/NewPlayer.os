@@ -37,7 +37,7 @@ NewPlayer = extends Player {
 			@body = @game.physWorld.createBody(bodyDef)
 			
 			var fixtureDef = PhysFixtureDef()
-			fixtureDef.type = PHYS_SHAPE_CIRCLE
+			// fixtureDef.type = PHYS_SHAPE_CIRCLE
 			fixtureDef.circleRadius = @wheelRadius
 			fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
 			fixtureDef.maskBits = PHYS_CAT_BIT_GROUND | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT
@@ -108,7 +108,7 @@ NewPlayer = extends Player {
 	},
 	
 	updateContacts = function(){
-		// var wasLadderContact = @ladderContact
+		// var prevLadderContact = @ladderContact
 		@groundContact = @ladderContact = @pitContact = null
 		var bestGroundAngle = 45
 		for(var _, contact in @contacts){
@@ -123,9 +123,9 @@ NewPlayer = extends Player {
 				@pitContact = contact
 			}
 		}
-		/* if(wasLadderContact && !@ladderContact){
+		/* if(prevLadderContact && !@ladderContact){
 			@game.addDebugMessage("release ladder contact")
-		}else if(!wasLadderContact && @ladderContact){
+		}else if(!prevLadderContact && @ladderContact){
 			@game.addDebugMessage("found ladder contact")
 		} */
 	},
@@ -137,7 +137,7 @@ NewPlayer = extends Player {
 	applyDestX = function(){
 		var linearVelocity = @body.linearVelocity
 		var dx = clamp((@destPosX - @x) / SNAP_SIZE * 1.0, -1, 1)
-		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, -1, 1)
+		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, 0, 1)
 		var groundContact = @groundContact
 		forceScale = forceScale * math.max(0.25, groundContact.dot || 0)
 		if(math.abs(dx) < 0.05){
@@ -156,7 +156,8 @@ NewPlayer = extends Player {
 	applyDestY = function(){
 		var linearVelocity = @body.linearVelocity
 		var dy = clamp((@destPosY - @y) / SNAP_SIZE * 1.0, -1, 1)
-		var forceScale = clamp(1 - math.abs(linearVelocity.y) / @maxSpeed, -1, 1)
+		var forceScale = clamp(1 - math.abs(linearVelocity.y) / @maxSpeed, 0, 1)
+		// @game.addDebugMessage("applyDestY dy: ${dy}, forceScale: ${forceScale}")
 		if(math.abs(dy) < 0.05){
 			linearVelocity.y = dy * @maxSpeed * forceScale
 			@body.linearVelocity = linearVelocity
@@ -206,18 +207,17 @@ NewPlayer = extends Player {
 			@moveDir = @game.moveJoystick.dir
 			
 			@dir.visible = true
-			@dir.angle = @moveDir.normalize().angle
+			@dir.angle = @moveDir.angle
 			
 			var groundContact = @groundContact
-			if(math.abs(@moveDir.x) > 0.25){
+			var sensorSize = 0.3
+			if(math.abs(@moveDir.x) > sensorSize){
 				var side = @moveDir.x > 0 ? 1 : -1
 				@destPosX = @snapPos(@x, side)
 				@setSideFlip(-side)
 				if(!@ladderContact && @pitContact){
 					var speedK = math.abs(@body.linearVelocity.x) / @maxSpeed
-					if(speedK > 0.7){
-						@body.gravityScale = 0.1
-					}
+					speedK > 0.7 && @body.gravityScale = 0.1
 				}
 				@applyDestX()
 			}
@@ -225,6 +225,8 @@ NewPlayer = extends Player {
 				@destPosY = null
 				@jumpTime = @game.time
 				var jumpForce = 400*0.8 / @game.physWorld.toPhysScale
+				
+				// TODO: use physWorld.queryAABB
 				var tileX, tileY = @game.posToTile(@pos)
 				var type = @game.getFrontType(tileX, tileY-1)
 				if(type != TILE_TYPE_LADDER){
@@ -242,9 +244,17 @@ NewPlayer = extends Player {
 				}
 				@body.applyForceToCenter(vec2(0, -jumpForce))
 				groundContact.fixture.body.applyForce(vec2(0, jumpForce), groundContact.point)
-			}else if(@ladderContact && math.abs(@moveDir.y) > 0.25){ // || @moveDir.y > 0){
+			}else if(@ladderContact && math.abs(@moveDir.y) > sensorSize){ // || @moveDir.y > 0){
 				// @destPosX = @snapPos(@x + (side || 0))
 				@destPosY = @snapPos(@y, @moveDir.y > 0 ? 1 : -1)
+				@applyDestY()
+				// @game.addDebugMessage("process move y in ladderContact: ${@destPosY}, gravityScale: ${@body.gravityScale}")
+				if(@moveDir.x == 0){
+					@destPosX = @snapPos(@x)
+					@applyDestX()
+				}
+			}else if(@ladderContact){
+				@destPosY = @snapPos(@y)
 				@applyDestY()
 				if(@moveDir.x == 0){
 					@destPosX = @snapPos(@x)
