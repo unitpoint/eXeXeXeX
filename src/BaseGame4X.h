@@ -423,7 +423,10 @@ protected:
 	
 	std::vector<spPhysTileArea> physTileAreas;
 	spBox2DDraw physDebugDraw;
-	Bounds2 physActiveBounds;
+	
+	Bounds2 physPlayerBounds;
+	Bounds2 physDraggingBounds;
+	bool physDraggingBoundsUsed;
 
 	void initLightmap(BaseLightmap*);
 	ShaderProgramGL * createShaderProgram(const char * _vs, const char * _fs, bvertex_format);

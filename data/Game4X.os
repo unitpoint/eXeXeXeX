@@ -633,8 +633,8 @@ Game4X = extends BaseGame4X {
 			color = Color.RED,
 			opacity = 0.2,
 			// parent = DEBUG ? @mapLayers[MAP_LAYER_DEBUG] : null,
-			parent = @mapLayers[MAP_LAYER_DEBUG],
-			// parent = null,
+			// parent = @mapLayers[MAP_LAYER_DEBUG],
+			parent = null,
 		}
 		
 		@physWorld = PhysWorld()
@@ -817,6 +817,30 @@ Game4X = extends BaseGame4X {
 			}
 			@keyEventDownId = stage.addEventListener(KeyboardEvent.DOWN, keyboardEvent)
 			@keyEventUpId = stage.addEventListener(KeyboardEvent.UP, keyboardEvent)
+			
+			@targetMapScale = @mapScale.x
+			var setMapScale = function(scale){
+				scale = math.round(scale / 0.1) * 0.1
+				scale = clamp(scale, 0.2, 1.5)
+				if(@targetMapScale != scale){
+					@targetMapScale = scale
+					@addDebugMessage("map scale: ${scale}")
+					// @mapScale = scale
+					@replaceTweenAction {
+						name = "mapScale",
+						duration = 0.5,
+						mapScale = scale,
+						ease = Ease.CUBIC_OUT,
+					}
+				}
+			}
+			
+			@addEventListener(TouchEvent.WHEEL_UP, function(ev){
+				setMapScale(@targetMapScale + 0.1)
+			})
+			@addEventListener(TouchEvent.WHEEL_DOWN, function(ev){
+				setMapScale(@targetMapScale - 0.1)
+			})
 		}
 
 		@addUpdate(@update.bind(this))
@@ -850,26 +874,27 @@ Game4X = extends BaseGame4X {
 			// var touch = ev.localPosition
 		})
 		
-		@dragging = null
-		@afterDraggingMode = false
+		@draggingPos = null
+		@dragging = false
 		if(@saveSlotNum){
 			@addEventListener(TouchEvent.START, function(ev){
 				if(ev.target is BaseLayerTile){
-					@dragging = ev.localPosition
+					@draggingPos = ev.localPosition
+					@dragging = true
 				}
 			})
 			
 			@addEventListener(TouchEvent.MOVE, function(ev){
-				if(@dragging){
-					var offs = ev.localPosition - @dragging
+				if(@draggingPos){
+					var offs = ev.localPosition - @draggingPos
 					@mapPos += offs
 					// @glowingTiles.pos = @speechBubbles.pos = @debugTiles.pos = @view.pos
-					@dragging = ev.localPosition
+					@draggingPos = ev.localPosition
 				}
 			})
 			
 			@addEventListener(TouchEvent.END, function(ev){
-				@dragging = null
+				@draggingPos = null
 			})
 		}
 		
@@ -947,7 +972,7 @@ Game4X = extends BaseGame4X {
 			opacity = 0,
 			detachTarget = true,
 			doneCallback = function(){
-				@addDebugMessage("game started game started")
+				@addDebugMessage("game started")
 			},
 		}
 	},
@@ -1206,11 +1231,12 @@ Game4X = extends BaseGame4X {
 		@borderBody = @physWorld.createBody(bodyDef)
 		
 		var createBoundsFixture = function(a, b){
-			var halfSize = (b - a) / 2
-			var center = (a + b) / 2
+			// var halfSize = (b - a) / 2
+			// var center = (a + b) / 2
 			var fixtureDef = PhysFixtureDef()
-			fixtureDef.type = PHYS_SHAPE_POLYGON
-			fixtureDef.setPolygonAsBox(halfSize, center, 0)
+			// fixtureDef.type = PHYS_SHAPE_POLYGON
+			// fixtureDef.setPolygonAsBox(halfSize, center, 0)
+			fixtureDef.setPolygonAsBounds(a, b)
 			fixtureDef.categoryBits = PHYS_CAT_BIT_GROUND
 			fixtureDef.friction = 0.99
 			@borderBody.createFixture(fixtureDef)
@@ -1817,6 +1843,7 @@ Game4X = extends BaseGame4X {
 			})
 			return @player
 		}
+		return; // debug
 		if(obj.gid > 0){
 			var ent = _G[entInfo.class || "Monster"](this, obj.gid)
 			if(state){
@@ -1938,7 +1965,7 @@ Game4X = extends BaseGame4X {
 	__set@mapPos = function(value){
 		@map.pos = value
 		@lightmapLayer.pos = -value / @map.scale
-		@lightmapLayer.scale = vec2(1, 1) / @map.scale
+		@lightmapLayer.scale = 1 / @map.scale
 	},
 	
 	__get@mapScale = function(){
@@ -2002,7 +2029,7 @@ Game4X = extends BaseGame4X {
 	},
 	
 	followPlayer = function(){
-		if(!@dragging){
+		if(!@draggingPos){
 			var mapPos, mapScale = @mapPos, @mapScale
 			var idealPos = (@size / 2 / mapScale - @player.pos) * mapScale
 			idealPos.x = math.round(idealPos.x)
@@ -2010,7 +2037,7 @@ Game4X = extends BaseGame4X {
 			if(idealPos != mapPos){
 				var maxOffs = @size * vec2(0.3, 0.1) / mapScale
 				// var maxOffs = @size * vec2(0.0, 0.0) / mapScale
-				if(@afterDraggingMode){
+				if(@dragging){
 					mapPos = mapPos + (idealPos - mapPos) * 0.1
 
 					var validPos = 0
@@ -2025,7 +2052,15 @@ Game4X = extends BaseGame4X {
 						validPos++
 					}
 					if(validPos == 2){
-						@afterDraggingMode = false
+						var posScreenScale = (@player.pos + mapPos / mapScale) / (@size / mapScale)
+						if(posScreenScale > 0.2 && posScreenScale < 0.8){
+							@dragging = false
+							// @addDebugMessage("fix dragging: ${posScreenScale}")
+						}else{
+							// @addDebugMessage("in fixing dragging: ${posScreenScale}")
+						}
+					}else{
+						// @addDebugMessage("validPos: ${validPos}")
 					}
 				}else{
 					mapPos = mapPos + (idealPos - mapPos) * math.min(1, 3 * @dt)
@@ -2042,10 +2077,12 @@ Game4X = extends BaseGame4X {
 					}
 				}
 				@mapPos = mapPos
+			}else{
+				// @addDebugMessage("idealPos: ${idealPos.x} ${idealPos.y}, ${mapPos.x} ${mapPos.y}")
 			}
 		}else{
-			@afterDraggingMode = true
-		}	
+			// @addDebugMessage("draggingPos: ${@draggingPos}")
+		}
 	},
 	
 	update = function(ev){

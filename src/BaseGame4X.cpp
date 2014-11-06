@@ -654,6 +654,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	pushCtypeValue(os, this);
 	float time = (os->getProperty(-1, "time"), os->popFloat());
 	float dt = (os->getProperty(-1, "dt"), os->popFloat());
+	bool dragging = (os->getProperty(-1, "dragging"), os->popBool());
 	os->pop();
 
 	Actor * player = getOSChild("player"); OX_ASSERT(player);
@@ -716,12 +717,22 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	endPhysY = ((endPhysY + physEdge-1) / physEdge) * physEdge;
 	// endPhysX = (endPhysX / physEdge + 1) * physEdge;
 	// endPhysY = (endPhysY / physEdge + 1) * physEdge;
+	// physDraggingBoundsUsed = false;
 	if(physChanged || startPhysX != this->startPhysX || startPhysY != this->startPhysY || endPhysX != this->endPhysX || endPhysY != this->endPhysY){
 		this->startPhysX = startPhysX;
 		this->startPhysY = startPhysY;
 		this->endPhysX = endPhysX;
 		this->endPhysY = endPhysY;
-		physActiveBounds = getTileAreaBounds(startPhysX, startPhysY, endPhysX, endPhysY);
+		Bounds2 bounds = getTileAreaBounds(startPhysX, startPhysY, endPhysX, endPhysY);
+		if(dragging){
+			physDraggingBounds = bounds;
+			physDraggingBoundsUsed = true;
+			// addDebugMessage("set dragging bounds");
+		}else{
+			physPlayerBounds = bounds;
+			physDraggingBoundsUsed = false;
+			// addDebugMessage("set player bounds");
+		}
 		queryTilePhysics(startPhysX, startPhysY, endPhysX, endPhysY, time);
 	}
 
@@ -1758,10 +1769,13 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 			if(tile){
 				EPhysTileType physTileType = tile->getPhysType();
 				switch(physTileType){
-				case PHYS_GROUND:
+				case PHYS_EMPTY:
+					return true;
+				/* case PHYS_GROUND:
 					return false;
 				}
-				return true;
+				return true; */
+				}
 			}
 			return false;
 		}
@@ -1814,7 +1828,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					break;
 				}
 			}
-			if(physTileType == PHYS_CAT_BIT_LADDER){
+			if(physTileType == PHYS_LADDER){
 				max_y = tiledmapHeight-1;
 			}
 			for(int ay = y+1; ay <= max_y; ay++){
@@ -1832,7 +1846,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 				}
 			}
 			int tx = x, ty = y;
-			if(physTileType == PHYS_CAT_BIT_LADDER){
+			if(physTileType == PHYS_LADDER){
 				for(ty = y-1; ty >= 0; ty--){
 					bool isOk = true;
 					for(int ax = x; ax <= max_x; ax++){
@@ -1865,37 +1879,34 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		}
 	}
 	
-	Bounds2 bounds = getTileAreaBounds(ax, ay, bx, by);
-
+	// Bounds2 bounds = getTileAreaBounds(ax, ay, bx, by);
 	int numDeletedByBounds = 0, numCreated = 0;
 	std::vector<spPhysTileArea>::iterator it = physTileAreas.begin(), next_it;
 	for(; it != physTileAreas.end(); it = next_it){
 		next_it = it + 1;
 		spPhysTileArea physTileArea = *it;
 		if(physTileArea->body){
-			if(bounds.intersectsBounds(physTileArea->bounds)){
-				physTileArea->time = time;
-			}else if(!physActiveBounds.intersectsBounds(physTileArea->bounds)){
+			if(!physPlayerBounds.intersectsBounds(physTileArea->bounds) 
+				&& (!physDraggingBoundsUsed || !physDraggingBounds.intersectsBounds(physTileArea->bounds)))
+			{
 				freePhysTileArea(physTileArea);
 				next_it = physTileAreas.erase(it);
 				numDeletedByBounds++;
 				// addDebugMessage("delete phys area by bounds");
+			}else{
+				physTileArea->time = time;
 			}
 			continue;
 		}
 		
-		spPhysBodyDef bodyDef = new PhysBodyDef();
-		bodyDef->setType(b2_staticBody);
-		bodyDef->setPos((physTileArea->physBounds.b[0] + physTileArea->physBounds.b[1]) / 2);
-		physTileArea->body = physWorld->createBody(bodyDef);
-		
-		float sub = 0.0f;
+		Bounds2 physBounds = physTileArea->physBounds;
 		spPhysFixtureDef fixtureDef = new PhysFixtureDef();
 		switch(physTileArea->type){
 		case PHYS_LADDER:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_LADDER);
 			fixtureDef->setIsSensor(true);
-			sub = 0.4f;
+			physBounds.expand(-TILE_SIZE * 0.4f);
+			physBounds.b[0].y -= TILE_SIZE * 0.8f;
 			break;
 
 		case PHYS_PLATFORM:
@@ -1911,8 +1922,13 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_GROUND);
 			break;
 		}
+		spPhysBodyDef bodyDef = new PhysBodyDef();
+		bodyDef->setType(b2_staticBody);
+		bodyDef->setPos((physBounds.b[0] + physBounds.b[1]) / 2);
+		physTileArea->body = physWorld->createBody(bodyDef);
+		
 		fixtureDef->setType(b2Shape::e_polygon);
-		fixtureDef->setPolygonAsBox((physTileArea->physBounds.b[1] - physTileArea->physBounds.b[0]) / 2 - TILE_SIZE * sub);
+		fixtureDef->setPolygonAsBox((physBounds.b[1] - physBounds.b[0]) / 2);
 		fixtureDef->setFriction(0.99f);
 		physTileArea->body->createFixture(fixtureDef);
 		numCreated++;
@@ -1921,7 +1937,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 	if(numDeletedByBounds || numCreated){
 		char buf[1024];
 		sprintf(buf, "phys area: +%d -%d", numCreated, numDeletedByBounds);
-		addDebugMessage(buf);
+		// addDebugMessage(buf);
 	}
 }
 
