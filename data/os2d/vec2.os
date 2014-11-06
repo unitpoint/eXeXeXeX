@@ -102,9 +102,12 @@ vec2 = extends Object {
 	
 	__cmp = function(b){
 		b is vec2 || b = vec2(b) // throw "vec2 required"
-		var i = @x <=> b.x 
-		if(i != 0) return i
-		return @y <=> b.y 
+		// print "vec2 cmp: ${@x} ${@y}, other: ${b.x} ${b.y}, cmp: ${@x <=> b.x} ${@y <=> b.y}"
+		var x, y = @x <=> b.x, @y <=> b.y
+		x < 0 && y < 0 && return -1
+		x > 0 && y > 0 && return 1
+		x == 0 && y == 0 && return 0
+		// else is not comparable
 	},
 	
 	__minus = function(){
