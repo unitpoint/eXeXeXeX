@@ -32,7 +32,7 @@
 ******************************************************************************/
 
 Tile = extends Object {
-	SIZE = vec2(TILE_SIZE, TILE_SIZE),
+	VEC2_SIZE = vec2(TILE_SIZE, TILE_SIZE),
 	
 	__construct = function(game, tx, ty){
 		super()
@@ -53,13 +53,12 @@ Tile = extends Object {
 		game.setTile(this)
 		
 		@frontType = game.getFrontType(tx, ty)
-		@itemType = game.getItemType(tx, ty)
+		// @itemType = game.getItemType(tx, ty)
 		@backType = game.getBackType(tx, ty)
 		
-		// _G[TILES_INFO[@backType].backClass || "BackTile"](this, @backType)
-		_G[TILES_INFO[@frontType].class || "FrontTile"](this)
-		
-		// _G[ITEMS_INFO[itemType].class || "ItemTile"](this, itemType)
+		var elem = ELEMENTS_LIST[@frontType] || throw "unknown front type: ${@frontType}"
+		// _G[elem.class || "FrontTile"](this)
+		FrontTile(this)
 	},
 	
 	cleanup = function(){

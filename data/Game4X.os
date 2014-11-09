@@ -31,9 +31,12 @@
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
+require "consts"
+
+/*
 TILE_FADE_SIZE = 32
 
-TILE_TYPE_EMPTY = 0
+ELEM_TYPE_EMPTY = 0
 ITEM_TYPE_EMPTY = 0
 
 TILE_TYPE_GRASS = 1
@@ -50,7 +53,7 @@ ITEM_TYPE_PICK_01 = 17
 ITEM_TYPE_PICK_02 = 18
 ITEM_TYPE_PICK_03 = 19
 ITEM_TYPE_BULLETS = 21
-ITEM_TYPE_LADDERS = 23
+ITEM_TYPE_LADDER = 23
 ITEM_TYPE_STAMINA = 24
 ITEM_TYPE_FOOD_01 = 25
 ITEM_TYPE_FOOD_02 = 26
@@ -61,9 +64,11 @@ ITEM_TYPE_BOMB_03 = 34
 ITEM_TYPE_BOMB_04 = 35
 ITEM_TYPE_STAND_FLAME_01 = 40
 ITEM_TYPE_ENT_SAFEPACK = 41
+ITEM_TYPE_TILE_DIRT_01 = 48
 
 // not real items
 ITEM_TYPE_SHOPPING = 1000
+*/
 
 /*
 TILE_PRIORITY_BASE = 2
@@ -81,66 +86,7 @@ LAYER_DEBUG = enumCount++
 LAYER_COUNT = enumCount
 */
 
-var enumCount = 0
-MAP_LAYER_TILES = enumCount++
-MAP_LAYER_TILE_BACK = enumCount++
-MAP_LAYER_TILE_SHADOW = enumCount++
-// MAP_LAYER_TILE_LADDERS = enumCount++
-MAP_LAYER_TILE_ITEM = enumCount++
-MAP_LAYER_ENTITIES = enumCount++
-MAP_LAYER_PLAYER = enumCount++
-MAP_LAYER_TILE_FRONT = enumCount++
-MAP_LAYER_TILE_FRONT_DOOR = enumCount++
-MAP_LAYER_TILE_FRONT_FALLING = enumCount++
-MAP_LAYER_TILE_FRONT_ITEM = enumCount++
-MAP_LAYER_DECALS = enumCount++
-MAP_LAYER_SCREEN_LIGHTMAP = enumCount++
-MAP_LAYER_TILE_GLOWING = enumCount++
-MAP_LAYER_EXPLODES = enumCount++
-MAP_LAYER_PLAYER_DIR = enumCount++
-MAP_LAYER_BUBBLES = enumCount++
-MAP_LAYER_DEBUG = enumCount++
-MAP_LAYER_COUNT = enumCount
-
-MAP_LAYERS_TOUCH_DISABLED = [
-	// MAP_LAYER_TILE_BACK,
-	MAP_LAYER_TILE_SHADOW,
-	// MAP_LAYER_TILE_ITEM,
-	// MAP_LAYER_TILE_FRONT,
-	// MAP_LAYER_TILE_FRONT_DOOR,
-	MAP_LAYER_TILE_FRONT_FALLING,
-	MAP_LAYER_TILE_FRONT_ITEM,
-	MAP_LAYER_DECALS,
-	MAP_LAYER_SCREEN_LIGHTMAP,
-	MAP_LAYER_TILE_GLOWING,
-	MAP_LAYER_EXPLODES,
-	MAP_LAYER_DEBUG,
-]
-
-var enumCount = 0
-GAME_LAYER_BG = enumCount++
-GAME_LAYER_MAP = enumCount++
-GAME_LAYER_DEBUG = enumCount++
-// GAME_LAYER_MODALVIEW = enumCount++
-GAME_LAYER_HUD = enumCount++
-GAME_LAYER_DRAGNDROP = enumCount++
-GAME_LAYER_MENU_MODALVIEW = enumCount++
-GAME_LAYER_BLOOD = enumCount++
-GAME_LAYER_FADE = enumCount++
-GAME_LAYER_DEBUG_MESSAGED = enumCount++
-
 /*
-GAME_PRIORITY_LIGHTMASK = enumCount++
-GAME_PRIORITY_GLOWING = enumCount++
-GAME_PRIORITY_BUBBLES = enumCount++
-GAME_PRIORITY_DEBUG = enumCount++
-GAME_PRIORITY_HUD = enumCount++
-GAME_PRIORITY_DRAGNDROP = enumCount++
-GAME_PRIORITY_MODALVIEW = enumCount++
-GAME_PRIORITY_BLOOD = enumCount++
-GAME_PRIORITY_FADEIN = enumCount++
-*/
-
 HUD_ICON_SIZE = 80
 HUD_ICON_INDENT = 10
 
@@ -150,241 +96,13 @@ HUD_ICON_INDENT = 10
 SLOT_SIZE = 80
 SLOT_INDENT = 5
 
-TILES_INFO = {
-	[TILE_TYPE_EMPTY] = {
-		// strength = 0,
-		passable = true,
-		transparent = true,
-	},
-	[TILE_TYPE_LADDER] = {
-		// strength = 0,
-		passable = true,
-		transparent = true,
-		item = ITEM_TYPE_LADDERS,
-	},
-	[TILE_TYPE_GRASS] = {
-		strength = 3,
-	},
-	[TILE_TYPE_CHERNOZEM] = {
-		variants = 3,
-		strength = 6,
-		// damageDelay = 0.1,
-	},
-	[TILE_TYPE_ROCK] = {
-		// variants = 1,
-	},
-	2 = {
-		strength = 50,
-		variants = 2,
-		glowing = true,
-	},
-	3 = {
-		strength = 30,
-		glowing = true,
-	},
-	[TILE_TYPE_DOOR_01] = {
-		class = "DoorTile",
-		// door = true,
-		handle = "door-handle",
-		handleShadow = "door-handle-shadow",
-	},
-	[TILE_TYPE_TRADE_STOCK] = {
-		variants = 4,
-	},
-}
-
-ITEMS_INFO = {
-	1 = {
-		hasTileSprite = true,
-		strengthScale = 1.1,
-		price = 50,
-		canBuy = false,
-		glowing = true,
-	},
-	2 = {
-		hasTileSprite = true,
-		strengthScale = 1.15,
-		price = 75,
-		canBuy = false,
-		glowing = true,
-	},
-	3 = {
-		hasTileSprite = true,
-		strengthScale = 1.2,
-		price = 85,
-		canBuy = false,
-		glowing = true,
-	},
-	4 = {
-		hasTileSprite = true,
-		strengthScale = 1.1,
-		price = 60,
-		canBuy = false,
-		glowing = true,
-	},
-	5 = {
-		hasTileSprite = true,
-		strengthScale = 1.1,
-		price = 95,
-		canBuy = false,
-		glowing = true,
-	},
-	6 = {
-		hasTileSprite = true,
-		strengthScale = 1.1,
-		price = 155,
-		canBuy = false,
-		glowing = true,
-	},
-	[ITEM_TYPE_COAL] = {
-		hasTileSprite = true,
-		strengthScale = 1.5,
-		price = 35,
-		canBuy = false,
-		glowing = true,
-	},
-	8 = {
-		hasTileSprite = true,
-		strengthScale = 1.1,
-		price = 45,
-		canBuy = false,
-		glowing = true,
-	},
-	9 = {
-		hasTileSprite = true,
-		strengthScale = 1.5,
-		price = 190,
-		canBuy = false,
-		glowing = true,
-	},
-	[ITEM_TYPE_GOLD] = {
-		hasTileSprite = true,
-		variants = 2,
-		strengthScale = 2,
-		price = 100,
-		canBuy = false,
-		glowing = true,
-	},
-	[ITEM_TYPE_SHOVEL] = {
-		strengthScale = 1.1,
-		price = 100,
-		pickDamage = 1,
-	},
-	[ITEM_TYPE_PICK_01] = {
-		strengthScale = 2,
-		price = 1500,
-		pickDamage = 3,
-	},
-	[ITEM_TYPE_PICK_02] = {
-		strengthScale = 4,
-		price = 5000,
-		pickDamage = 6,
-	},
-	[ITEM_TYPE_PICK_03] = {
-		strengthScale = 6,
-		price = 10000,
-		pickDamage = 12,
-	},
-	[ITEM_TYPE_BULLETS] = {
-		strengthScale = 1.1,
-		price = 1,
-		canBuy = false,
-	},
-	[ITEM_TYPE_LADDERS] = {
-		strengthScale = 1.1,
-		price = 20,
-		// useDistance = 1,
-	},
-	[ITEM_TYPE_STAMINA] = {
-		addMaxStamina = 25,
-		strengthScale = 4,
-		price = 1000,
-		useSounds = ["max-stamina"],
-	},
-	[ITEM_TYPE_FOOD_01] = {
-		strengthScale = 1.1,
-		stamina = 25,
-		price = 25,
-		useSounds = ["item-04"],
-	},
-	[ITEM_TYPE_FOOD_02] = {
-		strengthScale = 1.2,
-		stamina = 100,
-		price = 100,
-		useSounds = ["item-04"],
-	},
-	[ITEM_TYPE_FOOD_03] = {
-		strengthScale = 1.3,
-		stamina = 200,
-		price = 150,
-		useSounds = ["item-04"],
-	},
-	[ITEM_TYPE_BOMB_01] = {
-		strengthScale = 1.5,
-		price = 100,
-		bomb = true,
-		explodeRadius = 1.0,
-		explodeWait = 3.0,
-		damage = 200,
-		useDistance = 1,
-		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
-	},
-	[ITEM_TYPE_BOMB_02] = {
-		strengthScale = 1.5,
-		price = 200,
-		bomb = true,
-		explodeRadius = 1.5,
-		explodeWait = 3.0,
-		damage = 500,
-		useDistance = 2,
-		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
-	},
-	[ITEM_TYPE_BOMB_03] = {
-		strengthScale = 2.0,
-		price = 300,
-		bomb = true,
-		explodeRadius = 2.0,
-		explodeWait = 3.0,
-		damage = 1500,
-		useDistance = 3,
-		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
-	},
-	[ITEM_TYPE_BOMB_04] = {
-		strengthScale = 2.5,
-		price = 500,
-		bomb = true,
-		explodeRadius = 2.9,
-		explodeWait = 3.0,
-		damage = 5000,
-		useDistance = 3,
-		useSounds = ["grenade-bounce-01", "grenade-bounce-02"],
-	},
-	[ITEM_TYPE_STAND_FLAME_01] = {
-		strengthScale = 2.0,
-		price = 300,
-		canBuy = false,
-		// useDistance = 3,
-	},
-	/*
-	301 = {
-		staminaScale = 1.1,
-		price = 100,
-	},
-	[ITEM_TYPE_WEAPON_01] = {
-		strengthScale = 1.5,
-		meleeAttack = 20,
-		price = 200,
-	},
-	*/
-}
-
 SHOP_ITEMS_INFO = {}
 PICK_DAMAGE_ITEMS_INFO = {}
 BOMB_ITEMS_INFO = {}
 // LADDERS_ITEMS_INFO = {}
 
 @{
-	// LADDERS_ITEMS_INFO[ITEM_TYPE_LADDERS] = ITEMS_INFO[ITEM_TYPE_LADDERS]
+	// LADDERS_ITEMS_INFO[ITEM_TYPE_LADDER] = ITEMS_INFO[ITEM_TYPE_LADDER]
 	
 	for(var type, item in ITEMS_INFO){
 		if(item.canBuy !== false){
@@ -527,6 +245,7 @@ ENTITIES_INFO = {
 		// trader = true,
 	},
 }
+*/
 
 Game4X = extends BaseGame4X {
 	__object = {
@@ -546,10 +265,7 @@ Game4X = extends BaseGame4X {
 		// playerMaxStamina = 300,
 		// playerStamina = 0,
 		// npcList = {},
-		lightMask = null,
 		following = null,
-		followTileX = -1,
-		followTileY = -1,
 	},
 	
 	__construct = function(saveSlotNum){
@@ -620,12 +336,13 @@ Game4X = extends BaseGame4X {
 			// visible = false,
 		}
 		
-		@speechBubbles = Actor().attrs {
+		/* @speechBubbles = Actor().attrs {
 			// priority = GAME_PRIORITY_BUBBLES,
 			touchEnabled = false,
 			// touchChildrenEnabled = false,
 			parent = @mapLayers[MAP_LAYER_BUBBLES],
-		}
+		} */
+		@speechBubbles = @mapLayers[MAP_LAYER_BUBBLES]
 		
 		@playerTargetTile = ColorRectSprite().attrs {
 			size = vec2(TILE_SIZE, TILE_SIZE),
@@ -734,6 +451,7 @@ Game4X = extends BaseGame4X {
 		@disableSaveLoad()
 		
 		@hudSlots = []
+		@selectedHudSlot = null
 		if(false){
 			var hudSlotX = @width - 2
 			for(var i = 0; i < 3; i++){
@@ -750,7 +468,7 @@ Game4X = extends BaseGame4X {
 			var hudSlotY = 2
 			// var str = _T("Use item")
 			for(var i = 0; i < 3; i++){
-				var hudSlot = HudSlot(this).attrs {
+				var hudSlot = HudSlot(this, #@hudSlots).attrs {
 					pivot = vec2(1, 0),
 					x = @width - 2,
 					y = hudSlotY,
@@ -774,6 +492,10 @@ Game4X = extends BaseGame4X {
 			var moveJoystickActivated = false
 			var keyboardEvent = function(ev){
 				var pressed = ev.type == KeyboardEvent.DOWN
+				if(!pressed && ev.scancode == KeyboardEvent.SCANCODE_P){
+					@physDebugDraw = !@physDebugDraw
+					return
+				}
 				if(ev.scancode == KeyboardEvent.SCANCODE_LEFT || ev.scancode == KeyboardEvent.SCANCODE_A){
 					@keyPressed.left = pressed
 				}
@@ -1046,6 +768,13 @@ Game4X = extends BaseGame4X {
 			messageId = params.id || null,
 		}
 		startTimeout(messageField)
+	},
+	
+	showPaintBrush = function(pos){
+		var brushSize = 2
+		var itemInfo = ITEMS_INFO[@selectedHudSlot.type]
+		assert(itemInfo.canPaint)
+		var tileInfo = 
 	},
 	
 	createBlood = function(value){
@@ -1328,7 +1057,7 @@ Game4X = extends BaseGame4X {
 		}
 		if(!loaded){
 			@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
-			for(var _, obj in level.groups.entities.objects){
+			for(var _, obj in level.entities){
 				@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
 			}
 			print "game level is initialized"
@@ -1462,6 +1191,13 @@ Game4X = extends BaseGame4X {
 		@tileEnt["${tx}-${ty}"] = ent
 	},
 	
+	initEntPos = function(ent, x, y){
+		// DEBUG && assert(!@tileEnt["${tx}-${ty}"])
+		// ent.tileX, ent.tileY = tx, ty
+		ent.pos = vec2(x, y) // @tileToCenterPos(tx, ty)
+		// @tileEnt["${tx}-${ty}"] = ent
+	},
+	
 	setEntTile = function(ent, tx, ty){
 		if(ent.tileX != tx || ent.tileY != ty){
 			var key = "${ent.tileX}-${ent.tileY}"
@@ -1486,7 +1222,7 @@ Game4X = extends BaseGame4X {
 	
 	getAutoFrontType = function(tx, ty){
 		var tile = @getTile(tx, ty)
-		tile.front.openState > 0.7 && return TILE_TYPE_EMPTY
+		tile.front.openState > 0.7 && return ELEM_TYPE_EMPTY
 		return @getFrontType(tx, ty)
 	},
 	
@@ -1592,7 +1328,7 @@ Game4X = extends BaseGame4X {
 		if(!tileInfo.strength){
 			var soundPlayed = false
 			if(!tile.pickByEnt(@player)){
-				if(Player.pickItemType && type != TILE_TYPE_EMPTY){
+				if(Player.pickItemType && type != ELEM_TYPE_EMPTY){
 					@playBlockSound()
 					@checkBombBubble(@player, tx, ty)
 					soundPlayed = true
@@ -1667,7 +1403,7 @@ Game4X = extends BaseGame4X {
 				delete @tileCracks[id]
 				@cleanupActor(crack)
 				
-				@setFrontType(tx, ty, TILE_TYPE_EMPTY)
+				@setFrontType(tx, ty, ELEM_TYPE_EMPTY)
 				if(tile.itemType != ITEM_TYPE_EMPTY){
 					if(@takeTileItem(tile.itemType, tx, ty)){
 						@player.playTakeItemSound()
@@ -1730,10 +1466,11 @@ Game4X = extends BaseGame4X {
 		return sprintf("${group}-%03d", i)
 	},
 	
-	getTileResName = function(group, i, x, y, b){
-		b && return @getResName(group, i, @getTileRandomInt(x, y, 1, b))
-		// x && return @getResName(group, i, x)
-		return @getResName(group, i)
+	getTileResName = function(elem, x, y){
+		if(elem.variants){
+			return elem.variants[@getTileRandomInt(x, y, #elem.variants)]
+		}
+		return elem.res
 	},
 	
 	getSlotItemResName = function(type){
@@ -1768,7 +1505,17 @@ Game4X = extends BaseGame4X {
 	},
 	
 	touchTileRes = function(type){
-		@touchGroupRes("tile", type)
+		type == ELEM_TYPE_EMPTY && return;
+		var elem = ELEMENTS_LIST[type] || throw "element type ${type} not found"
+		if(elem.variants){
+			for(var _, resName in elem.variants){
+				res.get(resName)
+				elem.glowing && res.get(resName.."-glowing")
+			}
+		}else{
+			res.get(elem.res)
+			elem.glowing && res.get(elem.res.."-glowing")
+		}
 	},
 	
 	touchItemRes = function(type){
@@ -1819,20 +1566,22 @@ Game4X = extends BaseGame4X {
 	},
 	
 	addTiledmapEntity = function(obj, state){
-		if(obj.objType == "item"){
+		var elemInfo = ELEMENTS_LIST[obj.type] || throw "unknown entity: ${obj}"
+		/* if(obj.objType == "item"){
 			return @addTiledmapItem(obj, state)
-		}
-		var entInfo = ENTITIES_INFO[obj.gid]
-		if(entInfo.class === "Player"){
+		} */
+		// var entInfo = ENTITIES_INFO[obj.gid]
+		if(elemInfo.type == ELEM_TYPE_ENT_PLAYER){
 			@player && throw "player is already exist"
-			@player = NewPlayer(this, obj.gid)
+			@player = NewPlayer(this, elemInfo.type)
 			if(state){
 				@player.loadState(state)
 			}else{
 				@player.initObject(obj)
 				// @initEntTile(@player, obj.x, obj.y)
 			}
-			Player.saveType = obj.gid
+			/*
+			Player.saveType = elemInfo.type
 			Player.saveTileX = @player.tileX
 			Player.saveTileY = @player.tileY
 			@centerViewToTile(@player.tileX, @player.tileY)
@@ -1841,6 +1590,7 @@ Game4X = extends BaseGame4X {
 					@bubbleItem(@player, @player.tileX, @player.tileY, ITEM_TYPE_SHOVEL)
 				}
 			})
+			*/
 			return @player
 		}
 		return; // debug
@@ -2146,7 +1896,7 @@ Game4X = extends BaseGame4X {
 			var tile = @getTile(tx, ty)
 			if(!(tile is Door)){
 				type = @getFrontType(tx, ty + 1)
-				if(type != TILE_TYPE_EMPTY){
+				if(type != ELEM_TYPE_EMPTY){
 					var tile = @getTile(tx, ty - 1)
 					tile.startFalling()
 				}

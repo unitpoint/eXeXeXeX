@@ -34,23 +34,28 @@
 FrontTile = extends BaseLayerTile {
 	__construct = function(tile){
 		super(tile)
-		
-		var type = @tile.frontType
-		var layer = TILES_INFO[type].item ? MAP_LAYER_TILE_ITEM : MAP_LAYER_TILE_FRONT
-		@parent = @tile.game.mapLayers[layer]
+
 		@tile.front && throw "tile.front is already set"
 		@tile.front = this
+		
+		var type = @tile.frontType
+		var elem = ELEMENTS_LIST[type] || throw "unknown front type: ${type}"
+		elem.isTile || throw "required tile element but found: ${elem}"
+		
+		var layer = MAP_LAYER_TILE_FRONT // TILES_INFO[type].item ? MAP_LAYER_TILE_ITEM : MAP_LAYER_TILE_FRONT
+		@parent = @tile.game.mapLayers[layer]
 		// @tile.back.visible = false
 		
-		var resName = @tile.game.getTileResName("tile", type, @tile.tileX, @tile.tileY, TILES_INFO[type].variants)
+		var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
 		@resAnim = res.get(resName)
-		@scale = Tile.SIZE / @size
-		@size = Tile.SIZE
-		@touchEnabled = type != TILE_TYPE_EMPTY
+		@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
+		@scale = Tile.VEC2_SIZE / @size
+		@size = Tile.VEC2_SIZE
+		@touchEnabled = type != ELEM_TYPE_EMPTY
 		
-		if(TILES_INFO[type].glowing){
+		if(elem.glowing){
 			var glowing = Sprite().attrs {
-				resAnim = res.get(resName.."-glow"),
+				resAnim = res.get(resName.."-glowing"),
 				pivot = @pivot, // vec2(0, 0),
 				pos = @pos,
 				scale = @scale,
@@ -81,11 +86,11 @@ FrontTile = extends BaseLayerTile {
 	},
 	
 	__get@isPassable = function(){
-		return TILES_INFO[@tile.frontType].passable
+		return ELEMENTS_LIST[@tile.frontType].passable
 	},
 	
 	__get@isTransparent = function(){
-		return TILES_INFO[@tile.frontType].transparent
+		return ELEMENTS_LIST[@tile.frontType].transparent
 	},
 	
 	__get@touchSprite = function(){
@@ -93,6 +98,7 @@ FrontTile = extends BaseLayerTile {
 	},
 	
 	createItemTile = function(){
+		/*
 		if(@tile.itemType != ITEM_TYPE_EMPTY){
 			if(@isPassable){
 				var itemResName = @tile.game.getSlotItemResName(@tile.itemType)
@@ -129,6 +135,7 @@ FrontTile = extends BaseLayerTile {
 			}
 			@addLinkTile(@item)
 		}
+		*/
 	},
 	
 	createBackTile = function(){
@@ -148,6 +155,7 @@ FrontTile = extends BaseLayerTile {
 	},
 	
 	canFalling = function(){
+		/*
 		var tx, ty = @tile.tileX, @tile.tileY
 		if(@tile.frontType == TILE_TYPE_ROCK){
 			for(var dx = -1; dx < 2; dx++){
@@ -164,8 +172,9 @@ FrontTile = extends BaseLayerTile {
 				}
 			}
 			var type = @tile.game.getFrontType(tx, ty + 1)
-			return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER
+			return type == ELEM_TYPE_EMPTY || type == TILE_TYPE_LADDER
 		}
+		*/
 	},
 	
 	checkStartFalling = function(){
@@ -180,7 +189,7 @@ FrontTile = extends BaseLayerTile {
 		var type = @tile.frontType // game.getFrontType(tx, ty)
 		var itemType = @tile.itemType // game.getItemType(tx, ty)
 		
-		// game.setFrontType(tx, ty, TILE_TYPE_EMPTY)
+		// game.setFrontType(tx, ty, ELEM_TYPE_EMPTY)
 		// game.updateMapTiles(tx-1, ty-1, tx+1, ty+1, true)
 		// game.setFrontType(tx, ty, type)
 		
@@ -196,7 +205,7 @@ FrontTile = extends BaseLayerTile {
 				// @detach()
 				// @fallingInProgress = null
 				// @parent = @game.layers[LAYER_TILES]
-				game.setFrontType(tx, ty, TILE_TYPE_EMPTY)
+				game.setFrontType(tx, ty, ELEM_TYPE_EMPTY)
 				game.setItemType(tx, ty, ITEM_TYPE_EMPTY)
 				game.deleteTile(tx, ty)
 				game.deleteCrack(tx, ty)

@@ -1,25 +1,4 @@
-ShadowTile = extends BaseLayerTile {
-	__construct = function(tile){
-		super(tile)
-		@parent = @tile.game.mapLayers[MAP_LAYER_TILE_SHADOW]
-		@tile.shadow && throw "tile.shadow is already set"
-		@tile.shadow = this
-		@updateShadow()
-	},
-	
-	cleanup = function(){
-		@tile.shadow === this || throw "error to clear tile.shadow"
-		@tile.shadow = null
-		super()
-	},
-	
-	isPassableAt = function(x, y){
-		var type = @tile.game.getFrontType(x, y)
-		if(type == TILE_TYPE_EMPTY){
-			return true
-		}
-		var tile = @tile.game.getTile(x, y)
-		return tile.front.isPassable || tile.front.isFalling/******************************************************************************
+/******************************************************************************
 * Copyright (C) 2014 Evgeniy Golovin (evgeniy.golovin@unitpoint.ru)
 *
 * Please feel free to contact me at anytime, 
@@ -52,7 +31,28 @@ ShadowTile = extends BaseLayerTile {
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ******************************************************************************/
 
-
+ShadowTile = extends BaseLayerTile {
+	__construct = function(tile){
+		super(tile)
+		@parent = @tile.game.mapLayers[MAP_LAYER_TILE_SHADOW]
+		@tile.shadow && throw "tile.shadow is already set"
+		@tile.shadow = this
+		@updateShadow()
+	},
+	
+	cleanup = function(){
+		@tile.shadow === this || throw "error to clear tile.shadow"
+		@tile.shadow = null
+		super()
+	},
+	
+	isPassableAt = function(x, y){
+		var type = @tile.game.getFrontType(x, y)
+		if(type == ELEM_TYPE_EMPTY){
+			return true
+		}
+		var tile = @tile.game.getTile(x, y)
+		return tile.front.isPassable || tile.front.isFalling
 	},
 	
 	resetShadow = function(){

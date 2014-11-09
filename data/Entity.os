@@ -82,30 +82,33 @@ Entity = extends Actor {
 	
 	loadState = function(state){
 		// @game.unsetEntTile(this)
-		@game.initEntTile(this, state.tileX, state.tileY)
+		@game.initEntPos(this, state.x, state.y)
 	},
 	
 	initObject = function(levelObj){
-		@game.initEntTile(this, levelObj.x, levelObj.y)
+		@game.initEntPos(this, levelObj.x, levelObj.y)
 	},
 	
-	__construct = function(game, type, group){
+	__construct = function(game, type){
 		super()
 		@cull = true
 		@game = game
 		@type = type
-		group || group = "ent"
-		@name = game.getResName(group, type)
-		if(group == "ent"){
-			@fly = ENTITIES_INFO[type].fly
-			@attackValue = ENTITIES_INFO[type].attack || 25
-			@healthValue = ENTITIES_INFO[type].health || @attackValue
+		
+		var elem = ELEMENTS_LIST[type] || throw "unknown entity type: ${type}"
+		elem.isEntity || throw "required entity element but found: ${elem}"
+		
+		@name = elem.res
+		/* if(group == "ent"){
+			@fly = elem.fly
+			@attackValue = elem.attack || 25
+			@healthValue = elem.health || @attackValue
 			@damageValue = 0
-		}
+		} */
 		
 		@touchChildrenEnabled = false
 		@pivot = vec2(0.5, 0.5)
-		@size = vec2(TILE_SIZE, TILE_SIZE)
+		@size = vec2(elem.width, elem.height)
 		// @centerPos = vec2(0, 0) // @size / 2
 		// @childrenRelative = false
 		@centerPos = @size / 2
@@ -231,13 +234,13 @@ Entity = extends Actor {
 	
 	isTileEmptyToMove = function(tx, ty){
 		var type = @getAutoFrontType(tx, ty)
-		return (type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER) 
+		return (type == ELEM_TYPE_EMPTY || type == TILE_TYPE_LADDER) 
 			&& !@getTileEnt(tx, ty)
 	},
 	
 	isTileEmptyToFall = function(tx, ty){
 		var type = @getAutoFrontType(tx, ty)
-		return type == TILE_TYPE_EMPTY
+		return type == ELEM_TYPE_EMPTY
 			&& !@getTileEnt(tx, ty)
 	},
 	
@@ -403,7 +406,7 @@ Entity = extends Actor {
 						&& (!@isPlayer || (!@movingX && !@movingY) || @game.getFrontType(tileX, tileY) == TILE_TYPE_LADDER)
 						// && @isTileEmptyToMove(tileX, tileY) // == TILE_TYPE_LADDER
 						&& (@getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDER
-							|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY)
+							|| @getAutoFrontType(tileX, tileY + 1) != ELEM_TYPE_EMPTY)
 						&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
 						&& sideJump())
 					{
@@ -431,7 +434,7 @@ Entity = extends Actor {
 					// && (!@isPlayer || (!@movingX && !@movingY))
 					&& (@fly 
 						|| @getAutoFrontType(tileX, tileY) == TILE_TYPE_LADDER
-						|| @getAutoFrontType(tileX, tileY + 1) != TILE_TYPE_EMPTY 
+						|| @getAutoFrontType(tileX, tileY + 1) != ELEM_TYPE_EMPTY 
 						|| @getTileEnt(tileX, tileY + 1))
 					&& (@isTileEmptyToMove(tileX, tileY - 1) || @getTileEnt(tileX, tileY - 1))
 					&& sideJump())
@@ -463,8 +466,8 @@ Entity = extends Actor {
 						var curTileType = @getAutoFrontType(tileX, tileY)
 						var downTileType = @getAutoFrontType(tileX, tileY + 1)
 						// print "tiles ${tileX}x${tileY}, up-down: ${upTileType}, ${curTileType}, ${downTileType}"
-						if(curTileType == TILE_TYPE_EMPTY && upTileType == TILE_TYPE_EMPTY 
-							&& (downTileType != TILE_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
+						if(curTileType == ELEM_TYPE_EMPTY && upTileType == ELEM_TYPE_EMPTY 
+							&& (downTileType != ELEM_TYPE_EMPTY || @getTileEnt(tileX, tileY + 1)))
 						{
 							// print "jump move: ${tileX}, ${tileY - 1}"
 							@setTile(tileX, tileY - 1)
@@ -485,8 +488,8 @@ Entity = extends Actor {
 							}
 							return
 						}
-						if(curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER){
-							// print "#1 curTileType == TILE_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER"
+						if(curTileType == ELEM_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER){
+							// print "#1 curTileType == ELEM_TYPE_EMPTY && upTileType != TILE_TYPE_LADDER"
 							break
 						}
 						// print "#3 no"
@@ -533,7 +536,7 @@ Entity = extends Actor {
 			var dest = @game.tileToCenterPos(@tileX, @tileY)
 			var offs = dest - @pos
 			
-			var speed = TILE_SIZE / (0.3 * @moveSpeed)
+			var speed = ENTITY_SIZE / (0.3 * @moveSpeed)
 			var moveOffs = speed * @game.dt
 			
 			var experimentalWay = true
@@ -554,7 +557,7 @@ Entity = extends Actor {
 						if(offs.y > 0 && offs.x != 0){
 							var tileX, tileY = @game.posToTile(@pos)
 							if(math.abs(@tileX - tileX) <= 1 && tileY+1 == @tileY){
-								if(@getAutoFrontType(tileX, @tileY) != TILE_TYPE_EMPTY){
+								if(@getAutoFrontType(tileX, @tileY) != ELEM_TYPE_EMPTY){
 									moveOffs *= 0.25
 								}
 							}
@@ -583,7 +586,7 @@ Entity = extends Actor {
 						}
 						if(!@moveAnimatedY){
 							@y += offs.y * offsScale
-							var maxOffs = TILE_SIZE / 128
+							var maxOffs = ENTITY_SIZE / 128
 							if(math.abs(@y - dest.y) < maxOffs){
 								@y = dest.y
 							}
@@ -591,7 +594,7 @@ Entity = extends Actor {
 					}
 				}
 			}
-			// var maxOffs = TILE_SIZE / 128
+			// var maxOffs = ENTITY_SIZE / 128
 			@movingX = @x != dest.x
 			@movingY = @y != dest.y
 			// @movingY = math.abs(@y - dest.y) < maxOffs
@@ -713,7 +716,7 @@ Entity = extends Actor {
 		// @centerSprite()
 		// @sprite.pos = @idealPos
 		speed && @attackSpeed = speed
-		var destPos = @centerPos + vec2(TILE_SIZE * 0.3 * (side || 1), 0)
+		var destPos = @centerPos + vec2(ENTITY_SIZE * 0.3 * (side || 1), 0)
 		@attacking = @moveLayer.replaceTweenAction {
 			name = "move",
 			duration = 0.02 * math.random(0.9, 1.1) / @attackSpeed,

@@ -4,17 +4,20 @@ VEC2_UP = vec2(0, -1)
 // SNAP_SHIFT = 0
 
 SNAP_SIZE = TILE_SIZE
-SNAP_SHIFT = 0.5
+SNAP_SHIFT = 0.0
 
 NewPlayer = extends Player {
-	__construct = function(game, name){
-		super(game, name)
+	__construct = function(game, type){
+		super(game, type)
+		
+		var elem = ELEMENTS_LIST[type]
+		var size = math.min(elem.width, elem.height)
 		
 		@waddleStarted = false
 		@body = null
-		@wheelRadius = TILE_SIZE / 2 * 0.8
-		@posShift = vec2(0, -(TILE_SIZE / 2 - @wheelRadius))
-		@maxSpeed = TILE_SIZE * 4
+		@wheelRadius = size / 2 * 0.8
+		@posShift = vec2(0, -(size / 2 - @wheelRadius))
+		@maxSpeed = TILE_SIZE * 8
 		
 		@destPosX = @snapPos(@x, 0)
 		@destPosY = null
@@ -41,7 +44,7 @@ NewPlayer = extends Player {
 			fixtureDef.circleRadius = @wheelRadius
 			fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
 			fixtureDef.maskBits = PHYS_CAT_BIT_GROUND | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT
-			fixtureDef.friction = 0.2
+			fixtureDef.friction = 0.4
 			fixtureDef.restitution = 0.0
 			fixtureDef.density = 1
 			@body.createFixture(fixtureDef)
@@ -56,6 +59,7 @@ NewPlayer = extends Player {
 		@jumpTime = 0
 		@contacts = {}
 		@groundContact = null
+		@sideContact = null
 		@ladderContact = null
 		@pitContact = null
 	},
@@ -109,12 +113,14 @@ NewPlayer = extends Player {
 	
 	updateContacts = function(){
 		// var prevLadderContact = @ladderContact
-		@groundContact = @ladderContact = @pitContact = null
-		var bestGroundAngle = 45
+		@groundContact = @sideContact = @ladderContact = @pitContact = null
+		var bestGroundAngle = 50
 		for(var _, contact in @contacts){
 			if(bestGroundAngle > contact.angle && @game.time - contact.time > 0.05){
 				bestGroundAngle = contact.angle
 				@groundContact = contact
+			}else if(contact.angle > 50){
+				@sideContact = contact
 			}
 			if(contact.fixture.categoryBits & PHYS_CAT_BIT_LADDER != 0){
 				@ladderContact = contact
@@ -131,7 +137,7 @@ NewPlayer = extends Player {
 	},
 	
 	snapPos = function(x, dx){
-		return (math.floor(x / SNAP_SIZE + (dx || 0)) + SNAP_SHIFT) * SNAP_SIZE
+		return (math.round(x / SNAP_SIZE + (dx || 0)) + SNAP_SHIFT) * SNAP_SIZE
 	},
 	
 	applyDestX = function(){
@@ -139,15 +145,27 @@ NewPlayer = extends Player {
 		var dx = clamp((@destPosX - @x) / SNAP_SIZE * 1.0, -1, 1)
 		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, 0, 1)
 		var groundContact = @groundContact
+		// groundContact || forceScale = forceScale * 0.25 // math.max(0.25, groundContact.dot || 0)
 		forceScale = forceScale * math.max(0.25, groundContact.dot || 0)
 		if(math.abs(dx) < 0.05){
 			linearVelocity.x = dx * @maxSpeed * forceScale
-			@body.linearVelocity = linearVelocity
+			// @body.linearVelocity = linearVelocity
 		}else{
-			@body.applyForceToCenter(vec2(dx * 50 * forceScale / @game.physWorld.toPhysScale, 0))
+			// local dx = Ease.run(Ease.LINEAR, math.abs(dx)) * (dx > 0 ? 1 : -1)
+			// local forceScale = forceScale < 0.5 ? Ease.run(forceScale * 2, Ease.SINE_OUT) / 2 : forceScale
+			@body.applyForceToCenter(vec2(dx * (groundContact ? 100 : 50) * forceScale / @game.physWorld.toPhysScale, 0))
 		}
+		linearVelocity.x = math.min(linearVelocity.x, @maxSpeed)
+		@body.linearVelocity = linearVelocity
+		
 		if(groundContact || @body.gravityScale > 0){
-			@body.angularVelocity = 360 * @maxSpeed / (2*math.PI*@wheelRadius) * dx * 1.5
+			var maxAngularVelocity = 360 * @maxSpeed / (2*math.PI*@wheelRadius) * 2.0
+			if(math.abs(dx) < 0.1){
+				@body.angularVelocity = dx * maxAngularVelocity
+			}else if(!@sideContact){
+				@body.applyTorque(dx * 50 * forceScale / (@game.physWorld.toPhysScale * @game.physWorld.toPhysScale))
+				@body.angularVelocity = math.min(@body.angularVelocity, maxAngularVelocity)
+			}
 		}else{
 			@body.angularVelocity = 0
 		}
@@ -167,27 +185,16 @@ NewPlayer = extends Player {
 	},
 	
 	updateDestPos = function(){
-		var groundContact, ignorePosX = @groundContact, false
-		if(!groundContact){
-			/* var tileX, tileY = @game.posToTile(@pos)
-			var type = @game.getFrontType(tileX, tileY)
-			if(type != TILE_TYPE_LADDER){
-				ignorePosX = true
-			} */
-			if(!@ladderContact){
-				ignorePosX = true
-			}
+		if(@groundContact){
+			@destPosX && @applyDestX()
+		}else{
 			var x = @body.linearVelocity.x / SNAP_SIZE
 			// @game.addDebugMessage("fix pos by speed: ${x}")
 			var edge = 2.7
 			@destPosX = @snapPos(@x, x > edge ? 0.5 : x < -edge ? -0.5 : 0)
+			@ladderContact && @applyDestX()
 		}
-		if(!ignorePosX && @destPosX){
-			@applyDestX()
-		}
-		if(@destPosY){
-			@applyDestY()
-		}
+		@destPosY && @applyDestY()
 	},
 	
 	update = function(){
@@ -226,22 +233,50 @@ NewPlayer = extends Player {
 				@jumpTime = @game.time
 				var jumpForce = 400*0.8 / @game.physWorld.toPhysScale
 				
+				var size = TILE_SIZE*2 * 1.4
+				var a = @pos + vec2(-TILE_SIZE*2*0.45 + TILE_SIZE*2 * (side || 0), @wheelRadius - TILE_SIZE*2*2.35) // 2.3)
+				var b = a + vec2(TILE_SIZE*2*0.9, size)
+				
+				var collided = false
+				@game.physWorld.queryAABB(PhysAABB(a, b), function(fixture, body){
+					// print "queryAABB, cat: ${fixture.categoryBits}, aabb: (${a.x|0} ${a.y|0}) (${b.x|0} ${b.y|0})"
+					if(fixture.categoryBits & PHYS_CAT_BIT_GROUND != 0){
+						jumpForce *= 0.7
+						collided = true
+						// @game.addDebugMessage("fix jump force (time: ${@game.time})")
+						return false
+					}
+				})
+				
+				@game.physDebugDraw && ColorRectSprite().attrs {
+					pos = a,
+					size = b - a,
+					color = collided ? Color.RED : Color.GREEN,
+					opacity = 0.2,
+					parent = @game.mapLayers[MAP_LAYER_DEBUG],
+				}.addTweenAction {
+					duration = 2.0,
+					opacity = 0,
+					detachTarget = true,
+				}
+				
+				/*
 				// TODO: use physWorld.queryAABB
 				var tileX, tileY = @game.posToTile(@pos)
 				var type = @game.getFrontType(tileX, tileY-1)
 				if(type != TILE_TYPE_LADDER){
 					var type = @game.getFrontType(tileX + (side || 0), tileY-2)
-					if(type != TILE_TYPE_EMPTY && type != TILE_TYPE_LADDER){
+					if(type != ELEM_TYPE_EMPTY && type != TILE_TYPE_LADDER){
 						jumpForce *= 0.7
 					}else{
 						var type = @game.getFrontType(tileX, tileY-1)
-						if(type != TILE_TYPE_EMPTY && type != TILE_TYPE_LADDER){
+						if(type != ELEM_TYPE_EMPTY && type != TILE_TYPE_LADDER){
 							jumpForce *= 0.7
 						}
 					}
 				}else{
 					jumpForce *= 0.7
-				}
+				} */
 				@body.applyForceToCenter(vec2(0, -jumpForce))
 				groundContact.fixture.body.applyForce(vec2(0, jumpForce), groundContact.point)
 			}else if(@ladderContact && math.abs(@moveDir.y) > sensorSize){ // || @moveDir.y > 0){
@@ -299,7 +334,7 @@ NewPlayer = extends Player {
 	updatePos = function(){
 		if(@body){
 			@dir.pos = @pos = @body.pos + @posShift
-			var run = #@body.linearVelocity > TILE_SIZE
+			var run = #@body.linearVelocity > TILE_SIZE * 2
 			if(run){
 				if(!@waddleStarted){
 					@waddleStarted = true
@@ -313,8 +348,8 @@ NewPlayer = extends Player {
 			}
 		}
 		
-		@light.pos = @pos + vec2(math.random(-0.02, 0.02) * TILE_SIZE, math.random(-0.02, 0.02) * TILE_SIZE)
-		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.98, 1.02)
+		@light.pos = @pos + vec2(math.random(-0.01, 0.01) * TILE_SIZE, math.random(-0.01, 0.01) * TILE_SIZE)
+		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.99, 1.01)
 		
 		@game.playerTargetTile.pos = @game.tileToCenterPos(@tileX, @tileY)	
 	},

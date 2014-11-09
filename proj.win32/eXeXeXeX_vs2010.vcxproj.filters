@@ -34,15 +34,15 @@
     <Filter Include="ext-hashlib">
       <UniqueIdentifier>{22440106-5caf-47b5-b935-fac333a24329}</UniqueIdentifier>
     </Filter>
+    <Filter Include="box2d">
+      <UniqueIdentifier>{7446db9c-df59-4a11-abd3-d52c87d9a500}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../src/entry_point.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="../src/example.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\objectscript\src\EaseFunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\BaseGame4X.cpp">
@@ -163,6 +163,9 @@
       <Filter>objectscript</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\objectscript\src\ox-physics.cpp">
+      <Filter>objectscript</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\objectscript\src\EaseFunction.cpp">
       <Filter>objectscript</Filter>
     </ClCompile>
   </ItemGroup>

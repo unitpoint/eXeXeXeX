@@ -35,6 +35,48 @@ HudSlot = extends ItemSlot {
 	__construct = function(game, slotNum){
 		super(game, Backpack, slotNum)
 		@opacity = 0.75
+		@selectedSprite = null
+	},
+	
+	cleanup = function(){
+		@isSelected = false
+		super()
+	},
+	
+	select = function(){
+		if(!@selectedSprite){
+			print "select hud slot: ${@slotNum}"
+			@game.selectedHudSlot.deselect()
+			@game.selectedHudSlot = this
+			@selectedSprite = Sprite().attrs {
+				resAnim = res.get("slot-border-selected"),
+				pivot = vec2(0.5, 0.5),
+				pos = @pos + @size * (0.5 - @pivot),
+				scale = @scale,
+				parent = @parent,
+				touchEnabled = false,
+			}
+		}
+	},
+	
+	deselect = function(){
+		if(@selectedSprite){
+			print "deselect hud slot: ${@slotNum}"
+			@selectedSprite.detach()
+			@selectedSprite = null
+			@game.selectedHudSlot = null
+		}
+	},
+	
+	__get@isSelected = function(){
+		return @game.selectedHudSlot === this
+	},
+	
+	__set@isSelected = function(value){
+		if(value != @isSelected){
+			@game.selectedHudSlot.deselect()
+			value && @select()
+		}
 	},
 	
 	__set@type = function(type){
@@ -63,6 +105,7 @@ HudSlot = extends ItemSlot {
 	},
 	
 	clearItem = function(){
+		@isSelected = false
 		switch(@type){
 		case null:
 			break
@@ -90,8 +133,7 @@ HudSlot = extends ItemSlot {
 	},
 	
 	useItem = function(){
-		var type = @type
-		type || return;
+		var type = @type || return;
 		if(type == Player.pickItemType){
 			
 		}else{ // if(ITEMS_INFO[type].useDistance > 0){

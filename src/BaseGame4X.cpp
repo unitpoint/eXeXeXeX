@@ -12,6 +12,19 @@
 namespace ObjectScript
 {
 
+float TILE_SIZE;
+ElementType ELEM_TYPE_EMPTY;
+ElementType ELEM_TYPE_TILE_OUTSIDE;
+int PHYS_CAT_BIT_GROUND;
+int PHYS_CAT_BIT_LADDER;
+int PHYS_CAT_BIT_PLATFORM;
+int PHYS_CAT_BIT_PLAYER;
+int PHYS_CAT_BIT_ENTITY;
+int PHYS_CAT_BIT_STATIC_OBJECT;
+int PHYS_CAT_BIT_DYNAMIC_OBJECT;
+int PHYS_CAT_BIT_SCREEN;
+int PHYS_CAT_BIT_PIT;
+
 // =====================================================================
 
 static void registerGlobals(OS * os)
@@ -24,6 +37,7 @@ static void registerGlobals(OS * os)
 	};
 
 	OS::NumberDef nums[] = {
+		/*
 		DEF_CONST(PHYS_CAT_BIT_GROUND),
 		DEF_CONST(PHYS_CAT_BIT_LADDER),
 		DEF_CONST(PHYS_CAT_BIT_PLATFORM),
@@ -33,6 +47,11 @@ static void registerGlobals(OS * os)
 		DEF_CONST(PHYS_CAT_BIT_DYNAMIC_OBJECT),
 		DEF_CONST(PHYS_CAT_BIT_SCREEN),
 		DEF_CONST(PHYS_CAT_BIT_PIT),
+		
+		DEF_CONST(TILE_SIZE),
+		DEF_CONST(ENTITY_SIZE),
+		DEF_CONST(TILE_TYPE_BLOCK),
+		*/
 		/*
 		DEF_CONST(TO_PHYS_SCALE),
 		DEF_CONST(PHYS_DEF_FIXED_ROTATION),
@@ -42,16 +61,14 @@ static void registerGlobals(OS * os)
 		DEF_CONST(PHYS_DEF_RESTITUTION),
 		DEF_CONST(PHYS_DEF_FRICTION),
 		*/
-		DEF_CONST(TILE_SIZE),
-		DEF_CONST(TILE_TYPE_BLOCK),
 		{}
 	};
 	os->pushGlobals();
 	os->setFuncs(funcs);
 	os->setNumbers(nums);
 
-	os->pushString(LEVEL_BIN_DATA_PREFIX);
-	os->setProperty(-2, "LEVEL_BIN_DATA_PREFIX");
+	// os->pushString(LEVEL_BIN_DATA_PREFIX);
+	// os->setProperty(-2, "LEVEL_BIN_DATA_PREFIX");
 
 	os->pop();
 }
@@ -238,18 +255,11 @@ static void registerBaseGame4X(OS * os)
 		def("setFrontType", &BaseGame4X::setFrontType),
 		def("getBackType", &BaseGame4X::getBackType),
 		def("setBackType", &BaseGame4X::setBackType),
-		def("getItemType", &BaseGame4X::getItemType),
-		def("setItemType", &BaseGame4X::setItemType),
-		// def("createPhysicsWorld", &BaseGame4X::createPhysicsWorld),
-		// def("destroyPhysicsWorld", &BaseGame4X::destroyPhysicsWorld),
+		// def("getItemType", &BaseGame4X::getItemType),
+		// def("setItemType", &BaseGame4X::setItemType),
 		DEF_GET("physWorld", BaseGame4X, PhysWorld),
 		{"__set@physWorld", &Lib::setPhysWorld},
 		def("queryTilePhysics", &BaseGame4X::queryTilePhysics),
-		/*
-		def("updatePhysics", &BaseGame4X::updatePhysics),
-		def("initEntityPhysics", &BaseGame4X::initEntityPhysics),
-		def("destroyEntityPhysics", &BaseGame4X::destroyEntityPhysics),
-		*/
 		DEF_PROP("physDebugDraw", BaseGame4X, PhysDebugDraw),
 		{}
 	};
@@ -450,7 +460,7 @@ int prevPOT(int v)
 	return nextPOT(v) >> 1;
 }
 
-bool BaseGame4X::getTileVertices(TileType type, std::vector<Vector2>& vertices)
+bool BaseGame4X::getTileVertices(ElementType type, std::vector<Vector2>& vertices)
 {
 	if(!type){
 		return false;
@@ -786,15 +796,18 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		IVideoDriver::instance->setUniform("projection", &viewProj);
 		setUniformColor("color", light->shadowColor);
 
+		/*
 		int tx, ty;
 		posToTile(light->pos, tx, ty);
-		TileType type = getFrontType(tx, ty);
+		ElementType type = getFrontType(tx, ty);
 		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
 			light->validPos = light->pos;
 		}else{
 			posToTile(light->validPos, tx, ty);
 			lightScreenPos = (light->validPos - offs) * mapScale;
 		}
+		*/
+
 		/* it = activeTilesXY.begin();
 		for(; it != activeTilesXY.end(); ++it){
 			const Point& p = *it;
@@ -802,13 +815,13 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 			int y = p.y; */
 		for(int y = startY; y <= endY; y++){
 			for(int x = startX; x <= endX; x++){
-				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
+				ElementType type = getFrontType(x, y);
+				if(type == ELEM_TYPE_EMPTY){
 					continue;
 				}
 				bool isDoor = false;
 				float tileWidth = TILE_SIZE, tileHeight = TILE_SIZE;
-				if(type == TILE_TYPE_DOOR_01){
+				/* if(type == TILE_TYPE_DOOR_01){
 					pushCtypeValue(os, this);
 					os->getProperty(-1, "getTile");
 					OX_ASSERT(os->isFunction());
@@ -836,7 +849,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 					if(isFalling){
 						continue;
 					}
-				}
+				} */
 				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
 				vec2 points[] = {
 					pos,
@@ -863,8 +876,8 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 
 					vec2 lightToCurrent = p1 - lightScreenPos;
 					OX_ASSERT(normal.dot(lightToCurrent) > 0);
-					type = isDoor ? TILE_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-					if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
+					type = isDoor ? ELEM_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+					if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
 						vec2 p1_target = p1 + lightToCurrent * (lightScreenRadius * 100);
 						vec2 p2_target = p2 + (p2 - lightScreenPos) * (lightScreenRadius * 100);
 						
@@ -886,8 +899,8 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 			int y = p.y; */
 		for(int y = startY; y <= endY; y++){
 			for(int x = startX; x <= endX; x++){
-				TileType type = getFrontType(x, y);
-				if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){ // || type == TILE_TYPE_DOOR_01){
+				ElementType type = getFrontType(x, y);
+				if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_DOOR_01){
 					continue;
 				}
 				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
@@ -958,15 +971,11 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	// Matrix viewProj = r.getViewProjection();
 	IVideoDriver::instance->setUniform("projection", &viewProj);
 		
+#if 0
 	vec3 color, prevColor(0, 0, 0);
-	/* it = activeTilesXY.begin();
-	for(; it != activeTilesXY.end(); ++it){
-		const Point& p = *it;
-		int x = p.x;
-		int y = p.y; */
 	for(int y = startY; y <= endY; y++){
 		for(int x = startX; x <= endX; x++){
-			TileType type = getBackType(x, y);
+			ElementType type = getBackType(x, y);
 			if(type != TILE_TYPE_TRADE_STOCK){
 				// continue;
 				bool found = false;
@@ -1007,6 +1016,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 				points[3] * lightScale);
 		}
 	}
+#endif
 	r.drawBatch();
 
 	// glEnable(GL_BLEND);
@@ -1033,19 +1043,13 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	IVideoDriver::instance->setState(IVideoDriver::STATE_BLEND, 0);
 
 	const float TILE_LIGHT_SIZE = TILE_SIZE * 0.5f;
-
-	// if(false) // TODO: fix pos & scale using mapScale
-	/* it = activeTilesXY.begin();
-	for(; it != activeTilesXY.end(); ++it){
-		const Point& p = *it;
-		int x = p.x;
-		int y = p.y; */
+#if 0
 	for(int y = startY; y <= endY; y++){
 		for(int x = startX; x <= endX; x++){
 			struct Lib {
 				static bool isEmptyLightTile(BaseGame4X * game, int x, int y)
 				{
-					TileType type = game->getFrontType(x, y);
+					ElementType type = game->getFrontType(x, y);
 					return type != TILE_TYPE_LIGHT_ROCK_01 && type != TILE_TYPE_LIGHT_ROCK_02;
 				}
 				static void render(RenderState& rs, Sprite * lightSprite, const vec2& pos, const vec2& mapScale, float scale)
@@ -1056,8 +1060,8 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 				}
 			};
 
-			TileType type = getFrontType(x, y);
-			if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER){
+			ElementType type = getFrontType(x, y);
+			if(type == ELEM_TYPE_EMPTY){
 				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
 			
 				bool top = Lib::isEmptyLightTile(this, x, y-1);
@@ -1304,7 +1308,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 			}
 		}
 	}
-
+#endif
 	r.end();
 
 	// updatePhysics(dt);
@@ -1354,13 +1358,24 @@ BaseGame4X::BaseGame4X()
 	lightScale = 0.0f;
 	startViewX = startViewY = endViewX = endViewY = 0;
 	startPhysX = startPhysY = endPhysX = endPhysY = 0;
-	// afterDraggingMode = false;
 
-	/*
-	physAccumTimeSec = 0;
-	physWorld = NULL;
-	physContactShare = new PhysContact;
-	*/
+	// pushCtypeValue(os, this);
+	os->pushGlobals();
+	TILE_SIZE				= (os->getProperty(-1, "TILE_SIZE"), os->popFloat()); OX_ASSERT(!os->isExceptionSet());
+
+	ELEM_TYPE_EMPTY			= (os->getProperty(-1, "ELEM_TYPE_EMPTY"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	ELEM_TYPE_TILE_OUTSIDE	= (os->getProperty(-1, "ELEM_TYPE_TILE_OUTSIDE"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	
+	PHYS_CAT_BIT_GROUND		= (os->getProperty(-1, "PHYS_CAT_BIT_GROUND"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_LADDER		= (os->getProperty(-1, "PHYS_CAT_BIT_LADDER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_PLATFORM	= (os->getProperty(-1, "PHYS_CAT_BIT_PLATFORM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_PLAYER		= (os->getProperty(-1, "PHYS_CAT_BIT_PLAYER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_ENTITY		= (os->getProperty(-1, "PHYS_CAT_BIT_ENTITY"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_STATIC_OBJECT = (os->getProperty(-1, "PHYS_CAT_BIT_STATIC_OBJECT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_DYNAMIC_OBJECT = (os->getProperty(-1, "PHYS_CAT_BIT_DYNAMIC_OBJECT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_SCREEN		= (os->getProperty(-1, "PHYS_CAT_BIT_SCREEN"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_PIT		= (os->getProperty(-1, "PHYS_CAT_BIT_PIT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	os->pop();
 }
 
 BaseGame4X::~BaseGame4X()
@@ -1486,13 +1501,13 @@ void BaseGame4X::worldPosToPos(int& x, int& y, const vec2& pos)
 	y = (int)(pos.y / TILE_SIZE + 0.5f);
 }
 
-TileType BaseGame4X::getFrontType(int x, int y)
+ElementType BaseGame4X::getFrontType(int x, int y)
 {
 	Tile * tile = getTile(x, y);
-	return tile ? tile->front : TILE_TYPE_BLOCK;
+	return tile ? tile->front : ELEM_TYPE_TILE_OUTSIDE;
 }
 
-void BaseGame4X::setFrontType(int x, int y, TileType type)
+void BaseGame4X::setFrontType(int x, int y, ElementType type)
 {
 	Tile * tile = getTile(x, y);
 	if(tile){
@@ -1504,13 +1519,13 @@ void BaseGame4X::setFrontType(int x, int y, TileType type)
 	}
 }
 
-TileType BaseGame4X::getBackType(int x, int y)
+ElementType BaseGame4X::getBackType(int x, int y)
 {
 	Tile * tile = getTile(x, y);
-	return tile ? tile->back : TILE_TYPE_BLOCK;
+	return tile ? tile->back : ELEM_TYPE_TILE_OUTSIDE;
 }
 
-void BaseGame4X::setBackType(int x, int y, TileType type)
+void BaseGame4X::setBackType(int x, int y, ElementType type)
 {
 	Tile * tile = getTile(x, y);
 	if(tile){
@@ -1522,13 +1537,14 @@ void BaseGame4X::setBackType(int x, int y, TileType type)
 	}
 }
 
-ItemType BaseGame4X::getItemType(int x, int y)
+/*
+ElementType BaseGame4X::getItemType(int x, int y)
 {
 	Tile * tile = getTile(x, y);
 	return tile ? tile->item : 0;
 }
 
-void BaseGame4X::setItemType(int x, int y, ItemType type)
+void BaseGame4X::setItemType(int x, int y, ElementType type)
 {
 	Tile * tile = getTile(x, y);
 	if(tile){
@@ -1539,6 +1555,7 @@ void BaseGame4X::setItemType(int x, int y, ItemType type)
 		}
 	}
 }
+*/
 
 vec2 BaseGame4X::tileToCenterPos(int x, int y)
 {
@@ -1566,7 +1583,7 @@ OS::String BaseGame4X::retrieveLevelData()
 {
 	struct Lib
 	{
-		static void encode(OS_BYTE * data, int i, int a)
+		static void encode(OS_BYTE * data, int i, ElementType a)
 		{
 			OX_ASSERT(a >= 0 && a < 256);
 			data[i*2] = (OS_BYTE)(a & 0xff);
@@ -1574,22 +1591,27 @@ OS::String BaseGame4X::retrieveLevelData()
 		}
 	};
 
-	const char * dataPrefix = LEVEL_BIN_DATA_PREFIX;
-	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
+	// pushCtypeValue(os, this);
+	os->pushGlobals();
+	OS::String dataPrefixStr = (os->getProperty(-1, "LEVEL_BIN_DATA_PREFIX"), os->popString());
+	os->pop();
+
+	const char * dataPrefix = dataPrefixStr.toChar();
+	int dataPrefixLen = dataPrefixStr.getLen();
 	int count = tiledmapWidth * tiledmapHeight;
-	OS_BYTE * data = new OS_BYTE[count*2*3 + dataPrefixLen];
+	OS_BYTE * data = new OS_BYTE[count*2*2 + dataPrefixLen];
 	OX_ASSERT(data);
 	OS_MEMCPY(data, dataPrefix, dataPrefixLen); 
 	
 	OS_BYTE * front = data + dataPrefixLen;
 	OS_BYTE * back = front + count*2;
-	OS_BYTE * items = back + count*2;
+	// OS_BYTE * items = back + count*2;
 	for(int i = 0; i < count; i++){
 		Lib::encode(front, i, tiles[i].front);
 		Lib::encode(back, i, tiles[i].back);
-		Lib::encode(items, i, tiles[i].item);
+		// Lib::encode(items, i, tiles[i].item);
 	}
-	OS::String str(os, (const void*)data, count*2*3 + dataPrefixLen);
+	OS::String str(os, (const void*)data, count*2*2 + dataPrefixLen);
 	delete [] data;
 	return str;
 }
@@ -1598,21 +1620,28 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 {
 	struct Lib
 	{
-		static int decode(OS_BYTE * data, int i)
+		static ElementType decode(OS_BYTE * data, int i)
 		{
 			int a = data[i*2] + (data[i*2+1]<<8);
-			OX_ASSERT(a >= 0 && a < 256);
-			return a;
+			OX_ASSERT(a >= 0 && a < 0xffff && a != ELEM_TYPE_TILE_OUTSIDE);
+			return (ElementType)a;
 		}
 	};
 
 	// delete [] tiles;
 	tiles.clear();
 	OS_BYTE * data = (OS_BYTE*)p_data.toChar();
-	const char * dataPrefix = LEVEL_BIN_DATA_PREFIX;
-	int dataPrefixLen = (int)OS_STRLEN(dataPrefix);
+	
+	// pushCtypeValue(os, this);
+	os->pushGlobals();
+	OS::String dataPrefixStr = (os->getProperty(-1, "LEVEL_BIN_DATA_PREFIX"), os->popString());
+	os->pop();
+
+	const char * dataPrefix = dataPrefixStr.toChar();
+	int dataPrefixLen = dataPrefixStr.getLen();
+
 	int count = p_tiledmapWidth * p_tiledmapHeight;
-	if(count*2*3 + dataPrefixLen != p_data.getDataSize() || OS_STRNCMP((char*)data, dataPrefix, dataPrefixLen) != 0){
+	if(count*2*2 + dataPrefixLen != p_data.getDataSize() || OS_STRNCMP((char*)data, dataPrefix, dataPrefixLen) != 0){
 		os->setException("error layer data");
 		// tiles = NULL;
 		tiledmapWidth = tiledmapHeight = 0;
@@ -1625,22 +1654,22 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 
 	OS_BYTE * front = data + dataPrefixLen;
 	OS_BYTE * back = front + count*2;
-	OS_BYTE * items = back + count*2;
+	// OS_BYTE * items = back + count*2;
 
 	Tile tile;
-	std::map<TileType, bool> usedTiles;
-	std::map<ItemType, bool> usedItems;
+	std::map<ElementType, bool> usedTiles;
+	std::map<ElementType, bool> usedItems;
 	for(int i = 0; i < count; i++){
-		tile.front = (TileType)Lib::decode(front, i);
-		tile.back = (TileType)Lib::decode(back, i);
-		tile.item = (ItemType)Lib::decode(items, i);
+		tile.front = Lib::decode(front, i);
+		tile.back = Lib::decode(back, i);
+		// tile.item = Lib::decode(items, i);
 		tile.physCreated = false;
 		usedTiles[tile.front] = true;
 		usedTiles[tile.back] = true;
-		usedItems[tile.item] = true;
+		// usedItems[tile.item] = true;
 		tiles.push_back(tile);
 	}
-	std::map<ItemType, bool>::iterator it = usedTiles.begin();
+	std::map<ElementType, bool>::iterator it = usedTiles.begin();
 	for(; it != usedTiles.end(); ++it){
 		pushCtypeValue(os, this);
 		os->getProperty(-1, "touchTileRes");
@@ -1648,14 +1677,14 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 		pushCtypeValue(os, it->first);
 		os->callTF(1);
 	}
-	it = usedItems.begin();
+	/* it = usedItems.begin();
 	for(; it != usedItems.end(); ++it){
 		pushCtypeValue(os, this);
 		os->getProperty(-1, "touchItemRes");
 		OX_ASSERT(os->isFunction());
 		pushCtypeValue(os, it->first);
 		os->callTF(1);
-	}
+	} */
 }
 
 Actor * BaseGame4X::getMapLayer(int num)
@@ -1766,18 +1795,21 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		static bool isTileEmpty(BaseGame4X * game, int x, int y)
 		{
 			Tile * tile = game->getTile(x, y);
-			if(tile){
+			return tile && tile->getPhysType() == PHYS_EMPTY;
+			/* if(tile){
 				EPhysTileType physTileType = tile->getPhysType();
 				switch(physTileType){
 				case PHYS_EMPTY:
 					return true;
-				/* case PHYS_GROUND:
-					return false;
-				}
-				return true; */
 				}
 			}
-			return false;
+			return false; */
+		}
+
+		static bool isTileGround(BaseGame4X * game, int x, int y)
+		{
+			Tile * tile = game->getTile(x, y);
+			return tile && tile->getPhysType() == PHYS_GROUND;
 		}
 	};
 
@@ -1787,9 +1819,14 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 	if(ay < 0) ay = 0; else if(ay >= tiledmapHeight) ay = tiledmapHeight-1;
 	if(by < 0) by = 0; else if(by >= tiledmapHeight) by = tiledmapHeight-1;
 
+	float helperX = 0.7f, helperY = 0.7f;
+	std::vector<vec2> physPoly;
 	for(int y = ay; y <= by; y++){
 		for(int x = ax; x <= bx; x++){
 			Tile * tile = getTile(x, y);
+			if(!tile){
+				continue;
+			}
 			EPhysTileType physTileType = tile->getPhysType();
 			if(tile->physCreated){
 				continue;
@@ -1817,7 +1854,40 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 							}
 						}
 					}
-				}				
+					continue;
+				}
+				if(Lib::isTileEmpty(this, x-1, y) && Lib::isTileGround(this, x, y+1) && Lib::isTileGround(this, x+1, y)){
+					spPhysTileArea block = new PhysTileArea();
+					block->time = time;
+					block->type = PHYS_GROUND;
+					block->ax = x, block->ay = y;
+					block->bx = x, block->by = y;
+					block->bounds = block->physBounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
+					vec2 center = block->bounds.center();
+					vec2 corner = vec2((x+1) * TILE_SIZE, (y+1)*TILE_SIZE) - center;
+					block->physPoly.push_back(corner);
+					block->physPoly.push_back(corner - vec2(0, TILE_SIZE * helperY));
+					block->physPoly.push_back(corner - vec2(TILE_SIZE * helperX, 0));
+					physTileAreas.push_back(block);
+					tile->physCreated = true;
+					continue;
+				}
+				if(Lib::isTileEmpty(this, x+1, y) && Lib::isTileGround(this, x, y+1) && Lib::isTileGround(this, x-1, y)){
+					spPhysTileArea block = new PhysTileArea();
+					block->time = time;
+					block->type = PHYS_GROUND;
+					block->ax = x, block->ay = y;
+					block->bx = x, block->by = y;
+					block->bounds = block->physBounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
+					vec2 center = block->bounds.center();
+					vec2 corner = vec2(x * TILE_SIZE, (y+1)*TILE_SIZE) - center;
+					block->physPoly.push_back(corner);
+					block->physPoly.push_back(corner - vec2(0, TILE_SIZE * helperY));
+					block->physPoly.push_back(corner + vec2(TILE_SIZE * helperX, 0));
+					physTileAreas.push_back(block);
+					tile->physCreated = true;
+					continue;
+				}
 				continue;
 			}
 			int max_x = bx, max_y = by;
@@ -1828,9 +1898,9 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					break;
 				}
 			}
-			if(physTileType == PHYS_LADDER){
+			/* if(physTileType == PHYS_LADDER){
 				max_y = tiledmapHeight-1;
-			}
+			} */
 			for(int ay = y+1; ay <= max_y; ay++){
 				bool isOk = true;
 				for(int ax = x; ax <= max_x; ax++){
@@ -1846,7 +1916,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 				}
 			}
 			int tx = x, ty = y;
-			if(physTileType == PHYS_LADDER){
+			/* if(physTileType == PHYS_LADDER){
 				for(ty = y-1; ty >= 0; ty--){
 					bool isOk = true;
 					for(int ax = x; ax <= max_x; ax++){
@@ -1862,7 +1932,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					}
 				}
 				ty++;
-			}
+			} */
 			spPhysTileArea block = new PhysTileArea();
 			block->time = time;
 			block->type = physTileType;
@@ -1902,17 +1972,19 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		Bounds2 physBounds = physTileArea->physBounds;
 		spPhysFixtureDef fixtureDef = new PhysFixtureDef();
 		switch(physTileArea->type){
+		/*
 		case PHYS_LADDER:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_LADDER);
 			fixtureDef->setIsSensor(true);
 			physBounds.expand(-TILE_SIZE * 0.4f);
-			physBounds.b[0].y -= TILE_SIZE * 0.8f;
+			physBounds.b[0].y -= TILE_SIZE * 1.1f;
+			physBounds.b[1].y += TILE_SIZE * 0.1f;
 			break;
-
+		
 		case PHYS_PLATFORM:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PLATFORM);
 			break;
-
+		*/
 		case PHYS_PIT:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PIT);
 			fixtureDef->setIsSensor(true);
@@ -1928,7 +2000,11 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		physTileArea->body = physWorld->createBody(bodyDef);
 		
 		fixtureDef->setType(b2Shape::e_polygon);
-		fixtureDef->setPolygonAsBox((physBounds.b[1] - physBounds.b[0]) / 2);
+		if(physTileArea->physPoly.size() > 0){
+			fixtureDef->setPolygonPoints(physTileArea->physPoly);
+		}else{
+			fixtureDef->setPolygonAsBox((physBounds.b[1] - physBounds.b[0]) / 2);
+		}
 		fixtureDef->setFriction(0.99f);
 		physTileArea->body->createFixture(fixtureDef);
 		numCreated++;
@@ -1943,11 +2019,14 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 
 EPhysTileType Tile::getPhysType() const
 {
-	switch(front){
-	case TILE_TYPE_DOOR_01:
-	case TILE_TYPE_EMPTY: return PHYS_EMPTY;
-	case TILE_TYPE_LADDER: return PHYS_LADDER;
+	if(front == ELEM_TYPE_EMPTY){
+		return PHYS_EMPTY;
 	}
+	/* switch(front){
+	// case TILE_TYPE_DOOR_01:
+	case ELEM_TYPE_EMPTY: return PHYS_EMPTY;
+	// case TILE_TYPE_LADDER: return PHYS_LADDER;
+	} */
 	return PHYS_GROUND;
 }
 

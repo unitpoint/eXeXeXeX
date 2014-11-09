@@ -39,7 +39,7 @@ BaseLayerTile = extends Sprite {
 		@tile = tile
 		// @type = type
 		@pos = tile.pos
-		@size = Tile.SIZE
+		@size = Tile.VEC2_SIZE
 		@touchChildrenEnabled = false
 	},
 	
@@ -60,7 +60,7 @@ BaseLayerTile = extends Sprite {
 	},
 	
 	updateLinkTiles = function(){
-		var pos, size = @tile.pos, Tile.SIZE
+		var pos, size = @tile.pos, Tile.VEC2_SIZE
 		for(var _, linkTile in @linkTiles){
 			linkTile.parent !== this || throw "error link tile parent" 
 			linkTile.pos = pos + size * linkTile.pivot

@@ -39,12 +39,16 @@ BackTile = extends BaseLayerTile {
 		@tile.back = this
 		
 		var type = @tile.backType
-		var resName = @tile.game.getTileResName("tile", type, @tile.tileX, @tile.tileY, TILES_INFO[type].variants)
-		@resAnim = res.get(resName)
-		@scale = Tile.SIZE / @size
-		@size = Tile.SIZE
+		var elem = ELEMENTS_LIST[type] || throw "unknown front type: ${type}"
+		elem.isTile || throw "required tile element but found: ${elem}"
 		
-		@color = TILES_INFO[type].backColor || Color(0.5, 0.5, 0.5)
+		var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
+		@resAnim = res.get(resName)
+		@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
+		@scale = Tile.VEC2_SIZE / @size
+		@size = Tile.VEC2_SIZE
+		
+		@color = elem.backColor || Color(0.5, 0.5, 0.5)
 	},
 	
 	cleanup = function(){

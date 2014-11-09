@@ -28,8 +28,8 @@
 		<image file="light-01.png" />
 		<image file="light-02.png" />
 		<image file="light-03.png" />
-		<image file="light-mask.png" />
-		<image file="light-fill.png" />
+		<!-- <image file="light-mask.png" />
+		<image file="light-fill.png" /> -->
 		
 		<image file="tile-fade-outer-left-top.png" />
 		<image file="tile-fade-inner-left-top.png" />
@@ -46,6 +46,7 @@
 		<image file="button-01.png" />
 		<image file="button-01-pressed.png" />
 		<image file="slot.png" />
+		<image file="slot-border-selected.png" />
 		<image file="slot-target.png" />
 		<image file="slot-arrow-right.png" />
 		<image file="slot-arrow-left.png" />
@@ -56,84 +57,9 @@
 		<image file="stamina-monster.png" />
 		<image file="white.png" />
 		<image file="speech-bubble.png" />
+		<image file="tile-64x64-000.png" />
 		
 		<!-- begin auto generated assets -->
-		<image file="ent-001.png" />
-		<image file="ent-002.png" />
-		<image file="ent-003.png" />
-		<image file="ent-004.png" />
-		<image file="ent-005.png" />
-		<image file="ent-006.png" />
-		<image file="ent-007.png" />
-		<image file="ent-008.png" />
-		<image file="ent-009.png" />
-		<image file="ent-010.png" />
-		<image file="ent-011.png" />
-		<image file="ent-012.png" />
-		<image file="ent-013.png" />
-		<image file="ent-014.png" />
-		<image file="ent-015.png" />
-		<image file="ent-016.png" />
-		<image file="ent-017.png" />
-		<image file="ent-018.png" />
-		<image file="ent-019.png" />
-		<image file="ent-020.png" />
-		<image file="ent-021.png" />
-		<image file="ent-022.png" />
-		<image file="ent-023.png" />
-		<image file="ent-024.png" />
-		<image file="ent-025.png" />
-		<image file="ent-026.png" />
-		<image file="ent-027.png" />
-		<image file="ent-028.png" />
-		<image file="ent-029.png" />
-		<image file="ent-030.png" />
-		<image file="ent-031.png" />
-		<image file="ent-032.png" />
-		<image file="ent-033.png" />
-		<image file="ent-034.png" />
-		<image file="ent-035.png" />
-		<image file="ent-036.png" />
-		<image file="ent-037.png" />
-		<image file="ent-038.png" />
-		<image file="ent-039.png" />
-		<image file="ent-040.png" />
-		<image file="ent-041.png" />
-		<image file="ent-042.png" />
-		<image file="ent-043.png" />
-		<image file="ent-item-041.png" />
-		<image file="explode-01-01.png" />
-		<image file="explode-01-02.png" />
-		<image file="explode-01-03.png" />
-		<image file="explode-01-04.png" />
-		<image file="explode-01-05.png" />
-		<image file="explode-01-06.png" />
-		<image file="explode-01-07.png" />
-		<image file="explode-01-08.png" />
-		<image file="explode-01-09.png" />
-		<image file="explode-01-10.png" />
-		<image file="explode-01-11.png" />
-		<image file="explode-01-12.png" />
-		<image file="explode-01-13.png" />
-		<image file="explode-01-14.png" />
-		<image file="explode-01-15.png" />
-		<image file="explode-01-16.png" />
-		<image file="explode-02-01.png" />
-		<image file="explode-02-02.png" />
-		<image file="explode-02-03.png" />
-		<image file="explode-02-04.png" />
-		<image file="explode-02-05.png" />
-		<image file="explode-02-06.png" />
-		<image file="explode-02-07.png" />
-		<image file="explode-02-08.png" />
-		<image file="explode-02-09.png" />
-		<image file="explode-02-10.png" />
-		<image file="explode-02-11.png" />
-		<image file="explode-02-12.png" />
-		<image file="explode-02-13.png" />
-		<image file="explode-02-14.png" />
-		<image file="explode-02-15.png" />
-		<image file="explode-02-16.png" />
 		<image file="flame-01.png" />
 		<image file="flame-02.png" />
 		<image file="flame-03.png" />
@@ -148,78 +74,19 @@
 		<image file="flame-12.png" />
 		<image file="flame-13.png" />
 		<image file="flame-14.png" />
-		<image file="slot-item-001.png" />
-		<image file="slot-item-002.png" />
-		<image file="slot-item-003.png" />
-		<image file="slot-item-004.png" />
-		<image file="slot-item-005.png" />
-		<image file="slot-item-006.png" />
-		<image file="slot-item-007.png" />
-		<image file="slot-item-008.png" />
-		<image file="slot-item-009.png" />
-		<image file="slot-item-010.png" />
-		<image file="slot-item-016.png" />
-		<image file="slot-item-017.png" />
-		<image file="slot-item-018.png" />
-		<image file="slot-item-019.png" />
-		<image file="slot-item-021.png" />
-		<image file="slot-item-023.png" />
-		<image file="slot-item-024.png" />
-		<image file="slot-item-025.png" />
-		<image file="slot-item-026.png" />
-		<image file="slot-item-027.png" />
-		<image file="slot-item-032.png" />
-		<image file="slot-item-033.png" />
-		<image file="slot-item-034.png" />
-		<image file="slot-item-035.png" />
-		<image file="slot-item-040.png" />
-		<image file="slot-item-041.png" />
-		<image file="slot-item-1000.png" />
-		<image file="slot-item-201.png" />
-		<image file="slot-item-301.png" />
-		<image file="slot-item-401.png" />
-		<image file="tile-000.png" />
-		<image file="tile-001.png" />
-		<image file="tile-002-01-glow.png" />
-		<image file="tile-002-01.png" />
-		<image file="tile-002-02-glow.png" />
-		<image file="tile-002-02.png" />
-		<image file="tile-003-glow.png" />
-		<image file="tile-003.png" />
-		<image file="tile-008-01.png" />
-		<image file="tile-008-02.png" />
-		<image file="tile-008-03.png" />
-		<image file="tile-009.png" />
-		<image file="tile-010.png" />
-		<image file="tile-016.png" />
-		<image file="tile-017.png" />
-		<image file="tile-024-01.png" />
-		<image file="tile-024-02.png" />
-		<image file="tile-024-03.png" />
-		<image file="tile-024-04.png" />
-		<image file="tile-255.jpg" />
-		<image file="tile-item-001-glow.png" />
-		<image file="tile-item-001.png" />
-		<image file="tile-item-002-glow.png" />
-		<image file="tile-item-002.png" />
-		<image file="tile-item-003-glow.png" />
-		<image file="tile-item-003.png" />
-		<image file="tile-item-004-glow.png" />
-		<image file="tile-item-004.png" />
-		<image file="tile-item-005-glow.png" />
-		<image file="tile-item-005.png" />
-		<image file="tile-item-006-glow.png" />
-		<image file="tile-item-006.png" />
-		<image file="tile-item-007-glow.png" />
-		<image file="tile-item-007.png" />
-		<image file="tile-item-008-glow.png" />
-		<image file="tile-item-008.png" />
-		<image file="tile-item-009-glow.png" />
-		<image file="tile-item-009.png" />
-		<image file="tile-item-010-01-glow.png" />
-		<image file="tile-item-010-01.png" />
-		<image file="tile-item-010-02-glow.png" />
-		<image file="tile-item-010-02.png" />
+		<image file="tiles/tile-128x128-001.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-002-01.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-002-02.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-002-03.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-256x256-007.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-008.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-009.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-010.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-011.jpg" cols="4" rows="4" />
+		<image file="items/item-128x128-080.png" />
+		<image file="items/item-128x128-081.png" />
+		<image file="entities/ent-128x128-064.png" />
+		<image file="entities/ent-128x128-065.png" />
 		<!-- end auto generated assets -->
 	</atlas>
 

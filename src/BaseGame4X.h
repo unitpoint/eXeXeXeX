@@ -30,6 +30,7 @@ using namespace ObjectScript;
 #define PHYS_PLAYER_RESTITUTION		0.0f
 */
 
+/*
 #define PHYS_CAT_BIT_GROUND		(1<<0)
 #define PHYS_CAT_BIT_LADDER		(1<<1)
 #define PHYS_CAT_BIT_PLATFORM	(1<<2)
@@ -39,6 +40,7 @@ using namespace ObjectScript;
 #define PHYS_CAT_BIT_DYNAMIC_OBJECT	(1<<6)
 #define PHYS_CAT_BIT_SCREEN		(1<<7)
 #define PHYS_CAT_BIT_PIT		(1<<8)
+*/
 
 /*
 float toPhysValue(float a);
@@ -87,9 +89,9 @@ enum EPhysTileType
 {
 	PHYS_EMPTY,
 	PHYS_GROUND,
-	PHYS_PIT,
-	PHYS_LADDER,
-	PHYS_PLATFORM
+	// PHYS_LADDER,
+	// PHYS_PLATFORM,
+	PHYS_PIT
 };
 
 DECLARE_SMART(PhysTileArea, spPhysTileArea);
@@ -102,6 +104,7 @@ public:
 	int ax, ay, bx, by;
 	Bounds2 bounds;
 	Bounds2 physBounds;
+	std::vector<vec2> physPoly;
 	EPhysTileType type;
 
 	spPhysBody body;
@@ -185,23 +188,25 @@ public:
 
 // =====================================================================
 
-#define TILE_TYPE_BLOCK 255
+// #define TILE_TYPE_BLOCK 255
 
-typedef OS_BYTE TileType;
-typedef OS_BYTE ItemType;
+typedef OS_U16 ElementType;
 
 struct Tile
 {
-	ItemType item;
-	TileType front;
-	TileType back;
+	// ElementType item;
+	ElementType front;
+	ElementType back;
 	bool physCreated;
 
 	EPhysTileType getPhysType() const;
 };
 
-#define TILE_SIZE 128.0f
-#define LEVEL_BIN_DATA_PREFIX "level-layers:front:back:items."
+// #define LEVEL_BIN_DATA_PREFIX "level-tile-layers:front:back."
+
+/*
+#define TILE_SIZE 64.0f
+#define ENTITY_SIZE 128.0f
 
 #define TILE_TYPE_EMPTY			0
 #define TILE_TYPE_LIGHT_ROCK_01 2
@@ -209,6 +214,7 @@ struct Tile
 #define TILE_TYPE_DOOR_01		16
 #define TILE_TYPE_LADDER		17
 #define TILE_TYPE_TRADE_STOCK	24
+*/
 
 /*
 struct Tiledmap
@@ -275,14 +281,14 @@ public:
 	Color color;
 	float radius;
 
-	vec2 validPos;
+	// vec2 validPos;
 	// bool isLevelLights;
 
 	BaseLight()
 	{
 		shadowColor = Color(127, 127, 127, 255);
 		// tileRadiusScale = 1.0f;
-		pos = validPos = vec2(0.0f, 0.0f);
+		pos = /*validPos =*/ vec2(0.0f, 0.0f);
 		color = Color(255, 255, 255, 255);
 		radius = 0.0f; // disabled by default
 		// isLevelLights = false;
@@ -337,14 +343,14 @@ public:
 
 	float getTileRandom(int x, int y);
 
-	TileType getFrontType(int x, int y);
-	void setFrontType(int x, int y, TileType type);
+	ElementType getFrontType(int x, int y);
+	void setFrontType(int x, int y, ElementType type);
 
-	TileType getBackType(int x, int y);
-	void setBackType(int x, int y, TileType type);
+	ElementType getBackType(int x, int y);
+	void setBackType(int x, int y, ElementType type);
 
-	ItemType getItemType(int x, int y);
-	void setItemType(int x, int y, ItemType type);
+	// ElementType getItemType(int x, int y);
+	// void setItemType(int x, int y, ElementType type);
 
 	vec2 tileToCenterPos(int x, int y);
 	vec2 tileToPos(int x, int y);
@@ -434,7 +440,7 @@ protected:
 
 	std::vector<Vector2> vertices;
 
-	bool getTileVertices(TileType, std::vector<Vector2>&);
+	bool getTileVertices(ElementType, std::vector<Vector2>&);
 
 	Tile * getTile(int x, int y);
 	int getTileId(int x, int y);
@@ -535,8 +541,8 @@ public:
 
 namespace ObjectScript {
 
-// OS_DECL_CTYPE_ENUM(TileType);
-// OS_DECL_CTYPE_ENUM(TileType);
+// OS_DECL_CTYPE_ENUM(ElementType);
+// OS_DECL_CTYPE_ENUM(ElementType);
 
 /*
 OS_DECL_CTYPE_NAME(vec2, "vec2");

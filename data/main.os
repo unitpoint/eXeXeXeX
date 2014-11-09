@@ -65,10 +65,10 @@ GAME_SETTINGS = {
 		// sellItem = false,
 	},
 	saveSlots = {
-		/* 1 = {
-			levelNum = 1,
+		0 = {
+			levelNum = 3,
 			date = DateTime.now(),
-		}, */
+		},
 	},
 }
 

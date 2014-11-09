@@ -50,7 +50,7 @@ DoorTile = extends FrontTile {
 			parent = this,
 		}
 		@resAnim = null
-		@size = Tile.SIZE
+		@size = Tile.VEC2_SIZE
 		
 		@door.scale = @size / @door.size
 		@door.size = @size

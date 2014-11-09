@@ -230,10 +230,12 @@ Backpack = extends Actor {
 		Backpack.cols, Backpack.rows = 3, 2
 		Backpack.pack = ItemsPack(Backpack.cols * Backpack.rows)
 		
-		for(var i, type in [1, 3, 6]){
+		/* for(var i, type in [1, 3, 6]){
 		// for(var i, type in [1, 3, 11, 13]){
 			Backpack.pack.items[i] = {type = type, count = 1}
-		}
+		} */
+		 
+		Backpack.pack.items[] = {type = 10, count = 100}
 		
 		/* for(var type, item in ITEMS_INFO){
 			if(item.canBuy === false){

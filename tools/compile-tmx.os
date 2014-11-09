@@ -1,4 +1,5 @@
 require "std"
+require "../data/ELEMENTS_LIST"
 
 print "= BEGIN ============================"
 // print process.argv
@@ -9,7 +10,7 @@ function usage(){
 	terminate()
 }
 
-var filename = process.argv[2] || path.dirname(process.argv[1]).."/testmap.tmx"
+var filename = process.argv[2] // || path.dirname(process.argv[1]).."/testmap.tmx"
 print "${filename}"
 // if(!Regexp(`/\.tmx$/`).test(filename)){
 if(path.extname(filename) != ".tmx"){
@@ -17,8 +18,7 @@ if(path.extname(filename) != ".tmx"){
 }
 
 function parseAttributes(str){
-	var m = Regexp(`/([\w\d_]+)=\"([^\"]*)\"/g`).exec(str)
-	var r = {}
+	var r, m = {}, Regexp(`/([\w\d_]+)=\"([^\"]*)\"/g`).exec(str)
 	for(var i, v in m[1]){
 		r[v] = m[2][i]
 	}
@@ -37,12 +37,19 @@ function fixNumbers(obj){
 
 var contents = File.readContents(filename)
 var m = Regexp(`/<map\s+(.+?)>/`).exec(contents)
-var map = fixNumbers(parseAttributes(m[1]))
+var tmx = fixNumbers(parseAttributes(m[1]))
 
-map.tilesets = {}
+var elementCount = 0
+// var tilesets = {}
 var m = Regexp(`#<tileset\s+([^>]+)>(.*?)</tileset>#sg`).exec(contents)
 for(var i, v in m[1]){
 	var tileset = parseAttributes(v)
+	if(tileset.name != "tiledmap-${elementCount}"){
+		throw "mismatch tileset name: ${tileset.name}, required: tiledmap-${elementCount}"
+	}
+	if(tileset.firstgid != elementCount+1){
+		throw "error tileset firstgid: ${tileset.firstgid}, required: ${elementCount+1}, adjust tile size"
+	}
 	var im = Regexp(`#<image source=".+?" width="(\d+)" height="(\d+)"\s*/>#s`).exec(m[2][i])
 	// print im; terminate()
 	tileset.imagewidth = im[1]
@@ -50,125 +57,13 @@ for(var i, v in m[1]){
 	fixNumbers(tileset)
 	tileset.count = (tileset.imagewidth / tileset.tilewidth) * (tileset.imageheight / tileset.tileheight)
 	// print tileset; // terminate()
-	map.tilesets[tileset.name] = tileset
+	// tilesets[tileset.name] = tileset
+	elementCount = elementCount + tileset.count
 }
-
-for(var _, name in ["front", "back", "entities", "items"]){
-	map.tilesets[name] || throw "${name} tileset is not found in ${filename}"
-}
+// print tmx; terminate()
 
 var isPlayerExist = false
-var entitiesTileset = map.tilesets.entities
-var itemsTileset = map.tilesets.items
-// print "entities tileset: ${map.tilesets.entities}"; terminate()
-var parseObject = function(obj){
-	obj = fixNumbers(parseAttributes(obj))
-	// print obj; // terminate()
-	if(obj.gid >= itemsTileset.firstgid && obj.gid < itemsTileset.firstgid + itemsTileset.count){
-		obj.gid == itemsTileset.firstgid && throw "item should not use the first tileset gid: ${obj}"
-		obj.objType = "item"
-		obj.gid = obj.gid - itemsTileset.firstgid
-	}else if(obj.gid >= entitiesTileset.firstgid && obj.gid < entitiesTileset.firstgid + entitiesTileset.count){
-		obj.gid == entitiesTileset.firstgid && throw "entity should not use the first tileset gid: ${obj}"
-		// obj.objType = "entity"
-		obj.gid = obj.gid - entitiesTileset.firstgid
-	}else{
-		throw "error tileset gid: ${obj}"
-	}
-	obj.x = math.round(obj.x / map.tilewidth)
-	obj.y = math.round(obj.y / map.tileheight - 1)
-	if(obj.gid == 3){
-		isPlayerExist && throw "there are more than one player at ${obj}"
-		isPlayerExist = true
-	}
-	// print obj; // terminate()
-	return obj
-}
-
-function parseSize(text){
-	var mo = Regexp(`#^(\d+)x(\d+)$#s`).exec(text)
-	// print "parseSize: ${text}, ${mo}"
-	var x, y = toNumber(mo[1]), toNumber(mo[2])
-	"${x}" == mo[1] || throw "error size parsing of width: ${text}"
-	"${y}" == mo[2] || throw "error size parsing of height: ${text}"
-	return {x=x, y=y}
-}
-
-function parseItems(text){
-	var items = []
-	for(var _, itemInfo in text.split(",")){
-		var typeInfo, countInfo = itemInfo.split(":").unpack()
-		var type, count = toNumber(typeInfo), toNumber(countInfo || 1)
-		"${type}" == typeInfo || throw "error item type: ${text}"
-		if(countInfo){
-			"${count}" == countInfo || throw "error item count: ${text}"
-		}
-		items[] = {type=type, count=count}
-	}
-	return items
-}
-
-var m = Regexp(`#<objectgroup name="([^"]*)">(.*?)</objectgroup>#sg`).exec(contents)
-// print m; terminate()
-var groupNames = ["entities"]
-map.groups = {}
-for(var i, name in m[1]){
-	var group = {name = name}
-	var objects = group.objects = []
-	
-	var groupContents = m[2][i]
-	groupContents = groupContents.replace(Regexp(`#<object\s+([^>]+)/>#s`), function(m){
-		// print m
-		objects[] = parseObject(m[1])
-		return ""
-	})
-	
-	groupContents = groupContents.replace(Regexp(`#<object\s+([^>]+)>(.*?)</object>#sg`), function(m){
-		// print "prop obj: ${m}"
-		var obj = parseObject(m[1])
-		objects[] = obj
-		
-		var mo = Regexp(`#<property\s+([^>]+)/>#sg`).exec(m[2])
-		for(var _, propText in mo[1]){
-			// print "begin prop: ${propText}"
-			var prop = fixNumbers(parseAttributes(propText))
-			prop.name || throw "error prop name: ${propText}"
-			obj[prop.name] && throw "prop is alredy used: ${propText} in ${obj}"
-			switch(prop.name){
-			case "size":
-				obj.size = parseSize(prop.value)
-				break
-				
-			case "items":
-				obj.items = parseItems(prop.value)
-				break
-				
-			default:
-				throw "unknown prop: ${prop} in ${m}"
-				obj[prop.name] = prop.value
-			}
-		}
-		return ""
-	})
-	// print objects; terminate()
-	
-	if(group.name in groupNames){
-		map.groups[group.name] && throw "${group.name} objectgroup is already exist"
-		map.groups[group.name] = group
-	}else{
-		print "skip unknown objectgroup: ${group}"
-	}
-}
-for(var _, name in groupNames){
-	map.groups[name] || throw "${name} objectgroup is not found in ${filename}"
-}
-isPlayerExist || throw "player is not found"
-
-// print "map"; terminate()
-
-var layerNames = ["front", "back", "items"]
-
-layers = {}
+var map, tileLayers, items, entities = {}, {}, [], []
 var m = Regexp(`#<layer\s+([^>]+)>(.*?)</layer>#sg`).exec(contents)
 for(var i, v in m[1]){
 	var layer = fixNumbers(parseAttributes(v))
@@ -191,60 +86,91 @@ for(var i, v in m[1]){
 	delete layer.width
 	delete layer.height
 
-	var data = Buffer()
-	var tileset, offs = map.tilesets[layer.name], 0
+	var data, offs = Buffer(), 0
 	for(var y = 0; y < height; y++){
 		for(var x = 0; x < width; x++){
-			var gid = memdata.sub(offs, 4).unpack("V")
-			if(gid > 0){
-				gid = gid - tileset.firstgid
-				if(gid == 0 && layer.name == "front"){
-					map.floor && throw "layer ${layer.name} more than one floor at ${x}x${y}"
-					map.floor = y+1
-				}else if(gid <= 0 || gid > tileset.count){
-					throw "layer ${layer.name} uses error tileset at ${x}x${y}"
+			var type = memdata.sub(offs, 4).unpack("V")
+			if(type > 0){
+				type = type - 1
+				if(type >= elementCount){
+					throw "${layer.name} layer contains error tile (${type}) at ${x}x${y}"
 				}
-				if(gid > 0xffff){
-					throw "layer ${layer.name} has error gid (${gid} > 0xffff) at ${x}x${y}"
+				if(type == 0){
+					map.floor && throw "${layer.name} layer contains duplicate floor at ${x}x${y}"
+					map.floor = y+1
 				}
 			}
-			data << "v".pack(gid)
+			var elem = ELEMENTS_LIST[type] || throw "${layer.name} layer contains error tile (${type}) at ${x}x${y}, not found in ELEMENTS_LIST"
+			switch(layer.name){
+			case "front":
+			case "back":
+				if(type > 0){
+					elem.isTile || throw "${layer.name} layer contains error tile (${type}) at ${x}x${y}, should be isTile but found: ${elem}"
+				}
+				data << "v".pack(type)
+				break
+				
+			case "items":
+				if(type > 0){
+					elem.isItem || throw "${layer.name} layer contains error tile (${type}) at ${x}x${y}, should be isItem but found: ${elem}"
+					items[] = {
+						type = type,
+						tx = x,
+						ty = y - elem.rows + 1,
+					}
+				}
+				break
+				
+			case "entities":
+				if(type > 0){
+					elem.isEntity || throw "${layer.name} layer contains error tile (${type}) at ${x}x${y}, should be isEntity but found: ${elem}"
+					if(type == ELEM_TYPE_ENT_PLAYER){
+						isPlayerExist && throw "${layer.name} layer contains duplicate player at ${x}x${y}"
+						isPlayerExist = true
+					}
+					entities[] = {
+						type = type,
+						x = x * TILE_SIZE + elem.width / 2,
+						y = (y+1) * TILE_SIZE - elem.height / 2,
+					}
+				}
+				break
+			}
 			offs += 4
 		}
 	}
-	layer.data = data
-	// layer.data = zlib.gzcompress(toString(data))
-	// layer.data = url.encode(layer.data) // base64 bugged on android
-	// map.encoder = "url"
-
-	if(layer.name in layerNames){
-		layers[layer.name] && throw "layer ${layer.name} is already exist"
-		layers[layer.name] = layer
-	}else{
-		print "skip unknown layer: ${layer}"
+	switch(layer.name){
+	case "front":
+	case "back":
+		layer.data = data
+		tileLayers[layer.name] = layer
+		break
 	}
 }
 
-for(var _, name in layerNames){
-	layers[name] || throw "${name} layer is not found in ${filename}"
+var tileLayerNames = ["front", "back"]
+for(var _, name in tileLayerNames){
+	tileLayers[name] || throw "${name} layer is not found in ${filename}"
 }
-map.floor || throw "floor is not set in front layer"
+map.items = items
+map.entities = entities
+map.floor || throw "floor is not set"
+isPlayerExist || throw "player is not set"
 
 // print map; terminate()
 
 var filename = "../data/levels/"..path.basename(filename).lower().replace(".tmx", ".json")
 File.writeContents(filename, json.encode(map))
 
-var dataPrefix = "level-layers:front:back:items."
 var buf = Buffer()
-buf << dataPrefix
-buf << layers.front.data
-buf << layers.back.data
-buf << layers.items.data
+buf << LEVEL_BIN_DATA_PREFIX
+buf << tileLayers.front.data
+buf << tileLayers.back.data
+// buf << tileLayers.items.data
 var data = zlib.gzcompress(buf)
 File.writeContents(filename.replace(".json", ".bin"), data)
 
-print "${filename} saved, layers: ${#layers}, tilesets: ${#map.tilesets}, entities: ${#map.groups.entities.objects}"
+print "${filename} saved, tile layers: ${#tileLayers}, items: ${#items}, entities: ${#entities}"
 
 var levels = {}
 for(var _, filename in fs.readdir("../data/levels")){
@@ -259,11 +185,10 @@ for(var _, filename in fs.readdir("../data/levels")){
 }
 levels.sort()
 var filename = "../data/levels.os"
-var data = <<<END"
+File.writeContents(filename, <<<END"
 /* auto generated file */
 return ${json.encode(levels)}
-END
-File.writeContents(filename, data)
+END)
 
 print "${filename} updated, levels: ${#levels}"
 

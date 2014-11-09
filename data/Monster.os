@@ -141,7 +141,7 @@ Monster = extends Entity {
 				return
 			}
 		}
-		@game.getFrontType(@tileX, @tileY + 1) == TILE_TYPE_EMPTY && return;
+		@game.getFrontType(@tileX, @tileY + 1) == ELEM_TYPE_EMPTY && return;
 		
 		@patrolArea = {
 			start = vec2(@tileX, @tileY - 1),
@@ -153,9 +153,9 @@ Monster = extends Entity {
 		var isTileEmpty = function(tx, ty, allowLadders){
 			var type = @game.getFrontType(tx, ty)
 			if(allowLadders){
-				return type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER
+				return type == ELEM_TYPE_EMPTY || type == TILE_TYPE_LADDER
 			}
-			 return type == TILE_TYPE_EMPTY
+			 return type == ELEM_TYPE_EMPTY
 		}
 		for(var i = 1;; i++){
 			@patrolArea.end.x - @patrolArea.start.x + 1 >= maxAreaWidth && break
@@ -192,7 +192,7 @@ Monster = extends Entity {
 			var dx, dy = 0, 0
 
 			if(@fly){
-				@getAutoFrontType(@tileX, @tileY + 1) != TILE_TYPE_EMPTY && dy = -1
+				@getAutoFrontType(@tileX, @tileY + 1) != ELEM_TYPE_EMPTY && dy = -1
 			}
 			
 			if(@tileX < @patrolArea.start.x) dx = 1
@@ -211,8 +211,8 @@ Monster = extends Entity {
 			if(!@fly && @moveDir.x != 0 
 				&& @getAutoFrontType(@tileX, @tileY) == TILE_TYPE_LADDER
 				&& !@getTileEnt(@tileX, @tileY + 1)
-				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY) == TILE_TYPE_EMPTY
-				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY + 1) == TILE_TYPE_EMPTY)
+				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY) == ELEM_TYPE_EMPTY
+				&& @getAutoFrontType(@tileX + @moveDir.x, @tileY + 1) == ELEM_TYPE_EMPTY)
 			{
 				@moveDir.x = 0
 				if(@moveDir.y == 0){
@@ -257,7 +257,7 @@ Monster = extends Entity {
 				var px, py = @game.player.tileX, @game.player.tileY
 				var dx = px > @tileX ? 1 : px < @tileX ? -1 : -@prevMoveDir.x
 				var dy = py > @tileY ? 1 : py < @tileY ? -1 : 0
-				/* if(dy != 0 && @getAutoFrontType(@tileX, @tileY + dy) == TILE_TYPE_EMPTY){
+				/* if(dy != 0 && @getAutoFrontType(@tileX, @tileY + dy) == ELEM_TYPE_EMPTY){
 					dx = 0
 				} */
 				@nextMoveDir = vec2(dx, dy)

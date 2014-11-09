@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="front" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-front.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="65" name="back" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-back.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="129" name="items" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap-items.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="193" name="entities" tilewidth="64" tileheight="64">
+  <image source="../data_debug/images/tiledmap-entities-512.png" width="512" height="512"/>
+ </tileset>
+ <layer name="back" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztwwEJAAAMBKGr9/0LrcdQcNVUVVXV1w/g/iQQ
+  </data>
+ </layer>
+ <layer name="front" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJxjZGBg4BzFo3gUj+JRPIoHGSYHDKTd1HIjrQE97cZmLi3tJ8ZcUuynRXoayLgfafbTI/9Tu9wbxaN4FI9iWmMAzFAdSw==
+  </data>
+ </layer>
+ <layer name="items" width="32" height="32">
+  <data encoding="base64" compression="zlib">
+   eJztwQENAAAAwqD3T20PBxQAAADwbhAAAAE=
+  </data>
+ </layer>
+ <objectgroup name="entities">
+  <object gid="196" x="395" y="553"/>
+ </objectgroup>
+</map>
