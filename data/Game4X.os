@@ -332,6 +332,7 @@ Game4X = extends BaseGame4X {
 			// size = @size / @map.scale,
 			// scale = vec2(1, 1) / @map.scale,
 			// priority = GAME_PRIORITY_LIGHTMASK,
+			// opacity = 0.2,
 			parent = @mapLayers[MAP_LAYER_SCREEN_LIGHTMAP],
 			// visible = false,
 		}
@@ -357,7 +358,7 @@ Game4X = extends BaseGame4X {
 		@physWorld = PhysWorld()
 		@physWorld.toPhysScale = 2 / 128 * 0.5
 		@physWorld.gravity = vec2(0, 20) / @physWorld.toPhysScale
-		@physDebugDraw = PLATFORM == "windows"
+		@physDebugDraw = false // PLATFORM == "windows"
 		// @createPhysicsWorld()
 		
 		@dragndrop = DragndropItems(this).attrs {
@@ -494,6 +495,10 @@ Game4X = extends BaseGame4X {
 				var pressed = ev.type == KeyboardEvent.DOWN
 				if(!pressed && ev.scancode == KeyboardEvent.SCANCODE_P){
 					@physDebugDraw = !@physDebugDraw
+					return
+				}
+				if(!pressed && ev.scancode == KeyboardEvent.SCANCODE_L){
+					@lightmap.visible = !@lightmap.visible
 					return
 				}
 				if(ev.scancode == KeyboardEvent.SCANCODE_LEFT || ev.scancode == KeyboardEvent.SCANCODE_A){
@@ -1040,7 +1045,10 @@ Game4X = extends BaseGame4X {
 				@loadGameState(levelSave.state)
 				@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
 				for(var _, obj in levelSave.entities){
-					@addTiledmapEntity(obj, obj.state) // .x, obj.y, obj.gid, obj.type)
+					@addEntity(obj, obj.state) // .x, obj.y, obj.gid, obj.type)
+				}
+				for(var _, obj in levelSave.items){
+					@addTileItem(obj, obj.state) // .x, obj.y, obj.gid, obj.type)
 				}
 				print "game level is loaded"
 				return true
@@ -1058,7 +1066,10 @@ Game4X = extends BaseGame4X {
 		if(!loaded){
 			@registerLevelData(@tiledmapWidth, @tiledmapHeight, data)
 			for(var _, obj in level.entities){
-				@addTiledmapEntity(obj) // .x, obj.y, obj.gid, obj.type)
+				@addEntity(obj) // .x, obj.y, obj.gid, obj.type)
+			}
+			for(var _, obj in level.items){
+				@addTileItem(obj) // .x, obj.y, obj.gid, obj.type)
 			}
 			print "game level is initialized"
 		}
@@ -1184,46 +1195,12 @@ Game4X = extends BaseGame4X {
 		return child.localToGlobal(pos || vec2(0, 0), this)
 	},
 	
-	initEntTile = function(ent, tx, ty){
-		DEBUG && assert(!@tileEnt["${tx}-${ty}"])
-		ent.tileX, ent.tileY = tx, ty
-		ent.pos = @tileToCenterPos(tx, ty)
-		@tileEnt["${tx}-${ty}"] = ent
-	},
-	
 	initEntPos = function(ent, x, y){
-		// DEBUG && assert(!@tileEnt["${tx}-${ty}"])
-		// ent.tileX, ent.tileY = tx, ty
 		ent.pos = vec2(x, y) // @tileToCenterPos(tx, ty)
-		// @tileEnt["${tx}-${ty}"] = ent
 	},
 	
-	setEntTile = function(ent, tx, ty){
-		if(ent.tileX != tx || ent.tileY != ty){
-			var key = "${ent.tileX}-${ent.tileY}"
-			DEBUG && assert(@tileEnt[key] === ent, "tile busy at ${ent.tileX}x${ent.tileY} by ${@tileEnt[key].tileX}x${@tileEnt[key].tileY}")
-			delete @tileEnt[key]
-			ent.prevTileX, ent.prevTileY = ent.tileX, ent.tileY
-			ent.tileX, ent.tileY = tx, ty
-			@tileEnt["${tx}-${ty}"] = ent
-		}
-	},
-	
-	unsetEntTile = function(ent){
-		var key = "${ent.tileX}-${ent.tileY}"
-		DEBUG && assert(@tileEnt[key] === ent)
-		delete @tileEnt[key]
-		ent.tileX, ent.tileY = -1, -1
-	},
-	
-	getTileEnt = function(tx, ty){
-		return @tileEnt["${tx}-${ty}"]
-	},
-	
-	getAutoFrontType = function(tx, ty){
-		var tile = @getTile(tx, ty)
-		tile.front.openState > 0.7 && return ELEM_TYPE_EMPTY
-		return @getFrontType(tx, ty)
+	initTileItemPos = function(item, tx, ty){
+		item.pos = @tileToPos(tx, ty)
 	},
 	
 	explodeTileItem = function(tx, ty, radius, wait){
@@ -1318,6 +1295,7 @@ Game4X = extends BaseGame4X {
 	},
 	
 	pickTile = function(tx, ty, byTouch){
+		return;
 		if(math.abs(@player.tileX - tx) > 1 || math.abs(@player.tileY - ty) > 1){
 			// playErrClickSound()
 			return
@@ -1551,33 +1529,26 @@ Game4X = extends BaseGame4X {
 		})
 	},
 	
-	addTiledmapItem = function(obj, state){
-		var itemInfo = ENTITY_ITEMS_INFO[obj.gid]
-		if(obj.gid > 0){
-			var ent = _G[itemInfo.class || "EntItem"](this, obj.gid)
-			if(state){
-				ent.loadState(state)
-			}else{
-				ent.initObject(obj)
-			}
-			return ent
+	addTileItem = function(obj, state){
+		var elem = ELEMENTS_LIST[obj.type] || throw "unknown item: ${obj}"
+		var item = _G[elem.class || "TileItem"](this, elem.type)
+		if(state){
+			item.loadState(state)
+		}else{
+			item.initItem(obj)
 		}
-		throw "unknown entity tiledmap type: ${obj.gid}"
+		return item
 	},
 	
-	addTiledmapEntity = function(obj, state){
-		var elemInfo = ELEMENTS_LIST[obj.type] || throw "unknown entity: ${obj}"
-		/* if(obj.objType == "item"){
-			return @addTiledmapItem(obj, state)
-		} */
-		// var entInfo = ENTITIES_INFO[obj.gid]
-		if(elemInfo.type == ELEM_TYPE_ENT_PLAYER){
+	addEntity = function(obj, state){
+		var elem = ELEMENTS_LIST[obj.type] || throw "unknown entity: ${obj}"
+		if(elem.type == ELEM_TYPE_ENT_PLAYER){
 			@player && throw "player is already exist"
-			@player = NewPlayer(this, elemInfo.type)
+			@player = NewPlayer(this, elem.type)
 			if(state){
 				@player.loadState(state)
 			}else{
-				@player.initObject(obj)
+				@player.initEntity(obj)
 				// @initEntTile(@player, obj.x, obj.y)
 			}
 			/*
@@ -1879,7 +1850,7 @@ Game4X = extends BaseGame4X {
 		@followPlayer()
 		@updateLightmap(@lightmap)
 		
-		/* for(var _, physBody in @physWorld.bodyList){
+		/* for(var _, body in @physWorld.bodyList){
 			// TODO: apply body pos and angle to actor
 		} */
 		

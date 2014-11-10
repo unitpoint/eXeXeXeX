@@ -6,62 +6,246 @@ VEC2_UP = vec2(0, -1)
 SNAP_SIZE = TILE_SIZE
 SNAP_SHIFT = 0.0
 
-NewPlayer = extends Player {
+NewPlayer = extends Actor {
+	__object = {
+		flipX = 1,
+		flipY = 1,
+		
+		jumpTime = 0,
+		body = null,
+		contacts = {},
+		groundContact = null,
+		sideContact = null,
+		ladderContact = null,
+		pitContact = null,
+		
+		maxSpeed = TILE_SIZE * 10,
+		
+		breathingAction = null,
+		breathingSpeed = 1.0,
+		
+		isDead = false,
+		attacking = false,
+		
+		waddleEnabled = true,
+		waddleStarted = false,
+	},
+	
+	getState = function(){
+		return {
+			x = @x,
+			y = @y,
+		}
+	},
+	
+	loadState = function(state){
+		@game.initEntPos(this, state.x, state.y)
+		@createPhysBody()
+	},
+	
+	initEntity = function(ent){
+		@game.initEntPos(this, ent.x, ent.y)
+		@createPhysBody()
+	},
+	
 	__construct = function(game, type){
-		super(game, type)
+		super()
+		// super(game, type)
+		
+		@cull = true
+		@game = game
+		@type = type
+		
+		var elem = ELEMENTS_LIST[type] || throw "unknown entity type: ${type}"
+		elem.isEntity || throw "required entity element but found: ${elem}"
+		
+		@name = elem.res || throw "res is not found in elem: ${elem}"
+		
+		@touchChildrenEnabled = false
+		@pivot = vec2(0.5, 0.5)
+		@size = vec2(elem.width, elem.height)
+		@centerPos = @size / 2
+		
+		@moveLayer = Actor().attrs {
+			pivot = vec2(0.5, 0.5),
+			pos = @centerPos,
+			size = @size,
+			childrenRelative = false,
+			parent = this,
+		}
+		@flipLayer = Actor().attrs {
+			pivot = vec2(0.5, 0.5),
+			size = @size,
+			childrenRelative = false,
+			parent = @moveLayer,
+		}
+		@sprite = Sprite().attrs {
+			resAnim = res.get(@name),
+			pivot = vec2(0.5, 0.5),
+			parent = @flipLayer,
+		}
+		
+		@baseScale = @size / @sprite.size
+		@flipLayer.scale = @baseScale
+		
+		@sprite.scale = 0.9
+		
+		@addUpdate(@update.bind(this))
+		// @addUpdate(0.1, @checkFalling.bind(this))		
 		
 		var elem = ELEMENTS_LIST[type]
 		var size = math.min(elem.width, elem.height)
 		
-		@waddleStarted = false
-		@body = null
 		@wheelRadius = size / 2 * 0.8
 		@posShift = vec2(0, -(size / 2 - @wheelRadius))
-		@maxSpeed = TILE_SIZE * 8
-		
-		@destPosX = @snapPos(@x, 0)
-		@destPosY = null
 		
 		@dir = Sprite().attrs {
 			resAnim = res.get("dir"),
 			pivot = vec2(-6, 0.5),
-			// pos = @size / 2,
 			visible = false,
 			parent = @game.mapLayers[MAP_LAYER_PLAYER_DIR],
 		}
 		
-		@addTimeout(0.1, function(){
-			var bodyDef = PhysBodyDef()
-			bodyDef.type = PHYS_BODY_DYNAMIC
-			bodyDef.pos = @pos
-			bodyDef.linearDamping = 0.99
-			bodyDef.angularDamping = 0.99
-			bodyDef.isSleepingAllowed = false
-			@body = @game.physWorld.createBody(bodyDef)
-			
-			var fixtureDef = PhysFixtureDef()
-			// fixtureDef.type = PHYS_SHAPE_CIRCLE
-			fixtureDef.circleRadius = @wheelRadius
-			fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
-			fixtureDef.maskBits = PHYS_CAT_BIT_GROUND | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT
-			fixtureDef.friction = 0.4
-			fixtureDef.restitution = 0.0
-			fixtureDef.density = 1
-			@body.createFixture(fixtureDef)
-			
-			@body.testContactCallback = @testContact.bind(this)
-			@body.beginContactCallback = @registerContact.bind(this)
-			@body.endContactCallback = @unregisterContact.bind(this)
-			
-			@destPosX = @snapPos(@x, 0)
-		})
+		@lightTileRadius = 2.5 * 3
+		@lightTileRadiusScale = 1.5 // dependence on light name
+		@light = Light().attrs {
+			name = "light-01",
+			// shadowColor = Color(0.1, 0.1, 0.1),
+			shadowColor = Color(0.4, 0.4, 0.4),
+			radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
+			color = Color(0.8, 1.0, 1.0),
+			// tileRadius = @lightTileRadius,
+			// parent = this,
+		}
+		@game.addLight(@light)
 		
-		@jumpTime = 0
-		@contacts = {}
-		@groundContact = null
-		@sideContact = null
-		@ladderContact = null
-		@pitContact = null
+		@parent = game.mapLayers[MAP_LAYER_PLAYER]
+		@startBreathing()
+	},
+	
+	createPhysBody = function(){
+		@body && throw "body is already created"
+		var elem = ELEMENTS_LIST[@type]
+		
+		var bodyDef = PhysBodyDef()
+		bodyDef.type = PHYS_BODY_DYNAMIC
+		bodyDef.pos = @pos
+		bodyDef.linearDamping = 0.99
+		bodyDef.angularDamping = 0.99
+		bodyDef.isSleepingAllowed = false
+		@body = @game.physWorld.createBody(bodyDef)
+		
+		var fixtureDef = PhysFixtureDef()
+		// fixtureDef.type = PHYS_SHAPE_CIRCLE
+		fixtureDef.circleRadius = @wheelRadius
+		fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
+		fixtureDef.maskBits = PHYS_CAT_BIT_GROUND | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT | PHYS_CAT_BIT_HELPER
+		fixtureDef.friction = elem.physFriction || 0.4
+		fixtureDef.restitution = elem.physRestitution || 0.0
+		fixtureDef.density = elem.physDensity || 1
+		@body.createFixture(fixtureDef)
+		
+		@body.testContactCallback = @testContact.bind(this)
+		@body.beginContactCallback = @registerContact.bind(this)
+		@body.endContactCallback = @unregisterContact.bind(this)
+	},
+	
+	centerSprite = function(){
+		@attacking || @moveLayer.replaceTweenAction {
+			name = "move",
+			duration = 0.1,
+			pos = @centerPos,
+			angle = 0,
+		}
+	},
+	
+	setSideFlip = function(newScaleX){
+		if(newScaleX != @flipX){
+			@flipLayer.replaceTweenAction {
+				name = "scaleX",
+				duration = 0.2, // * @maxSpeed,
+				scaleX = (@flipX = newScaleX) * @baseScale.x,
+				ease = Ease.CUBIC_IN_OUT,
+			}
+		}
+	},
+	
+	setUpFlip = function(newScaleY){
+		if(newScaleY != @flipY){
+			@flipLayer.replaceTweenAction {
+				name = "scaleY",
+				duration = 0.3, // * @maxSpeed,
+				scaleY = (@flipY = newScaleY) * @baseScale.y,
+				ease = Ease.CUBIC_IN_OUT,
+			}
+		}
+	},
+	
+	stopBreathing = function(){
+		if(@breathingAction){
+			@centerSprite()
+			@sprite.removeActionsByName("scale")
+			@sprite.scale = 0.9
+			/* @sprite.replaceTweenAction {
+				name = "scale",
+				duration = 0.1,
+				scale = 0.9,
+			} */
+			@breathingAction = null
+		}
+	},
+	
+	startBreathing = function(speed){
+		@isDead && return;
+		@breathingAction && (!speed || @breathingSpeed == speed) && return;
+		@centerSprite()
+		speed && @breathingSpeed = speed
+		this is Player && print("startBreathing#${@__id}:${@classname}:${@__name}, speed: ${@breathingSpeed}")
+		var anim = function(){
+			var action = SequenceAction(
+				TweenAction {
+					duration = 1.1 * math.random(0.9, 1.1) / @breathingSpeed,
+					scale = 0.94,
+					ease = Ease.CIRC_IN_OUT,
+				},
+				TweenAction {
+					duration = 0.9 * math.random(0.9, 1.1) / @breathingSpeed,
+					scale = 0.9,
+					ease = Ease.CIRC_IN_OUT,
+				},
+			)
+			action.name = "scale"
+			action.doneCallback = anim
+			@sprite.replaceAction(action)
+			@breathingAction = action
+		}
+		anim()
+	},
+	
+	startWaddle = function(){
+		if(@waddleEnabled){
+			var side = @body.linearVelocity.x > 0 ? 1 : -1
+			@replaceAction("moveAngle", RepeatForeverAction(SequenceAction(
+				TweenAction {
+					duration = 0.15, // * @maxSpeed,
+					angle = -5 * side,
+					// ease = Ease.CUBIC_IN_OUT,
+				},
+				TweenAction {
+					duration = 0.15, // * @maxSpeed,
+					angle = 5 * side,
+					// ease = Ease.CUBIC_IN_OUT,
+				},
+			)))
+		}
+	},
+	
+	stopWaddle = function(){
+		@replaceTweenAction {
+			name = "moveAngle",
+			duration = 0.1, // * @maxSpeed,
+			angle = 0,
+		}
 	},
 	
 	testContact = function(contact, i){
@@ -136,65 +320,67 @@ NewPlayer = extends Player {
 		} */
 	},
 	
-	snapPos = function(x, dx){
-		return (math.round(x / SNAP_SIZE + (dx || 0)) + SNAP_SHIFT) * SNAP_SIZE
-	},
-	
-	applyDestX = function(){
+	applyHorizForce = function(dx){
 		var linearVelocity = @body.linearVelocity
-		var dx = clamp((@destPosX - @x) / SNAP_SIZE * 1.0, -1, 1)
 		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, 0, 1)
 		var groundContact = @groundContact
-		// groundContact || forceScale = forceScale * 0.25 // math.max(0.25, groundContact.dot || 0)
 		forceScale = forceScale * math.max(0.25, groundContact.dot || 0)
-		if(math.abs(dx) < 0.05){
-			linearVelocity.x = dx * @maxSpeed * forceScale
-			// @body.linearVelocity = linearVelocity
-		}else{
-			// local dx = Ease.run(Ease.LINEAR, math.abs(dx)) * (dx > 0 ? 1 : -1)
-			// local forceScale = forceScale < 0.5 ? Ease.run(forceScale * 2, Ease.SINE_OUT) / 2 : forceScale
-			@body.applyForceToCenter(vec2(dx * (groundContact ? 100 : 50) * forceScale / @game.physWorld.toPhysScale, 0))
+		@body.applyForceToCenter(vec2(dx * (groundContact ? 10000 : 5000) * forceScale, 0))
+
+		if(linearVelocity.x < -@maxSpeed){
+			linearVelocity.x = -@maxSpeed
+		}else if(linearVelocity.x > @maxSpeed){
+			linearVelocity.x = @maxSpeed
 		}
-		linearVelocity.x = math.min(linearVelocity.x, @maxSpeed)
 		@body.linearVelocity = linearVelocity
 		
-		if(groundContact || @body.gravityScale > 0){
-			var maxAngularVelocity = 360 * @maxSpeed / (2*math.PI*@wheelRadius) * 2.0
-			if(math.abs(dx) < 0.1){
-				@body.angularVelocity = dx * maxAngularVelocity
-			}else if(!@sideContact){
-				@body.applyTorque(dx * 50 * forceScale / (@game.physWorld.toPhysScale * @game.physWorld.toPhysScale))
-				@body.angularVelocity = math.min(@body.angularVelocity, maxAngularVelocity)
+		if((groundContact || @body.gravityScale > 0)){ // && !@sideContact){
+			@body.applyTorque(dx * 100000)
+			
+			var maxAngularVelocity = 360 * @maxSpeed / (2*math.PI*@wheelRadius) * 1.0
+			var angularVelocity = @body.angularVelocity
+			if(angularVelocity < -maxAngularVelocity){
+				angularVelocity = -maxAngularVelocity
+			}else if(angularVelocity > maxAngularVelocity){
+				angularVelocity = maxAngularVelocity
 			}
+			@body.angularVelocity = angularVelocity
 		}else{
 			@body.angularVelocity = 0
 		}
 	},
 	
-	applyDestY = function(){
+	applyVertForce = function(dy){
 		var linearVelocity = @body.linearVelocity
-		var dy = clamp((@destPosY - @y) / SNAP_SIZE * 1.0, -1, 1)
 		var forceScale = clamp(1 - math.abs(linearVelocity.y) / @maxSpeed, 0, 1)
-		// @game.addDebugMessage("applyDestY dy: ${dy}, forceScale: ${forceScale}")
-		if(math.abs(dy) < 0.05){
-			linearVelocity.y = dy * @maxSpeed * forceScale
-			@body.linearVelocity = linearVelocity
-		}else{
-			@body.applyForceToCenter(vec2(0, dy * 50 * forceScale / @game.physWorld.toPhysScale))
+		@body.applyForceToCenter(vec2(0, dy * 5000 * forceScale))
+
+		if(linearVelocity.y < -@maxSpeed){
+			linearVelocity.y = -@maxSpeed
+		}else if(linearVelocity.y > @maxSpeed * 2){
+			linearVelocity.y = @maxSpeed * 2
 		}
+		@body.linearVelocity = linearVelocity
 	},
 	
-	updateDestPos = function(){
-		if(@groundContact){
-			@destPosX && @applyDestX()
+	snapXToLadder = function(){
+		var body = @ladderContact.fixture.body
+		var ladder = body.item as TileLadderItem || throw "ladder required"
+		var dx = clamp((body.pos.x - @x) / TILE_SIZE, -1, 1)
+		var linearVelocity = @body.linearVelocity
+		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, 0, 1)
+		if(math.abs(dx) < 0.2){
+			linearVelocity.x = dx * @maxSpeed * forceScale
 		}else{
-			var x = @body.linearVelocity.x / SNAP_SIZE
-			// @game.addDebugMessage("fix pos by speed: ${x}")
-			var edge = 2.7
-			@destPosX = @snapPos(@x, x > edge ? 0.5 : x < -edge ? -0.5 : 0)
-			@ladderContact && @applyDestX()
+			// @applyHorizForce(dx)
+			@body.applyForceToCenter(vec2(dx * 5000 * forceScale, 0))
 		}
-		@destPosY && @applyDestY()
+		if(linearVelocity.x < -@maxSpeed){
+			linearVelocity.x = -@maxSpeed
+		}else if(linearVelocity.x > @maxSpeed){
+			linearVelocity.x = @maxSpeed
+		}
+		@body.linearVelocity = linearVelocity			
 	},
 	
 	update = function(){
@@ -204,10 +390,8 @@ NewPlayer = extends Player {
 		@updateContacts()
 		if(@ladderContact){
 			@body.gravityScale = 0
-			@destPosY = @snapPos(@y)
 		}else{
 			@body.gravityScale = 1
-			@destPosY = null
 		}
 		if(@game.moveJoystick.active){
 			// @destPosY = null
@@ -220,22 +404,27 @@ NewPlayer = extends Player {
 			var sensorSize = 0.3
 			if(math.abs(@moveDir.x) > sensorSize){
 				var side = @moveDir.x > 0 ? 1 : -1
-				@destPosX = @snapPos(@x, side)
 				@setSideFlip(-side)
 				if(!@ladderContact && @pitContact){
 					var speedK = math.abs(@body.linearVelocity.x) / @maxSpeed
 					speedK > 0.7 && @body.gravityScale = 0.1
 				}
-				@applyDestX()
+				@applyHorizForce(@moveDir.x)
 			}
-			if(@moveDir.y < -0.5 && groundContact && @game.time - @jumpTime > 0.1){
-				@destPosY = null
+			if(@ladderContact){
+				if(math.abs(@moveDir.y) > sensorSize){
+					@applyVertForce(@moveDir.y)
+				}
+				if(!side){
+					@snapXToLadder()
+				}
+			}else if(@moveDir.y < -0.5 && groundContact && @game.time - @jumpTime > 0.1){
 				@jumpTime = @game.time
-				var jumpForce = 400*0.8 / @game.physWorld.toPhysScale
+				var jumpForce = 40000
 				
 				var size = TILE_SIZE*2 * 1.4
-				var a = @pos + vec2(-TILE_SIZE*2*0.45 + TILE_SIZE*2 * (side || 0), @wheelRadius - TILE_SIZE*2*2.35) // 2.3)
-				var b = a + vec2(TILE_SIZE*2*0.9, size)
+				var a = @pos + vec2(-TILE_SIZE*2*0.3 + TILE_SIZE*2 * (side || 0), @wheelRadius - TILE_SIZE*2*2.35) // 2.3)
+				var b = a + vec2(TILE_SIZE*2*0.6, size)
 				
 				var collided = false
 				@game.physWorld.queryAABB(PhysAABB(a, b), function(fixture, body){
@@ -260,74 +449,18 @@ NewPlayer = extends Player {
 					detachTarget = true,
 				}
 				
-				/*
-				// TODO: use physWorld.queryAABB
-				var tileX, tileY = @game.posToTile(@pos)
-				var type = @game.getFrontType(tileX, tileY-1)
-				if(type != TILE_TYPE_LADDER){
-					var type = @game.getFrontType(tileX + (side || 0), tileY-2)
-					if(type != ELEM_TYPE_EMPTY && type != TILE_TYPE_LADDER){
-						jumpForce *= 0.7
-					}else{
-						var type = @game.getFrontType(tileX, tileY-1)
-						if(type != ELEM_TYPE_EMPTY && type != TILE_TYPE_LADDER){
-							jumpForce *= 0.7
-						}
-					}
-				}else{
-					jumpForce *= 0.7
-				} */
 				@body.applyForceToCenter(vec2(0, -jumpForce))
 				groundContact.fixture.body.applyForce(vec2(0, jumpForce), groundContact.point)
-			}else if(@ladderContact && math.abs(@moveDir.y) > sensorSize){ // || @moveDir.y > 0){
-				// @destPosX = @snapPos(@x + (side || 0))
-				@destPosY = @snapPos(@y, @moveDir.y > 0 ? 1 : -1)
-				@applyDestY()
-				// @game.addDebugMessage("process move y in ladderContact: ${@destPosY}, gravityScale: ${@body.gravityScale}")
-				if(@moveDir.x == 0){
-					@destPosX = @snapPos(@x)
-					@applyDestX()
-				}
-			}else if(@ladderContact){
-				@destPosY = @snapPos(@y)
-				@applyDestY()
-				if(@moveDir.x == 0){
-					@destPosX = @snapPos(@x)
-					@applyDestX()
-				}
-			}else if(@destPosY){
-				@applyDestY()
 			}
 		}else{
 			@dir.visible = false
-			@updateDestPos()
-		}
-		// super()
-	},
-	
-	startWaddle = function(){
-		if(@waddleEnabled){
-			var side = @body.linearVelocity.x > 0 ? 1 : -1
-			@replaceAction("moveAngle", RepeatForeverAction(SequenceAction(
-				TweenAction {
-					duration = 0.15 * @moveSpeed,
-					angle = -5 * side,
-					// ease = Ease.CUBIC_IN_OUT,
-				},
-				TweenAction {
-					duration = 0.15 * @moveSpeed,
-					angle = 5 * side,
-					// ease = Ease.CUBIC_IN_OUT,
-				},
-			)))
-		}
-	},
-	
-	stopWaddle = function(){
-		@replaceTweenAction {
-			name = "moveAngle",
-			duration = 0.1 * @moveSpeed,
-			angle = 0,
+			
+			if(@ladderContact){
+				@body.linearVelocity = @body.linearVelocity * 0.5
+				@snapXToLadder()
+			}else if(@groundContact){
+				@body.linearVelocity = @body.linearVelocity * 0.5
+			}
 		}
 	},
 	
@@ -348,10 +481,8 @@ NewPlayer = extends Player {
 			}
 		}
 		
-		@light.pos = @pos + vec2(math.random(-0.01, 0.01) * TILE_SIZE, math.random(-0.01, 0.01) * TILE_SIZE)
-		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE * math.random(0.99, 1.01)
-		
-		@game.playerTargetTile.pos = @game.tileToCenterPos(@tileX, @tileY)	
+		@light.pos = @pos // + vec2(math.random(-0.01, 0.01) * TILE_SIZE, math.random(-0.01, 0.01) * TILE_SIZE)
+		@light.radius = @lightTileRadius * @lightTileRadiusScale * TILE_SIZE // * math.random(0.99, 1.01)
 	},
 	
 }

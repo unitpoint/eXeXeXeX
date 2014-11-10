@@ -91,6 +91,7 @@ enum EPhysTileType
 	PHYS_GROUND,
 	// PHYS_LADDER,
 	// PHYS_PLATFORM,
+	PHYS_HELPER,
 	PHYS_PIT
 };
 

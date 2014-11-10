@@ -39,29 +39,32 @@ var tileCount = 0
 var dir = fs.readdir("../data_debug/images/tiles")
 // print dir
 for(var _, filename in dir){
-	var m = Regexp(`/^tile-(\d+)x(\d+)-(\d+)(-(\d+))?(-glowing)?\.(png|jpg)$/s`).exec(filename)
+	var m = Regexp(`/^tile-(\d+)x(\d+)-(\d+)(-(\d+))?(-t)?(-glowing)?\.(png|jpg)$/s`).exec(filename)
 	// print "${filename}, ${m}"
 	m || throw "error element filename 'tiles/${filename}'"
 	var cols, rows = num(m[1]) / TILE_SIZE, num(m[2]) / TILE_SIZE
-	var type, variants, glowing = num(m[3]), !!m[5], !!m[6]
+	var type, variants, transparent, glowing = num(m[3]), !!m[5], !!m[6], !!m[7]
 	type > 0 || throw "error type in 'tiles/${filename}', m: ${m}"
+	var resName = getId(filename).replace(Regexp(`/-glowing$/`), '')
 	if(elements[type]){
 		var elem = elements[type]
 		elem.cols == cols || throw "mismatch cols in 'tiles/${filename}', new: ${cols}, cur: ${elem.cols}, elem: ${elem}, m: ${m}"
 		elem.rows == rows || throw "mismatch rows in 'tiles/${filename}', new: ${rows}, cur: ${elem.rows}, elem: ${elem}, m: ${m}"
 		// elem.glowing == glowing || throw "mismatch cols in 'tiles/${filename}', new: ${glowing}, cur: ${elem.glowing}, elem: ${elem}, m: ${m}"
+		elem.transparent == transparent || throw "mismatch cols in 'tiles/${filename}', new: ${transparent}, cur: ${elem.transparent}, elem: ${elem}, m: ${m}"
 		!!elem.variants == !!variants || throw "mismatch cols in 'tiles/${filename}', new: ${variants}, cur: ${elem.variants}, elem: ${elem}, m: ${m}"
 		glowing && elem.glowing = true
-		variants && elem.variants[] = getId(filename) // math.max(elem.variants, variants)
+		variants && elem.variants[] = resName // math.max(elem.variants, variants)
 	}else{
 		elements[type] = {
 			type = type,
-			res = variants ? null : getId(filename),
-			variants = variants ? [getId(filename)] : null,
+			res = variants ? null : resName,
+			variants = variants ? [resName] : null,
 			isTile = true,
 			cols = cols,
 			rows = rows,
 			glowing = glowing,
+			transparent = transparent,
 			
 		}
 	}
@@ -79,6 +82,7 @@ for(var _, filename in dir){
 	var cols, rows = num(m[1]) / TILE_SIZE, num(m[2]) / TILE_SIZE
 	var type, glowing = num(m[3]), !!m[4]
 	type > 0 || throw "error type in 'items/${filename}', m: ${m}"
+	var resName = getId(filename).replace(Regexp(`/-glowing$/`), '')
 	if(elements[type]){
 		var elem = elements[type]
 		elem.isItem || throw "mismatch isItem in 'items/${filename}', cur: ${elem.isItem}, elem: ${elem}, m: ${m}"
@@ -89,7 +93,7 @@ for(var _, filename in dir){
 	}else{
 		elements[type] = {
 			type = type,
-			res = getId(filename),
+			res = resName,
 			isItem = true,
 			cols = cols,
 			rows = rows,
@@ -111,6 +115,7 @@ for(var _, filename in dir){
 	var width, height = num(m[1]), num(m[2])
 	var type, glowing = num(m[3]), !!m[4]
 	type > 0 || throw "error type in 'entities/${filename}', m: ${m}"
+	var resName = getId(filename).replace(Regexp(`/-glowing$/`), '')
 	if(elements[type]){
 		var elem = elements[type]
 		elem.isEntity || throw "mismatch isEntity in 'entities/${filename}', cur: ${elem.isItem}, elem: ${elem}, m: ${m}"
@@ -121,7 +126,7 @@ for(var _, filename in dir){
 	}else{
 		elements[type] = {
 			type = type,
-			res = getId(filename),
+			res = resName,
 			isEntity = true,
 			width = width,
 			height = height,
@@ -137,6 +142,7 @@ for(var type, elem in elements){
 	if(!elem.res) delete elem.res
 	if(!elem.variants) delete elem.variants
 	if(!elem.glowing) delete elem.glowing
+	if(!elem.transparent) delete elem.transparent
 	if(elem.cols == 1 && elem.rows == 1){
 		delete elem.cols
 		delete elem.rows

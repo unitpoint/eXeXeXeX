@@ -627,6 +627,10 @@ function OS2DObject.reverseIter(){
 	}
 }
 
+function Sprite.fixAnimRect(edge){
+	@setAnimFrameRect(edge, edge, @width-edge*2, @height-edge*2)
+}
+
 /*	
 url || throw "url module required"
 

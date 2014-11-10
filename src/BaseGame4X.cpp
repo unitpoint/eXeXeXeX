@@ -20,10 +20,11 @@ int PHYS_CAT_BIT_LADDER;
 int PHYS_CAT_BIT_PLATFORM;
 int PHYS_CAT_BIT_PLAYER;
 int PHYS_CAT_BIT_ENTITY;
-int PHYS_CAT_BIT_STATIC_OBJECT;
-int PHYS_CAT_BIT_DYNAMIC_OBJECT;
+int PHYS_CAT_BIT_TILE_ITEM;
+int PHYS_CAT_BIT_TILE_SOLID_ITEM;
 int PHYS_CAT_BIT_SCREEN;
 int PHYS_CAT_BIT_PIT;
+int PHYS_CAT_BIT_HELPER;
 
 // =====================================================================
 
@@ -528,7 +529,7 @@ void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
 #if defined _WIN32 && 1
 		// keep max quality lightScale?
-		lightScale *= 1.0f / 2.0f;
+		// lightScale *= 1.0f / 2.0f;
 #else
 		lightScale *= 1.0f / 3.0f;
 #endif
@@ -746,6 +747,10 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		queryTilePhysics(startPhysX, startPhysY, endPhysX, endPhysY, time);
 	}
 
+	if(!lightmap->getVisible()){
+		return;
+	}
+
 	vec2 lightTextureSize((float)lightTextureWidth, (float)lightTextureHeight);
 
 	MyRenderer r;	
@@ -796,18 +801,6 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		IVideoDriver::instance->setUniform("projection", &viewProj);
 		setUniformColor("color", light->shadowColor);
 
-		/*
-		int tx, ty;
-		posToTile(light->pos, tx, ty);
-		ElementType type = getFrontType(tx, ty);
-		if(type == TILE_TYPE_EMPTY || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
-			light->validPos = light->pos;
-		}else{
-			posToTile(light->validPos, tx, ty);
-			lightScreenPos = (light->validPos - offs) * mapScale;
-		}
-		*/
-
 		/* it = activeTilesXY.begin();
 		for(; it != activeTilesXY.end(); ++it){
 			const Point& p = *it;
@@ -817,6 +810,23 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 			for(int x = startX; x <= endX; x++){
 				ElementType type = getFrontType(x, y);
 				if(type == ELEM_TYPE_EMPTY){
+					continue;
+				}
+				static Point tileSideOffs[] = {
+					Point(0, -1),
+					Point(1, 0),
+					Point(0, 1),
+					Point(-1, 0),
+				};
+				int i, count = 4;
+				bool shadowSide[4], shadowSideExists = false;
+				for(i = 0; i < count; i++){
+					shadowSide[i] = getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y) == ELEM_TYPE_EMPTY;
+					if(shadowSide[i]){
+						shadowSideExists = true;
+					}
+				}
+				if(!shadowSideExists){
 					continue;
 				}
 				bool isDoor = false;
@@ -857,14 +867,10 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 					pos + vec2(tileWidth, tileHeight) * mapScale,
 					pos + vec2(0, tileHeight) * mapScale
 				};
-				static Point tileSideOffs[] = {
-					Point(0, -1),
-					Point(1, 0),
-					Point(0, 1),
-					Point(-1, 0),
-				};
-				int count = 4;
-				for(int i = 0; i < count; i++){
+				for(i = 0; i < count; i++){
+					if(!shadowSide[i]){
+						continue;
+					}
 					const vec2& p1 = points[i];
 					const vec2& p2 = points[(i+1) % count];
 					vec2 edge = p2 - p1;
@@ -876,8 +882,9 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 
 					vec2 lightToCurrent = p1 - lightScreenPos;
 					OX_ASSERT(normal.dot(lightToCurrent) > 0);
-					type = isDoor ? ELEM_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
-					if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
+					// type = isDoor ? ELEM_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+					// if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
+					// if(shadowSide[i]){
 						vec2 p1_target = p1 + lightToCurrent * (lightScreenRadius * 100);
 						vec2 p2_target = p2 + (p2 - lightScreenPos) * (lightScreenRadius * 100);
 						
@@ -885,7 +892,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 								p1_target * lightScale, 
 								p2_target * lightScale, 
 								p2 * lightScale);
-					}
+					// }
 				}
 			}
 		}
@@ -1371,10 +1378,11 @@ BaseGame4X::BaseGame4X()
 	PHYS_CAT_BIT_PLATFORM	= (os->getProperty(-1, "PHYS_CAT_BIT_PLATFORM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_PLAYER		= (os->getProperty(-1, "PHYS_CAT_BIT_PLAYER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_ENTITY		= (os->getProperty(-1, "PHYS_CAT_BIT_ENTITY"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
-	PHYS_CAT_BIT_STATIC_OBJECT = (os->getProperty(-1, "PHYS_CAT_BIT_STATIC_OBJECT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
-	PHYS_CAT_BIT_DYNAMIC_OBJECT = (os->getProperty(-1, "PHYS_CAT_BIT_DYNAMIC_OBJECT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_TILE_ITEM	= (os->getProperty(-1, "PHYS_CAT_BIT_TILE_ITEM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_TILE_SOLID_ITEM = (os->getProperty(-1, "PHYS_CAT_BIT_TILE_SOLID_ITEM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_SCREEN		= (os->getProperty(-1, "PHYS_CAT_BIT_SCREEN"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_PIT		= (os->getProperty(-1, "PHYS_CAT_BIT_PIT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_HELPER		= (os->getProperty(-1, "PHYS_CAT_BIT_HELPER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	os->pop();
 }
 
@@ -1832,34 +1840,62 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 				continue;
 			}
 			if(physTileType == PHYS_EMPTY){
-				if(Lib::isTileEmpty(this, x-1, y) && Lib::isTileEmpty(this, x+1, y)
-					&& !Lib::isTileEmpty(this, x-1, y+1) && !Lib::isTileEmpty(this, x+1, y+1)
+#if 0
+				if(Lib::isTileEmpty(this, x-1, y) 
+					&& !Lib::isTileEmpty(this, x-1, y+1)
 					&& Lib::isTileEmpty(this, x, y+1))
 				{
 					spPhysTileArea block = new PhysTileArea();
 					block->time = time;
 					block->type = PHYS_PIT;
 					block->ax = x-1, block->ay = y;
-					block->bx = x+1, block->by = y+1;
+					block->bx = x, block->by = y+1;
 					block->bounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
 					block->physBounds = Bounds2(
 						vec2(((float)x - 0.0f) * TILE_SIZE, ((float)y + 1.0f) * TILE_SIZE), 
 						vec2((float)(x + 1.0f) * TILE_SIZE, ((float)y + 1.5f) * TILE_SIZE));
 					physTileAreas.push_back(block);
-					for(int ax = block->ax; ax <= block->bx; ax++){
+					tile->physCreated = true;
+					/* for(int ax = block->ax; ax <= block->bx; ax++){
 						for(int ay = block->ay; ay <= block->by; ay++){
 							Tile * tile = getTile(ax, ay);
 							if(tile && tile->getPhysType() == PHYS_EMPTY){
 								tile->physCreated = true;
 							}
 						}
-					}
-					continue;
+					} */
+					// continue;
 				}
+				if(Lib::isTileEmpty(this, x+1, y) 
+					&& !Lib::isTileEmpty(this, x+1, y+1)
+					&& Lib::isTileEmpty(this, x, y+1))
+				{
+					spPhysTileArea block = new PhysTileArea();
+					block->time = time;
+					block->type = PHYS_PIT;
+					block->ax = x, block->ay = y;
+					block->bx = x+1, block->by = y+1;
+					block->bounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
+					block->physBounds = Bounds2(
+						vec2(((float)x - 0.0f) * TILE_SIZE, ((float)y + 1.0f) * TILE_SIZE), 
+						vec2((float)(x + 1.0f) * TILE_SIZE, ((float)y + 1.5f) * TILE_SIZE));
+					physTileAreas.push_back(block);
+					tile->physCreated = true;
+					/* for(int ax = block->ax; ax <= block->bx; ax++){
+						for(int ay = block->ay; ay <= block->by; ay++){
+							Tile * tile = getTile(ax, ay);
+							if(tile && tile->getPhysType() == PHYS_EMPTY){
+								tile->physCreated = true;
+							}
+						}
+					} */
+					// continue;
+				}
+#endif
 				if(Lib::isTileEmpty(this, x-1, y) && Lib::isTileGround(this, x, y+1) && Lib::isTileGround(this, x+1, y)){
 					spPhysTileArea block = new PhysTileArea();
 					block->time = time;
-					block->type = PHYS_GROUND;
+					block->type = PHYS_HELPER;
 					block->ax = x, block->ay = y;
 					block->bx = x, block->by = y;
 					block->bounds = block->physBounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
@@ -1870,12 +1906,12 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					block->physPoly.push_back(corner - vec2(TILE_SIZE * helperX, 0));
 					physTileAreas.push_back(block);
 					tile->physCreated = true;
-					continue;
+					// continue;
 				}
 				if(Lib::isTileEmpty(this, x+1, y) && Lib::isTileGround(this, x, y+1) && Lib::isTileGround(this, x-1, y)){
 					spPhysTileArea block = new PhysTileArea();
 					block->time = time;
-					block->type = PHYS_GROUND;
+					block->type = PHYS_HELPER;
 					block->ax = x, block->ay = y;
 					block->bx = x, block->by = y;
 					block->bounds = block->physBounds = getTileAreaBounds(block->ax, block->ay, block->bx, block->by);
@@ -1886,7 +1922,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 					block->physPoly.push_back(corner + vec2(TILE_SIZE * helperX, 0));
 					physTileAreas.push_back(block);
 					tile->physCreated = true;
-					continue;
+					// continue;
 				}
 				continue;
 			}
@@ -1988,6 +2024,10 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		case PHYS_PIT:
 			fixtureDef->setCategoryBits(PHYS_CAT_BIT_PIT);
 			fixtureDef->setIsSensor(true);
+			break;
+
+		case PHYS_HELPER:
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_HELPER);
 			break;
 
 		default:
@@ -2377,6 +2417,8 @@ void BaseGame4X::drawPhysics()
 						color = b2Color(0.68f, 0.46f, 0.12f);
 					}else if(filter.categoryBits & PHYS_CAT_BIT_PIT){
 						color = b2Color(0.48f, 0.46f, 0.68f);
+					}else if(filter.categoryBits & PHYS_CAT_BIT_TILE_ITEM){
+						color = b2Color(0.68f, 0.68f, 0.46f);
 					}
 					drawPhysShape(f, xf, color);
 				}

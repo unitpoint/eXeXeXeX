@@ -56,7 +56,7 @@ Tile = extends Object {
 		// @itemType = game.getItemType(tx, ty)
 		@backType = game.getBackType(tx, ty)
 		
-		var elem = ELEMENTS_LIST[@frontType] || throw "unknown front type: ${@frontType}"
+		// var elem = ELEMENTS_LIST[@frontType] || throw "unknown front type: ${@frontType}"
 		// _G[elem.class || "FrontTile"](this)
 		FrontTile(this)
 	},

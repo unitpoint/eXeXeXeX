@@ -52,6 +52,35 @@ for(var _, elem in require("resElements")){
 	addElement(elem)
 }
 
+/* if("Color" in _E){
+// var color = Color(0.5, 0.5, 0.5, 1)
+var color = Color(1.1, 1.1, 1.1, 1)
+ELEMENTS_LIST[24].color = Color.fromInt(0x346b8c) * color
+ELEMENTS_LIST[25].color = Color.fromInt(0xf3f7e5) * color
+ELEMENTS_LIST[26].color = Color.fromInt(0xcc863d) * color
+} */
+
 ELEMENTS_LIST[ELEM_TYPE_TILE_OUTSIDE] = ELEMENTS_LIST[7]
+
+ELEMENTS_LIST[ELEM_TYPE_ENT_PLAYER].merge {
+	class = "NewPlayer",
+}
+
+ELEMENTS_LIST[ELEM_TYPE_ITEM_LADDER].merge {
+	class = "TileLadderItem",
+}
+
+/*
+ELEMENTS_LIST[82].merge {
+	class = "TileUpHandleDoorItem",
+	handle = "door-handle",
+	handleShadow = "door-handle-shadow",
+}
+ELEMENTS_LIST[96].merge {
+	class = "TileUpHandleDoorItem",
+	handle = "door-handle",
+	handleShadow = "door-handle-shadow",
+}
+*/
 
 // print ELEMENTS_LIST; terminate()

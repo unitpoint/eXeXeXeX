@@ -240,5 +240,8 @@ ShadowTile = extends BaseLayerTile {
 			}
 			fade.scale = vec2(TILE_FADE_SIZE, TILE_FADE_SIZE) / fade.size
 		}
+		for(var _, child in this){
+			child.fixAnimRect(0.4)
+		}
 	},
 }

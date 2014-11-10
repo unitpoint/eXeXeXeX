@@ -42,29 +42,35 @@ FrontTile = extends BaseLayerTile {
 		var elem = ELEMENTS_LIST[type] || throw "unknown front type: ${type}"
 		elem.isTile || throw "required tile element but found: ${elem}"
 		
-		var layer = MAP_LAYER_TILE_FRONT // TILES_INFO[type].item ? MAP_LAYER_TILE_ITEM : MAP_LAYER_TILE_FRONT
-		@parent = @tile.game.mapLayers[layer]
-		// @tile.back.visible = false
-		
-		var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
-		@resAnim = res.get(resName)
-		@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
-		@scale = Tile.VEC2_SIZE / @size
-		@size = Tile.VEC2_SIZE
-		@touchEnabled = type != ELEM_TYPE_EMPTY
-		
-		if(elem.glowing){
-			var glowing = Sprite().attrs {
-				resAnim = res.get(resName.."-glowing"),
-				pivot = @pivot, // vec2(0, 0),
-				pos = @pos,
-				scale = @scale,
-				size = @size,
-				// priority = @PRIORITY_FRONT,
-				parent = @tile.game.mapLayers[MAP_LAYER_TILE_GLOWING],
+		if(type != ELEM_TYPE_EMPTY){
+			var layer = MAP_LAYER_TILE_FRONT // TILES_INFO[type].item ? MAP_LAYER_TILE_ITEM : MAP_LAYER_TILE_FRONT
+			@parent = @tile.game.mapLayers[layer]
+			// @tile.back.visible = false
+			
+			var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
+			@resAnim = res.get(resName)
+			@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
+			@fixAnimRect(0.4)
+			@scale = Tile.VEC2_SIZE / @size
+			@size = Tile.VEC2_SIZE
+			@touchEnabled = type != ELEM_TYPE_EMPTY
+			elem.color && @color = elem.color
+			
+			if(elem.glowing){
+				var glowing = Sprite().attrs {
+					resAnim = res.get(resName.."-glowing"),
+					resAnimFrameNum = @resAnimFrameNum,
+					pivot = @pivot, // vec2(0, 0),
+					pos = @pos,
+					scale = @scale,
+					size = @size,
+					// priority = @PRIORITY_FRONT,
+					parent = @tile.game.mapLayers[MAP_LAYER_TILE_GLOWING],
+				}
+				// glowing.fixAnimRect(0.4)
+				// @glowing.scale = @size / @glowing.size
+				@addLinkTile(glowing)
 			}
-			// @glowing.scale = @size / @glowing.size
-			@addLinkTile(glowing)
 		}
 		
 		@createItemTile()
@@ -142,15 +148,12 @@ FrontTile = extends BaseLayerTile {
 		var isTransparent = @isTransparent
 		// var canFalling = @tile.frontType == TILE_TYPE_ROCK
 		if(isTransparent){ // || canFalling){
-			@needBackTile()
-			// back.visible = isTransparent
-		}
-	},
-	
-	needBackTile = function(){
-		if(!@tile.back){
-			var back = BackTile(@tile)
-			back === @tile.back || throw "error init tile.back"
+			if(!@tile.back){
+				var back = BackTile(@tile)
+				back === @tile.back || throw "error init tile.back"
+			}else{
+				back.visible = true
+			}
 		}
 	},
 	

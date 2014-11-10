@@ -43,7 +43,7 @@ Color = extends Object {
 			((value >> 16) & 0xff) / 0xff,
 			((value >> 8) & 0xff) / 0xff,
 			((value >> 0) & 0xff) / 0xff,
-			a
+			a || 1
 		)
 	},
 	

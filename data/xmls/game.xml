@@ -78,13 +78,47 @@
 		<image file="tiles/tile-128x128-002-01.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-002-02.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-002-03.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-026.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-036.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-256x256-006.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-007.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-008.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-009.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-010.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-011.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-012.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-013.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-014.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-015.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-016.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-017.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-018.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-019.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-020.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-021-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-021.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-022-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-022.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-023-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-023.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-024.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-025.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-027.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-028.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-029.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-030.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-031.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-032.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-033.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-034-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-034.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-035-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-035.jpg" cols="4" rows="4" />
 		<image file="items/item-128x128-080.png" />
 		<image file="items/item-128x128-081.png" />
+		<image file="items/item-128x128-082.png" />
+		<image file="items/item-64x128-096.png" />
+		<image file="items/item-64x128-097.png" />
 		<image file="entities/ent-128x128-064.png" />
 		<image file="entities/ent-128x128-065.png" />
 		<!-- end auto generated assets -->

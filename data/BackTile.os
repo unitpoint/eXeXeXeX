@@ -34,7 +34,7 @@
 BackTile = extends BaseLayerTile {
 	__construct = function(tile, type){
 		super(tile, type)
-		@parent = @tile.game.mapLayers[MAP_LAYER_TILE_BACK]
+		
 		@tile.back && throw "tile.back is already set"
 		@tile.back = this
 		
@@ -42,13 +42,35 @@ BackTile = extends BaseLayerTile {
 		var elem = ELEMENTS_LIST[type] || throw "unknown front type: ${type}"
 		elem.isTile || throw "required tile element but found: ${elem}"
 		
-		var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
-		@resAnim = res.get(resName)
-		@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
-		@scale = Tile.VEC2_SIZE / @size
-		@size = Tile.VEC2_SIZE
-		
-		@color = elem.backColor || Color(0.5, 0.5, 0.5)
+		if(type != ELEM_TYPE_EMPTY){
+			@parent = @tile.game.mapLayers[MAP_LAYER_TILE_BACK]
+			
+			var resName = @tile.game.getTileResName(elem, @tile.tileX, @tile.tileY) // TILES_INFO[type].variants)
+			@resAnim = res.get(resName)
+			@resAnimFrameNum = (@tile.tileX % elem.cols) + (@tile.tileY % elem.rows) * elem.cols
+			@fixAnimRect(0.4)
+			@scale = Tile.VEC2_SIZE / @size
+			@size = Tile.VEC2_SIZE
+			
+			elem.color && @color = elem.color
+			@color = @color * (elem.backColor || Color(0.6, 0.6, 0.6))
+			
+			if(elem.glowing){
+				var glowing = Sprite().attrs {
+					resAnim = res.get(resName.."-glowing"),
+					resAnimFrameNum = @resAnimFrameNum,
+					pivot = @pivot, // vec2(0, 0),
+					pos = @pos,
+					scale = @scale,
+					size = @size,
+					// priority = @PRIORITY_FRONT,
+					parent = @tile.game.mapLayers[MAP_LAYER_TILE_GLOWING],
+				}
+				// glowing.fixAnimRect(0.4)
+				// @glowing.scale = @size / @glowing.size
+				@addLinkTile(glowing)
+			}
+		}
 	},
 	
 	cleanup = function(){

@@ -171,7 +171,7 @@ void run()
 	DebugActor::initialize();
 
 	//create and add new DebugActor to root actor as child
-#if defined OS_DEBUG || 0
+#if defined OS_DEBUG || 1
 	getStage()->addChild(new DebugActor());
 #endif
 
