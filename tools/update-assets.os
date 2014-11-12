@@ -50,9 +50,9 @@ for(var _, filename in dir){
 		var elem = elements[type]
 		elem.cols == cols || throw "mismatch cols in 'tiles/${filename}', new: ${cols}, cur: ${elem.cols}, elem: ${elem}, m: ${m}"
 		elem.rows == rows || throw "mismatch rows in 'tiles/${filename}', new: ${rows}, cur: ${elem.rows}, elem: ${elem}, m: ${m}"
-		// elem.glowing == glowing || throw "mismatch cols in 'tiles/${filename}', new: ${glowing}, cur: ${elem.glowing}, elem: ${elem}, m: ${m}"
-		elem.transparent == transparent || throw "mismatch cols in 'tiles/${filename}', new: ${transparent}, cur: ${elem.transparent}, elem: ${elem}, m: ${m}"
-		!!elem.variants == !!variants || throw "mismatch cols in 'tiles/${filename}', new: ${variants}, cur: ${elem.variants}, elem: ${elem}, m: ${m}"
+		// elem.glowing == glowing || throw "mismatch glowing in 'tiles/${filename}', new: ${glowing}, cur: ${elem.glowing}, elem: ${elem}, m: ${m}"
+		elem.transparent == transparent || throw "mismatch transparent in 'tiles/${filename}', new: ${transparent}, cur: ${elem.transparent}, elem: ${elem}, m: ${m}"
+		!!elem.variants == !!variants || throw "mismatch variants in 'tiles/${filename}', new: ${variants}, cur: ${elem.variants}, elem: ${elem}, m: ${m}"
 		glowing && elem.glowing = true
 		variants && elem.variants[] = resName // math.max(elem.variants, variants)
 	}else{
@@ -76,11 +76,11 @@ var itemCount = 0
 var dir = fs.readdir("../data_debug/images/items")
 // print dir
 for(var _, filename in dir){
-	var m = Regexp(`/^item-(\d+)x(\d+)-(\d+)(-glowing)?\.(png|jpg)$/s`).exec(filename)
+	var m = Regexp(`/^item-(\d+)x(\d+)-(\d+)(-t)?(-n)?(-glowing)?\.(png|jpg)$/s`).exec(filename)
 	// print "${filename}, ${m}"
 	m || throw "error element filename 'items/${filename}'"
 	var cols, rows = num(m[1]) / TILE_SIZE, num(m[2]) / TILE_SIZE
-	var type, glowing = num(m[3]), !!m[4]
+	var type, transparent, noShadow, glowing = num(m[3]), !!m[4], !!m[5], !!m[6]
 	type > 0 || throw "error type in 'items/${filename}', m: ${m}"
 	var resName = getId(filename).replace(Regexp(`/-glowing$/`), '')
 	if(elements[type]){
@@ -88,7 +88,9 @@ for(var _, filename in dir){
 		elem.isItem || throw "mismatch isItem in 'items/${filename}', cur: ${elem.isItem}, elem: ${elem}, m: ${m}"
 		elem.cols == cols || throw "mismatch cols in 'items/${filename}', new: ${cols}, cur: ${elem.cols}, elem: ${elem}, m: ${m}"
 		elem.rows == rows || throw "mismatch rows in 'items/${filename}', new: ${rows}, cur: ${elem.rows}, elem: ${elem}, m: ${m}"
-		// elem.glowing == glowing || throw "mismatch cols in 'items/${filename}', new: ${glowing}, cur: ${elem.glowing}, elem: ${elem}, m: ${m}"
+		// elem.glowing == glowing || throw "mismatch glowing in 'items/${filename}', new: ${glowing}, cur: ${elem.glowing}, elem: ${elem}, m: ${m}"
+		elem.transparent == transparent || throw "mismatch transparent in 'items/${filename}', new: ${transparent}, cur: ${elem.transparent}, elem: ${elem}, m: ${m}"
+		elem.noShadow == noShadow || throw "mismatch noShadow in 'items/${filename}', new: ${noShadow}, cur: ${elem.noShadow}, elem: ${elem}, m: ${m}"
 		glowing && elem.glowing = true
 	}else{
 		elements[type] = {
@@ -98,7 +100,8 @@ for(var _, filename in dir){
 			cols = cols,
 			rows = rows,
 			glowing = glowing,
-			
+			transparent = transparent,
+			noShadow = noShadow,
 		}
 	}
 	resBuf << "${indent}<image file=\"items/${filename}\" />\n"
@@ -143,10 +146,11 @@ for(var type, elem in elements){
 	if(!elem.variants) delete elem.variants
 	if(!elem.glowing) delete elem.glowing
 	if(!elem.transparent) delete elem.transparent
-	if(elem.cols == 1 && elem.rows == 1){
+	if(!elem.noShadow) delete elem.noShadow
+	/* if(elem.cols == 1 && elem.rows == 1){
 		delete elem.cols
 		delete elem.rows
-	}
+	} */
 }
 
 var re = Regexp("/"..Regexp.escape(beginMark)..".*"..Regexp.escape(endMark).."/s")

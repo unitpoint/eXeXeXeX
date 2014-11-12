@@ -31,7 +31,7 @@ using namespace ObjectScript;
 */
 
 /*
-#define PHYS_CAT_BIT_GROUND		(1<<0)
+#define PHYS_CAT_BIT_SOLID		(1<<0)
 #define PHYS_CAT_BIT_LADDER		(1<<1)
 #define PHYS_CAT_BIT_PLATFORM	(1<<2)
 #define PHYS_CAT_BIT_PLAYER		(1<<3)
@@ -88,7 +88,7 @@ public:
 enum EPhysTileType
 {
 	PHYS_EMPTY,
-	PHYS_GROUND,
+	PHYS_SOLID,
 	// PHYS_LADDER,
 	// PHYS_PLATFORM,
 	PHYS_HELPER,
@@ -281,6 +281,9 @@ public:
 	vec2 pos;
 	Color color;
 	float radius;
+	float angle;
+	float angularVelocity;
+	float prevTimeSec;
 
 	// vec2 validPos;
 	// bool isLevelLights;
@@ -292,7 +295,9 @@ public:
 		pos = /*validPos =*/ vec2(0.0f, 0.0f);
 		color = Color(255, 255, 255, 255);
 		radius = 0.0f; // disabled by default
-		// isLevelLights = false;
+		angle = 0.0f;
+		angularVelocity = 0.0f;
+		prevTimeSec = 0.0f;
 	}
 
 	// OS getters, setters
@@ -313,6 +318,12 @@ public:
 
 	float getRadius() const { return radius; }
 	void setRadius(float value){ radius = value;}
+
+	float getAngle() const { return angle; }
+	void setAngle(float value){ angle = value;}
+
+	float getAngularVelocity() const { return angularVelocity; }
+	void setAngularVelocity(float value){ angularVelocity = value;}
 
 	// bool getIsLevelLights() const { return isLevelLights; }
 	// void setIsLevelLights(bool value){ isLevelLights = value;}

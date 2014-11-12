@@ -305,7 +305,7 @@ Game4X = extends BaseGame4X {
 		@map = Actor().attrs {
 			pivot = vec2(0, 0),
 			pos = vec2(0, 0),
-			// scale = 0.5,
+			scale = PLATFORM == "windows" ? 0.8 : 1.0,
 			priority = GAME_LAYER_MAP,			
 			clock = Clock(),
 			parent = this,
@@ -971,7 +971,7 @@ Game4X = extends BaseGame4X {
 			// fixtureDef.type = PHYS_SHAPE_POLYGON
 			// fixtureDef.setPolygonAsBox(halfSize, center, 0)
 			fixtureDef.setPolygonAsBounds(a, b)
-			fixtureDef.categoryBits = PHYS_CAT_BIT_GROUND
+			fixtureDef.categoryBits = PHYS_CAT_BIT_SOLID
 			fixtureDef.friction = 0.99
 			@borderBody.createFixture(fixtureDef)
 		}

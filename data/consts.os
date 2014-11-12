@@ -1,6 +1,6 @@
 LEVEL_BIN_DATA_PREFIX = "level-tile-layers:front:back."
 
-PHYS_CAT_BIT_GROUND			= 1<<0
+PHYS_CAT_BIT_SOLID			= 1<<0
 PHYS_CAT_BIT_LADDER			= 1<<1
 PHYS_CAT_BIT_PLATFORM		= 1<<2
 PHYS_CAT_BIT_PLAYER			= 1<<3
@@ -10,6 +10,7 @@ PHYS_CAT_BIT_TILE_SOLID_ITEM= 1<<6
 PHYS_CAT_BIT_SCREEN			= 1<<7
 PHYS_CAT_BIT_PIT			= 1<<8
 PHYS_CAT_BIT_HELPER			= 1<<9
+PHYS_CAT_BIT_DOOR			= 1<<10
 
 TILE_SIZE = 64
 // ENTITY_SIZE = 128
@@ -35,6 +36,7 @@ MAP_LAYER_TILES = enumCount++
 MAP_LAYER_TILE_BACK = enumCount++
 MAP_LAYER_TILE_SHADOW = enumCount++
 // MAP_LAYER_TILE_LADDERS = enumCount++
+MAP_LAYER_TILE_ITEM_SHADOW = enumCount++
 MAP_LAYER_TILE_ITEM = enumCount++
 MAP_LAYER_ENTITIES = enumCount++
 MAP_LAYER_PLAYER = enumCount++
@@ -77,5 +79,10 @@ GAME_LAYER_MENU_MODALVIEW = enumCount++
 GAME_LAYER_BLOOD = enumCount++
 GAME_LAYER_FADE = enumCount++
 GAME_LAYER_DEBUG_MESSAGED = enumCount++
+
+require "os2d/vec2"
+
+VEC2_UP = vec2(0, -1)
+VEC2_RIGHT = vec2(1, 0)
 
 

@@ -70,17 +70,51 @@ ELEMENTS_LIST[ELEM_TYPE_ITEM_LADDER].merge {
 	class = "TileLadderItem",
 }
 
-/*
 ELEMENTS_LIST[82].merge {
 	class = "TileUpHandleDoorItem",
 	handle = "door-handle",
 	handleShadow = "door-handle-shadow",
 }
-ELEMENTS_LIST[96].merge {
+
+ELEMENTS_LIST[97].merge {
 	class = "TileUpHandleDoorItem",
 	handle = "door-handle",
+	handleScale = 0.6,
 	handleShadow = "door-handle-shadow",
 }
-*/
+
+ELEMENTS_LIST[84].merge {
+	class = "TileUpDoorItem",
+}
+
+ELEMENTS_LIST[98].merge {
+	class = "TileUpDoorItem",
+}
+
+ELEMENTS_LIST[172].merge {
+	class = "TileLightItem",
+	lightResName = "light-table-lamp",
+	lightRadius = TILE_SIZE * 3,
+	lightColor = [1.0, 1.0, 0.7],
+}
+
+ELEMENTS_LIST[173].merge {
+	class = "TileLightItem",
+	lightResName = "light-tunel-lamp",
+	// lightRadius = TILE_SIZE * 8,
+	lightColor = [1.0, 1.0, 0.8],
+}
+
+ELEMENTS_LIST[174].merge {
+	class = "TileLightItem",
+	lightResName = "light-alarm-lamp",
+	// lightRadius = TILE_SIZE * 8,
+	lightColor = [1.0, 0.5, 0.4],
+	lightAngularVelocity = 360 * 0.5,
+}
+
+ELEMENTS_LIST[211].merge {
+	class = "TileLightItem",
+}
 
 // print ELEMENTS_LIST; terminate()

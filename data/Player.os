@@ -122,7 +122,7 @@ Player = extends Entity {
 		@light = Light().attrs {
 			name = "light-01",
 			// shadowColor = Color(0.1, 0.1, 0.1),
-			shadowColor = Color(0.3, 0.3, 0.3),
+			shadowColor = PLATFORM == "windows" ? Color(0.3, 0.3, 0.3) : Color(0.4, 0.4, 0.4),
 			radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
 			color = Color(0.8, 1.0, 1.0),
 			// tileRadius = @lightTileRadius,

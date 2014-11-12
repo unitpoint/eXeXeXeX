@@ -43,7 +43,7 @@ NewPlayer = extends Player {
 			// fixtureDef.type = PHYS_SHAPE_CIRCLE
 			fixtureDef.circleRadius = @wheelRadius
 			fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
-			fixtureDef.maskBits = PHYS_CAT_BIT_GROUND | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT
+			fixtureDef.maskBits = PHYS_CAT_BIT_SOLID | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT
 			fixtureDef.friction = 0.4
 			fixtureDef.restitution = 0.0
 			fixtureDef.density = 1
@@ -240,7 +240,7 @@ NewPlayer = extends Player {
 				var collided = false
 				@game.physWorld.queryAABB(PhysAABB(a, b), function(fixture, body){
 					// print "queryAABB, cat: ${fixture.categoryBits}, aabb: (${a.x|0} ${a.y|0}) (${b.x|0} ${b.y|0})"
-					if(fixture.categoryBits & PHYS_CAT_BIT_GROUND != 0){
+					if(fixture.categoryBits & PHYS_CAT_BIT_SOLID != 0){
 						jumpForce *= 0.7
 						collided = true
 						// @game.addDebugMessage("fix jump force (time: ${@game.time})")
@@ -331,7 +331,7 @@ NewPlayer = extends Player {
 				var collided = false
 				@game.physWorld.queryAABB(PhysAABB(a, b), function(fixture, body){
 					// print "queryAABB, cat: ${fixture.categoryBits}, aabb: (${a.x|0} ${a.y|0}) (${b.x|0} ${b.y|0})"
-					if(fixture.categoryBits & PHYS_CAT_BIT_GROUND != 0){
+					if(fixture.categoryBits & PHYS_CAT_BIT_SOLID != 0){
 						jumpForce *= 0.7
 						collided = true
 						// @game.addDebugMessage("fix jump force (time: ${@game.time})")

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" backgroundcolor="#161616">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="64" height="32" tilewidth="32" tileheight="32" backgroundcolor="#161616">
  <tileset firstgid="1" name="tiledmap-0" tilewidth="32" tileheight="32">
   <image source="../data_debug/images/tiledmap/tiledmap-0.jpg" width="256" height="256"/>
  </tileset>
@@ -12,24 +12,39 @@
  <tileset firstgid="97" name="tiledmap-96" tilewidth="32" tileheight="64">
   <image source="../data_debug/images/tiledmap/tiledmap-96.png" width="256" height="256"/>
  </tileset>
- <layer name="back" width="32" height="32" opacity="0.3">
+ <tileset firstgid="129" name="tiledmap-128" tilewidth="32" tileheight="32">
+  <image source="../data_debug/images/tiledmap/tiledmap-128.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="193" name="tiledmap-192" tilewidth="96" tileheight="64">
+  <image source="../data_debug/images/tiledmap/tiledmap-192.png" width="192" height="256"/>
+ </tileset>
+ <tileset firstgid="201" name="tiledmap-200" tilewidth="96" tileheight="96">
+  <image source="../data_debug/images/tiledmap/tiledmap-200.png" width="192" height="384"/>
+ </tileset>
+ <tileset firstgid="209" name="tiledmap-208" tilewidth="64" tileheight="32">
+  <image source="../data_debug/images/tiledmap/tiledmap-208.png" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="241" name="tiledmap-240" tilewidth="64" tileheight="128">
+  <image source="../data_debug/images/tiledmap/tiledmap-240.png" width="256" height="256"/>
+ </tileset>
+ <layer name="back" width="64" height="32" opacity="0.3">
   <data encoding="base64" compression="zlib">
-   eJzt1DELgCAQhmFXh4as1gqi//8XI0iI40w7r76CG55J8T0U9M45b4wxQC0D2Z8ZAwPd15iFu3tJfzcRI/HFfsOQ9unZ0n5cWwnJ+3Yntf0+A93vMv7Sj0r6pW+v0df8c6lweLJR0kfMEBKWC+i+5iypPt33xl3cge4bU2MDkD0zXA==
+   eJzt1j0LwjAQgOGuUjpY20mqBekorur//2EOpnAc+f66JL3hHcV7gjnTd13XE3YijtLO/nL8q6a7oZuhSdPR/dRnwH6+/9T+i6gkP/x96uafwPw+1eA3FeKHnVEU/n2nuZxBCv8qaZYU6lft9Fr8oWeh8+fef6H+WeLA/8W2fpvvwj0dgp9j/78B5OvHvlr9+3wbyueO4//b1Pf/ZQjf/0GSyu/zls7td91/Mf027y32m99/1P49G7/t3W/Bn/r9m6qrIjjLKIptrM2f8wxK8Y+KHppK8X9Fuf0xziKG/yPpjdL5F5HMj+dtxb8ocp2/JX+unVfC/mM/+4/kV0Vhhv0A9Th+5A==
   </data>
  </layer>
- <layer name="front" width="32" height="32">
+ <layer name="front" width="64" height="32">
   <data encoding="base64" compression="zlib">
-   eJztlcsKwzAMBHVuQpoeY2jrQv7/G0NAAqHKL9Wxe/DCXDOL8cYbAGyDwWCAvBitnFpadrCmt79Gl5ZxjH/w3yt//4HsiNW/IFpuEXYFq39CSlLLP4HNn0qOn87+Cj9PrfsX2vX7Av+KyA2H/BLNT1CeglXBgf4vmZFQBwrtRfPLDtIVY4bvDvw9DfktSfk50n/G/+jXYvHH3oBFUDMe0m+j9J9n/GH09hPO6E9tmOB3LOTneEbKr205Z2shvy+gZNu59PaX9DgAEE9Crw==
+   eJztmNtqwzAMQP3aXdqOwmAdXb3SvRWWt/3/n21mFgghWbLsXAo5cB66Ju2Om8SJNyGEjeJXQW1f8Cj4NrOvBkv91jGQ+uceg7X/Xwlo9L4P/RJLOf6Xxto//fmPwX9/VHwRfGZ8Ylz7p23GHrJjwPVjpP4P5D33tzLFGByIwFLHhNLaL1HT/46ck979kj+Cw5/fBtN2c40Zve/0AL309WDc37rdGEj95+y9A3PvNUu5l/5tluOh4JURY+3n5m5pLj9la87/S3ZX6If7qxq8/RRv/4BeJy9E2Ebrx/eXPRmjH8DdVrh+OPbH6Mek/jOxldr+Hkhzu9bjnf9KcP3cs5GXfdaydkR/WzoepX7v/0z7uX3xZ+6Q9DPAPaO0hgbPVNIYADBfWK8z3t9O24frT+D+0tohFT9Xc8+TQG0/7bGOg7Xfg9aPpf2JGPrMMzeD0lpPSz/HXP3e97X2LbEnMYx3n+GFXsNpfzrGP5EtxLCsfm4O0/rBo+P7Yij3a+ueScu5r50fQGkux9c4qR8bkdZ+j9b+WygfY3Qut8x1Un+ssLW/Vq29h0vup/Zurx2HX5DTZXw=
   </data>
  </layer>
- <layer name="items" width="32" height="32">
+ <layer name="items" width="64" height="32">
   <data encoding="base64" compression="zlib">
-   eJzt0dENABAMAFFGxATsP0Q3kEZKU733XfSiFgAAcuvKuXZ1Cz/a/l9Z9g/Du17J8P+7RvpjWQdnojVa8+ifDm9CRwDl8QSd
+   eJztmMsNwjAMhsOIvAbgIQQXmAIhduCC4MhjFgSLUBiAIDVqDiWxgxNHrT/J6sFO7PZPGitK8dJhzi8INg9mf1M5aVtyFxHABOB3xRj/PXD+1PRaklOoh0qLC0NO4X/avP99a3YImKOgKISRNuuP7U+wvdxR2wE5JjWUWpyROaG5uwG1pMD0clNtM1X1fPMfcamBnMkY/anWClZ/IR4c+seYr084FxVjxtwvYJytga/eWPpD+qzcyfVf5qurKfufmisyPtd34dbfNSa3bzZAxu/KZ6o73pDzJLb+G21rbVvgGMw9ESdvh+/bz+9V1e/fyudC20rldcdLqX+M/DEYMeQU6rH1f7JVIRg+qL4rpA==
   </data>
  </layer>
- <layer name="entities" width="32" height="32">
+ <layer name="entities" width="64" height="32">
   <data encoding="base64" compression="zlib">
-   eJztzjEBAAAMAiCrrX+pZfDygQQkAEDr1gEAgNIDSN4AQg==
+   eJztzjEBAAAMAiCrrX+pxdADEpAAAADAvmsHAAAAAMY9gXwAQg==
   </data>
  </layer>
 </map>

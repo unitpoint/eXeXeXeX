@@ -1,4 +1,6 @@
 TileItem = extends Actor {
+	SHADOW_OFFS = vec2(5, 5),
+	
 	__object = {
 		tileX = 0,
 		tileY = 0,
@@ -40,11 +42,53 @@ TileItem = extends Actor {
 		@name = elem.res || throw "res is not found in elem: ${elem}"
 		@size = vec2(elem.cols * TILE_SIZE, elem.rows * TILE_SIZE)
 		
-		@sprite = Box9Sprite().attrs {
+		@sprite = Sprite().attrs {
 			resAnim = res.get(@name),
-			size = @size,
+			// size = @size,
 			parent = this,
 		}
+		@spriteBaseSize = @sprite.size
+		@sprite.scale = @size / @spriteBaseSize
+		@sprite.size = @size
+		
+		if(elem.noShadow){
+			@shadow = @shadowBaseSize = null
+		}else{
+			@shadow = Sprite().attrs {
+				resAnim = @sprite.resAnim,
+				// size = @size,
+				// pos = @pos + vec2(10, 10),
+				color = Color(0.1, 0.1, 0.1, 0.8),
+				parent = game.mapLayers[MAP_LAYER_TILE_ITEM_SHADOW],
+			}
+			@shadowBaseSize = @shadow.size
+			@shadow.scale = @size / @shadowBaseSize
+			@shadow.size = @size
+		}
+	},
+	
+	updateLinkPos = function(){
+		@shadow.pos = @pos + TileItem.SHADOW_OFFS
+	},
+	
+	__set@pos = function(value){
+		super(value)
+		@updateLinkPos()
+	},
+	
+	__set@x = function(value){
+		super(value)
+		@updateLinkPos()
+	},
+	
+	__set@y = function(value){
+		super(value)
+		@updateLinkPos()
+	},
+	
+	cleanup = function(){
+		@body.destroy()
+		@shadow.detach()
 	},
 	
 	createPhysBody = function(){

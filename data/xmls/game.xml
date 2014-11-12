@@ -25,6 +25,9 @@
 		<image file="joystick.png" />
 		<image file="finger.png" />
 		
+		<image file="light-alarm-lamp.png" />
+		<image file="light-tunel-lamp.png" />
+		<image file="light-table-lamp.png" />
 		<image file="light-01.png" />
 		<image file="light-02.png" />
 		<image file="light-03.png" />
@@ -80,6 +83,7 @@
 		<image file="tiles/tile-128x128-002-03.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-026.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-036.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x128-042.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-256x256-006.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-007.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-008.jpg" cols="4" rows="4" />
@@ -114,11 +118,104 @@
 		<image file="tiles/tile-256x256-034.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-035-glowing.png" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-035.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-037.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-038.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-039.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-040.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-041.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-043.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-044.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-045.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-046.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-047.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-048.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-049.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-050.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-051.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-052.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-053.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-054.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-055.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-056.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-057.jpg" cols="4" rows="4" />
 		<image file="items/item-128x128-080.png" />
-		<image file="items/item-128x128-081.png" />
+		<image file="items/item-128x128-081-t.png" />
 		<image file="items/item-128x128-082.png" />
+		<image file="items/item-128x128-083.png" />
+		<image file="items/item-128x128-084-t-n.png" />
+		<image file="items/item-128x128-085-t.png" />
+		<image file="items/item-128x128-086-t.png" />
+		<image file="items/item-128x128-087-t.png" />
+		<image file="items/item-128x128-088-t.png" />
+		<image file="items/item-128x256-240-t.png" />
+		<image file="items/item-128x256-241-t.png" />
+		<image file="items/item-128x256-242-t.png" />
+		<image file="items/item-128x256-243-t.png" />
+		<image file="items/item-128x64-208-t.png" />
+		<image file="items/item-128x64-209-t.png" />
+		<image file="items/item-128x64-210-t.png" />
+		<image file="items/item-128x64-211-t-n.png" />
+		<image file="items/item-192x128-192-t.png" />
+		<image file="items/item-192x192-200-t.png" />
 		<image file="items/item-64x128-096.png" />
 		<image file="items/item-64x128-097.png" />
+		<image file="items/item-64x128-098-t-n.png" />
+		<image file="items/item-64x128-099-t.png" />
+		<image file="items/item-64x128-100-t.png" />
+		<image file="items/item-64x128-101-t.png" />
+		<image file="items/item-64x128-102-t.png" />
+		<image file="items/item-64x128-103-t.png" />
+		<image file="items/item-64x128-104-t.png" />
+		<image file="items/item-64x128-105-t.png" />
+		<image file="items/item-64x128-109-t.png" />
+		<image file="items/item-64x128-110-t.png" />
+		<image file="items/item-64x64-128-t-n.png" />
+		<image file="items/item-64x64-129-t-n.png" />
+		<image file="items/item-64x64-130-t.png" />
+		<image file="items/item-64x64-131-t.png" />
+		<image file="items/item-64x64-132-t.png" />
+		<image file="items/item-64x64-133-t.png" />
+		<image file="items/item-64x64-134-t-n.png" />
+		<image file="items/item-64x64-135-t-n.png" />
+		<image file="items/item-64x64-136-t-n.png" />
+		<image file="items/item-64x64-137-t-n.png" />
+		<image file="items/item-64x64-138-t-n.png" />
+		<image file="items/item-64x64-139-t-n.png" />
+		<image file="items/item-64x64-140-t-n.png" />
+		<image file="items/item-64x64-141-t-n.png" />
+		<image file="items/item-64x64-142-t.png" />
+		<image file="items/item-64x64-143-t.png" />
+		<image file="items/item-64x64-144-t.png" />
+		<image file="items/item-64x64-145-t.png" />
+		<image file="items/item-64x64-146-t-n.png" />
+		<image file="items/item-64x64-147-t-n.png" />
+		<image file="items/item-64x64-148-t-n.png" />
+		<image file="items/item-64x64-149-t.png" />
+		<image file="items/item-64x64-150-t.png" />
+		<image file="items/item-64x64-151-t.png" />
+		<image file="items/item-64x64-152-t-n.png" />
+		<image file="items/item-64x64-153-t-n.png" />
+		<image file="items/item-64x64-154-t-n.png" />
+		<image file="items/item-64x64-155.png" />
+		<image file="items/item-64x64-156.png" />
+		<image file="items/item-64x64-157-t.png" />
+		<image file="items/item-64x64-158-t.png" />
+		<image file="items/item-64x64-159-t.png" />
+		<image file="items/item-64x64-160-t.png" />
+		<image file="items/item-64x64-161-t.png" />
+		<image file="items/item-64x64-162.png" />
+		<image file="items/item-64x64-163.png" />
+		<image file="items/item-64x64-164.png" />
+		<image file="items/item-64x64-165.png" />
+		<image file="items/item-64x64-166-t.png" />
+		<image file="items/item-64x64-167-t.png" />
+		<image file="items/item-64x64-168-t.png" />
+		<image file="items/item-64x64-169-t.png" />
+		<image file="items/item-64x64-170-t.png" />
+		<image file="items/item-64x64-171-t.png" />
+		<image file="items/item-64x64-172-t-n.png" />
+		<image file="items/item-64x64-173-t-n.png" />
+		<image file="items/item-64x64-174-t-n.png" />
 		<image file="entities/ent-128x128-064.png" />
 		<image file="entities/ent-128x128-065.png" />
 		<!-- end auto generated assets -->
