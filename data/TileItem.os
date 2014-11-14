@@ -37,7 +37,9 @@ TileItem = extends Actor {
 		@parent = game.mapLayers[MAP_LAYER_TILE_ITEM]
 		
 		var elem = ELEMENTS_LIST[type] || throw "unknown entity type: ${type}"
-		elem.isItem || throw "required item element but found: ${elem}"
+		elem.isItem || throw "item element required: ${elem}"
+		elem.cols || throw "cols required: ${elem}"
+		elem.rows || throw "rows required: ${elem}"
 		
 		@name = elem.res || throw "res is not found in elem: ${elem}"
 		@size = vec2(elem.cols * TILE_SIZE, elem.rows * TILE_SIZE)

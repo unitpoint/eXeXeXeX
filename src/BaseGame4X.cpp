@@ -21,11 +21,12 @@ int PHYS_CAT_BIT_PLATFORM;
 int PHYS_CAT_BIT_PLAYER;
 int PHYS_CAT_BIT_ENTITY;
 int PHYS_CAT_BIT_TILE_ITEM;
-int PHYS_CAT_BIT_TILE_SOLID_ITEM;
+int PHYS_CAT_BIT_ITEM;
 int PHYS_CAT_BIT_SCREEN;
 int PHYS_CAT_BIT_PIT;
 int PHYS_CAT_BIT_HELPER;
-int PHYS_CAT_BIT_DOOR;
+int PHYS_CAT_BIT_CAST_SHADOW;
+// int PHYS_CAT_BIT_DOOR;
 
 // =====================================================================
 
@@ -688,9 +689,27 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	vec2 endOffs = offs + size / mapScale;
 	posToCeilTile(endOffs, endX, endY);
 
+#ifndef USE_PHYS_OF_WHOLE_LEVEL
 	int physEdge = 0;
 	int startPhysX = startX+physEdge, endPhysX = endX-physEdge;
 	int startPhysY = startY+physEdge, endPhysY = endY-physEdge;
+#else
+	if(!startPhysX && !endPhysX && tiledmapWidth){
+		startPhysX = 0;	endPhysX = tiledmapWidth-1;
+		startPhysY = 0;	endPhysY = tiledmapHeight-1;
+		Bounds2 bounds = getTileAreaBounds(startPhysX, startPhysY, endPhysX, endPhysY);
+		if(dragging){
+			physDraggingBounds = bounds;
+			physDraggingBoundsUsed = true;
+			// addDebugMessage("set dragging bounds");
+		}else{
+			physPlayerBounds = bounds;
+			physDraggingBoundsUsed = false;
+			// addDebugMessage("set player bounds");
+		}
+		queryTilePhysics(startPhysX, startPhysY, endPhysX, endPhysY, time);
+	}
+#endif
 
 #if 1 || defined _WIN32 && 1
 	startX -= 2; startY -= 1;
@@ -725,14 +744,12 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		os->callTF(4);
 	}
 	
+#ifndef USE_PHYS_OF_WHOLE_LEVEL
 	physEdge = 4;
 	startPhysX = (startPhysX / physEdge) * physEdge;
 	startPhysY = (startPhysY / physEdge) * physEdge;
 	endPhysX = ((endPhysX + physEdge-1) / physEdge) * physEdge;
 	endPhysY = ((endPhysY + physEdge-1) / physEdge) * physEdge;
-	// endPhysX = (endPhysX / physEdge + 1) * physEdge;
-	// endPhysY = (endPhysY / physEdge + 1) * physEdge;
-	// physDraggingBoundsUsed = false;
 	if(physChanged || startPhysX != this->startPhysX || startPhysY != this->startPhysY || endPhysX != this->endPhysX || endPhysY != this->endPhysY){
 		this->startPhysX = startPhysX;
 		this->startPhysY = startPhysY;
@@ -750,6 +767,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		}
 		queryTilePhysics(startPhysX, startPhysY, endPhysX, endPhysY, time);
 	}
+#endif
 
 	if(!lightmap->getVisible()){
 		return;
@@ -763,30 +781,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	Matrix viewProj = r.getViewProjection();
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
-#if 0
-	activeTilesXY.clear();
-
-#if 1
-	activeTilesXY.reserve((endX - startX + 1) * (endY - startY + 1));
-	for(int y = startY; y <= endY; y++){
-		for(int x = startX; x <= endX; x++){
-			activeTilesXY.push_back(Point(x, y));
-		}
-	}
-#else
-	pushCtypeValue(os, this);
-	os->getProperty("tiles");
-	while(os->nextIteratorStep()){
-		int x = (os->getProperty(-1, "tileX"), os->popInt());
-		int y = (os->getProperty(-1, "tileY"), os->popInt());
-		activeTilesXY.push_back(Point(x, y));
-		os->pop(2);
-	}
-	os->pop();
-#endif
-#endif // 0
-
-	std::vector<Point>::iterator it;
+	// std::vector<Point>::iterator it;
 	bool lightmapInitialized = false;
 	
 	AffineTransform transform; 
@@ -824,7 +819,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		}
 
 		vec2 lightScreenRadius = vec2(light->radius, light->radius) * mapScale;
-		float lightScreenRadiusMax = MathLib::max(lightScreenRadius.x, lightScreenRadius.y);
+		// float lightScreenRadiusMax = MathLib::max(lightScreenRadius.x, lightScreenRadius.y);
 		vec2 lightScreenPos = (light->pos - offs) * mapScale;
 
 		transform.identity();
@@ -838,6 +833,123 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		IVideoDriver::instance->setUniform("projection", &viewProj);
 		setUniformColor("color", light->shadowColor);
 
+		// vec2 lightStart = tileToPos(lightStartX, lightStartY);
+		// vec2 lightEnd = tileToPos(lightEndX, lightEndY);
+		
+		class CastShadowQueryCallback: public b2QueryCallback
+		{
+		public:
+
+			BaseGame4X * game;
+			MyRenderer * r;
+			b2World * physWorld;
+			b2AABB aabb;
+			vec2 offs;
+			vec2 mapScale;
+			vec2 lightScreenPos;
+			vec2 lightScreenRadius;
+			
+			CastShadowQueryCallback(BaseGame4X * _game, MyRenderer * _r, b2World * _physWorld, const b2AABB& _aabb, 
+				const vec2& _offs, const vec2& _mapScale, const vec2& _lightScreenPos, const vec2& _lightScreenRadius)
+			{
+				game = _game;
+				r = _r;
+				physWorld = _physWorld;
+				aabb = _aabb;
+				offs = _offs;
+				mapScale = _mapScale;
+				lightScreenPos = _lightScreenPos;
+				lightScreenRadius = _lightScreenRadius;
+			}
+
+			/// Called for each fixture found in the query AABB.
+			/// @return false to terminate the query.
+			virtual bool ReportFixture(b2Fixture* coreFixture)
+			{
+				if(coreFixture->GetShape()->GetType() != b2Shape::e_polygon){
+					return true;
+				}
+				int castShadowBits = PHYS_CAT_BIT_CAST_SHADOW;
+				if((coreFixture->GetFilterData().categoryBits & castShadowBits) != castShadowBits){
+					return true;
+				}
+				b2Vec2 vertices[b2_maxPolygonVertices];
+				const b2Transform& xf = coreFixture->GetBody()->GetTransform();
+				b2PolygonShape * shape = (b2PolygonShape*)coreFixture->GetShape();
+				
+				b2AABB fixtureAABB;
+				vertices[0] = b2Mul(xf, shape->m_vertices[0]);
+				fixtureAABB.upperBound = fixtureAABB.lowerBound = vertices[0];
+				
+				// points[0] = PhysWorld::fromPhysVec(fixtureAABB.lowerBound);
+				int i;
+				for(i = 1; i < shape->m_count; i++){
+					vertices[i] = b2Mul(xf, shape->m_vertices[i]);
+					fixtureAABB.lowerBound = b2Min(fixtureAABB.lowerBound, vertices[i]);
+					fixtureAABB.upperBound = b2Max(fixtureAABB.upperBound, vertices[i]);
+					// points[i] = PhysWorld::fromPhysVec(v);
+				}
+
+				b2Vec2 radius(shape->m_radius, shape->m_radius);
+				fixtureAABB.lowerBound = fixtureAABB.lowerBound - radius;
+				fixtureAABB.upperBound = fixtureAABB.upperBound + radius;
+
+				// b2AABB fixtureAABB;
+				// coreFixture->GetShape()->ComputeAABB(&fixtureAABB, coreFixture->GetBody()->GetTransform(), 0);
+				if(!b2TestOverlap(aabb, fixtureAABB)){
+					return true;
+				}
+
+				ShadowPolygon shadowPolygon;
+				shadowPolygon.count = shape->m_count;
+				
+				// float lightScale = game->lightScale;
+				vec2 scale = mapScale * game->lightScale;
+				for(i = 0; i < shape->m_count; i++){
+					shadowPolygon.points[i] = (PhysWorld::fromPhysVec(vertices[i]) - offs) * scale;
+				}
+				vec2 lightScreenPos = this->lightScreenPos * game->lightScale;
+				float lightScreenRadius = this->lightScreenRadius.x * game->lightScale;
+
+				for(i = 0; i < shape->m_count; i++){
+					const vec2& p1 = shadowPolygon.points[i];
+					const vec2& p2 = shadowPolygon.points[(i+1) % shape->m_count];
+					vec2 edge = p2 - p1;
+					vec2 normal = vec2(edge.y, -edge.x).norm();
+					float dist = normal.dot(p1) - normal.dot(lightScreenPos);
+					if(dist <= 0 || dist > lightScreenRadius){
+						continue;
+					}
+
+					vec2 lightToCurrent = p1 - lightScreenPos;
+					OX_ASSERT(normal.dot(lightToCurrent) > 0);
+					// type = isDoor ? ELEM_TYPE_EMPTY : getFrontType(x + tileSideOffs[i].x, y + tileSideOffs[i].y);
+					// if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_LADDER || type == TILE_TYPE_DOOR_01){
+					// if(shadowSide[i]){
+						vec2 p1_target = p1 + lightToCurrent * (lightScreenRadius * 100);
+						vec2 p2_target = p2 + (p2 - lightScreenPos) * (lightScreenRadius * 100);
+						
+						r->drawPoly(p1, // * lightScale, 
+								p1_target, // * lightScale, 
+								p2_target, // * lightScale, 
+								p2); // * lightScale);
+					// }
+				}
+				game->shadowPolygons.push_back(shadowPolygon);
+				return true;
+			}
+		};
+
+		shadowPolygons.clear();
+		if(physWorld->getCore()){
+			b2AABB aabb;
+			aabb.lowerBound = PhysWorld::toPhysVec(tileToPos(lightStartX, lightStartY));
+			aabb.upperBound = PhysWorld::toPhysVec(tileToPos(lightEndX, lightEndY));
+			CastShadowQueryCallback queryCallback(this, &r, physWorld->getCore(), aabb, offs, mapScale, lightScreenPos, lightScreenRadius);
+			physWorld->getCore()->QueryAABB(&queryCallback, aabb);
+		}
+
+#ifndef USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
 		for(int y = lightStartY; y <= lightEndY; y++){
 			for(int x = lightStartX; x <= lightEndX; x++){
 				ElementType type = getFrontType(x, y);
@@ -908,7 +1020,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 					vec2 edge = p2 - p1;
 					vec2 normal = vec2(edge.y, -edge.x).norm();
 					float dist = normal.dot(p1) - normal.dot(lightScreenPos);
-					if(dist <= 0 || dist > lightScreenRadiusMax){
+					if(dist <= 0 || dist > lightScreenRadius.x){
 						continue;
 					}
 
@@ -928,19 +1040,46 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 				}
 			}
 		}
+#endif // USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
 		r.drawBatch();
 
 		// setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
 		vec3 frontColor = light->frontColor;
 		setUniformColor("color", frontColor);
 		float edge = frontColor == vec3(0.0f, 0.0f, 0.0f) ? 2.0f : 0.0f;
+		float halfEdge = edge/2.0f;
+
+		vec2 polygonCenter, points[b2_maxPolygonVertices];
+		for(int j, i = 0; i < shadowPolygons.size(); i++){
+			ShadowPolygon& polygon = shadowPolygons[i];
+			OX_ASSERT(polygon.count > 2);
+			if(edge){
+				polygonCenter = polygon.points[0];
+				for(j = 1; j < polygon.count; j++){
+					polygonCenter = polygonCenter + polygon.points[j];
+				}
+				polygonCenter = polygonCenter / (float)polygon.count;
+				for(j = 0; j < polygon.count; j++){
+					points[j] = polygon.points[j];
+					// points[j].x = polygonCenter.x < points[j].x ? ceilf(points[j].x + halfEdge) : floorf(points[j].x - halfEdge);
+					// points[j].y = polygonCenter.y < points[j].y ? ceilf(points[j].y + halfEdge) : floorf(points[j].y - halfEdge);
+					points[j].x += polygonCenter.x < points[j].x ? halfEdge : -halfEdge;
+					points[j].y += polygonCenter.y < points[j].y ? halfEdge : -halfEdge;
+				}
+				r.drawTriangleFan(points, polygon.count);
+			}else{
+				r.drawTriangleFan(polygon.points, polygon.count);
+			}
+		}
+
+#ifndef USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
 		for(int y = lightStartY; y <= lightEndY; y++){
 			for(int x = lightStartX; x <= lightEndX; x++){
 				ElementType type = getFrontType(x, y);
 				if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_DOOR_01){
 					continue;
 				}
-				vec2 pos = (tileToPos(x, y) - offs) * mapScale - edge/2;
+				vec2 pos = (tileToPos(x, y) - offs) * mapScale - halfEdge;
 				vec2 points[] = {
 					pos,
 					pos + vec2(TILE_SIZE, 0) * mapScale + vec2(edge, 0),
@@ -953,6 +1092,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 					points[3] * lightScale);
 			}
 		}
+#endif // USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
 		r.end();
 
 		if(!lightmapInitialized){
@@ -1428,11 +1568,12 @@ BaseGame4X::BaseGame4X()
 	PHYS_CAT_BIT_PLAYER		= (os->getProperty(-1, "PHYS_CAT_BIT_PLAYER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_ENTITY		= (os->getProperty(-1, "PHYS_CAT_BIT_ENTITY"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_TILE_ITEM	= (os->getProperty(-1, "PHYS_CAT_BIT_TILE_ITEM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
-	PHYS_CAT_BIT_TILE_SOLID_ITEM = (os->getProperty(-1, "PHYS_CAT_BIT_TILE_SOLID_ITEM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_ITEM		= (os->getProperty(-1, "PHYS_CAT_BIT_ITEM"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_SCREEN		= (os->getProperty(-1, "PHYS_CAT_BIT_SCREEN"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_PIT		= (os->getProperty(-1, "PHYS_CAT_BIT_PIT"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_HELPER		= (os->getProperty(-1, "PHYS_CAT_BIT_HELPER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
-	PHYS_CAT_BIT_DOOR		= (os->getProperty(-1, "PHYS_CAT_BIT_DOOR"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	PHYS_CAT_BIT_CAST_SHADOW= (os->getProperty(-1, "PHYS_CAT_BIT_CAST_SHADOW"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	// PHYS_CAT_BIT_DOOR		= (os->getProperty(-1, "PHYS_CAT_BIT_DOOR"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	os->pop();
 }
 
@@ -2049,6 +2190,7 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 		
 		Bounds2 physBounds = physTileArea->physBounds;
 		spPhysFixtureDef fixtureDef = new PhysFixtureDef();
+		OX_ASSERT(physTileArea->type != PHYS_EMPTY);
 		switch(physTileArea->type){
 		/*
 		case PHYS_LADDER:
@@ -2073,7 +2215,11 @@ void BaseGame4X::queryTilePhysics(int ax, int ay, int bx, int by, float time)
 			break;
 
 		default:
-			fixtureDef->setCategoryBits(PHYS_CAT_BIT_SOLID);
+			fixtureDef->setCategoryBits(PHYS_CAT_BIT_SOLID
+#ifdef USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
+				| PHYS_CAT_BIT_CAST_SHADOW
+#endif
+			);
 			break;
 		}
 		spPhysBodyDef bodyDef = new PhysBodyDef();
@@ -2463,7 +2609,7 @@ void BaseGame4X::drawPhysics()
 						color = b2Color(0.48f, 0.46f, 0.68f);
 					}else if(filter.categoryBits & PHYS_CAT_BIT_TILE_ITEM){
 						color = b2Color(0.68f, 0.68f, 0.46f);
-					}else if(filter.categoryBits & PHYS_CAT_BIT_DOOR){
+					}else if(filter.categoryBits & PHYS_CAT_BIT_ITEM){
 						color = b2Color(0.9f, 0.1f, 0.1f);
 					}
 					drawPhysShape(f, xf, color);

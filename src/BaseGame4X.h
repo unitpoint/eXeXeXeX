@@ -13,6 +13,9 @@ using namespace ObjectScript;
 
 // =====================================================================
 
+#define USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
+#define USE_PHYS_OF_WHOLE_LEVEL
+
 // #define GAME_TO_PHYS_SCALE	(2.0f / 128.0f)
 
 /*
@@ -419,6 +422,13 @@ protected:
 	float lightScale;
 	int lightTextureWidth;
 	int lightTextureHeight;
+
+	struct ShadowPolygon
+	{
+		vec2 points[b2_maxPolygonVertices];
+		int count;
+	};
+	std::vector<ShadowPolygon> shadowPolygons;
 	
 	spResources resources;
 
@@ -537,15 +547,70 @@ public:
 		}
 	}
 
-	void drawPoints(const vec3 * points, int numPoints)
+	void drawTriangleStrip(const vec3 * points, int numPoints)
 	{
 		Renderer::draw(points, sizeof(points[0])*numPoints, VERTEX_POSITION);
+	}
+
+	void drawTriangleStrip(const vec2 * points, int numPoints)
+	{
+		vec3 * p = (vec3*)alloca(sizeof(vec3)*numPoints);
+		for(int i = 0; i < numPoints; i++){
+			p[i] = points[i];
+		}
+		drawTriangleStrip(p, numPoints);
+	}
+
+	void drawTriangleFan(const vec3 * points, int numPoints)
+	{
+		if(numPoints > 2){
+			vec3 * strip = (vec3*)alloca(sizeof(vec3)*numPoints);
+			strip[0] = points[0];
+			strip[1] = points[1];
+			strip[2] = points[2];
+			int i = 3;
+			for(int a = 3, b = numPoints-1;;){
+				if(b < a){
+					break;
+				}
+				strip[i++] = points[b--];
+				if(a > b){
+					break;
+				}
+				strip[i++] = points[a++];
+			}
+			OX_ASSERT(i == numPoints);
+			drawTriangleStrip(strip, numPoints);
+		}
+	}
+
+	void drawTriangleFan(const vec2 * points, int numPoints)
+	{
+		if(numPoints > 2){
+			vec3 * strip = (vec3*)alloca(sizeof(vec3)*numPoints);
+			strip[0] = points[0];
+			// strip[1] = points[1];
+			// strip[2] = points[2];
+			int i = 1;
+			for(int a = 1, b = numPoints-1;;){
+				if(b < a){
+					break;
+				}
+				strip[i++] = points[b--];
+				if(a > b){
+					break;
+				}
+				strip[i++] = points[a++];
+			}
+			OX_ASSERT(i == numPoints);
+			drawTriangleStrip(strip, numPoints);
+		}
 	}
 
 	void drawPoly(const vec2& p1, const vec2& p2, const vec2& p3, const vec2& p4)
 	{
 		vec3 points[] = {p1, p4, p2, p3};
-		drawPoints(points, 4);
+		drawTriangleStrip(points, 4);
 	}
 };
 

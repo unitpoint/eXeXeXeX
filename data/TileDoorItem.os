@@ -68,6 +68,7 @@ TileDoorItem = extends TileItem {
 		// to detect origin item place while placing new items
 		super()
 		
+		var elem = ELEMENTS_LIST[@type]
 		var physAngle = math.round((@moveDir.angle + 90) / 90) * 90 | 0
 		
 		var halfSize = @size * 0.5
@@ -88,7 +89,8 @@ TileDoorItem = extends TileItem {
 		
 		var fixtureDef = PhysFixtureDef()
 		fixtureDef.setPolygonAsBounds(-halfSize, halfSize)
-		fixtureDef.categoryBits = PHYS_CAT_BIT_SOLID | PHYS_CAT_BIT_DOOR
+		fixtureDef.categoryBits = PHYS_CAT_BIT_SOLID | PHYS_CAT_BIT_ITEM 
+			| (elem.doorCastShadow !== false ? PHYS_CAT_BIT_CAST_SHADOW : 0)
 		// fixtureDef.maskBits = PHYS_CAT_BIT_PLAYER | PHYS_CAT_BIT_ENTITY
 		@doorBody.createFixture(fixtureDef)
 		
@@ -99,14 +101,14 @@ TileDoorItem = extends TileItem {
 		fixtureDef.setPolygonAsBounds(
 			vec2(-1.0, -0.5) * halfSize - vec2(sideSensorSize, 0), 
 			vec2( 1.0,  0.5) * halfSize + vec2(sideSensorSize, 0))
-		fixtureDef.categoryBits = PHYS_CAT_BIT_DOOR
+		fixtureDef.categoryBits = PHYS_CAT_BIT_ITEM
 		fixtureDef.maskBits = PHYS_CAT_BIT_PLAYER | PHYS_CAT_BIT_ENTITY
 		fixtureDef.isSensor = true
 		@doorBody.createFixture(fixtureDef)
 		
 		var fixtureDef = PhysFixtureDef()
 		fixtureDef.setPolygonAsBounds(vec2(-0.5, 0.9) * halfSize, vec2(0.5, 1.0) * halfSize + vec2(0, TILE_SIZE * 0.1))
-		fixtureDef.categoryBits = PHYS_CAT_BIT_DOOR
+		fixtureDef.categoryBits = PHYS_CAT_BIT_ITEM
 		fixtureDef.maskBits = PHYS_CAT_BIT_PLAYER | PHYS_CAT_BIT_ENTITY
 		fixtureDef.isSensor = true
 		@doorBody.createFixture(fixtureDef)

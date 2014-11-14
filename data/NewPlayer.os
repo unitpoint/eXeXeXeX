@@ -9,6 +9,7 @@ NewPlayer = extends Actor {
 		groundContact = null,
 		sideContact = null,
 		ladderContact = null,
+		platformContact = null,
 		pitContact = null,
 		
 		maxSpeed = TILE_SIZE * 10,
@@ -98,16 +99,14 @@ NewPlayer = extends Actor {
 			parent = @game.mapLayers[MAP_LAYER_PLAYER_DIR],
 		}
 		
-		@lightRadius = 8 * TILE_SIZE
+		@lightRadius = 10 * TILE_SIZE
 		@light = Light().attrs {
 			name = "light-01",
-			shadowColor = Color(0.1, 0.1, 0.1),
+			shadowColor = Color(0.2, 0.2, 0.2),
 			// shadowColor = Color(0.4, 0.4, 0.4),
-			// radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
-			color = Color(0.8, 0.9, 0.9),
+			color = Color(0.85, 0.95, 0.95),
+			// color = Color(0.8, 0.9, 0.9),
 			frontColor = Color.WHITE,
-			// tileRadius = @lightTileRadius,
-			// parent = this,
 		}
 		@game.addLight(@light)
 		
@@ -131,7 +130,13 @@ NewPlayer = extends Actor {
 		// fixtureDef.type = PHYS_SHAPE_CIRCLE
 		fixtureDef.circleRadius = @wheelRadius
 		fixtureDef.categoryBits = PHYS_CAT_BIT_PLAYER
-		fixtureDef.maskBits = PHYS_CAT_BIT_SOLID | PHYS_CAT_BIT_LADDER | PHYS_CAT_BIT_PIT | PHYS_CAT_BIT_HELPER | PHYS_CAT_BIT_DOOR
+		fixtureDef.maskBits = PHYS_CAT_BIT_SOLID 
+			| PHYS_CAT_BIT_ITEM
+			| PHYS_CAT_BIT_LADDER 
+			| PHYS_CAT_BIT_PLATFORM
+			| PHYS_CAT_BIT_PIT 
+			| PHYS_CAT_BIT_HELPER 
+			// | PHYS_CAT_BIT_SENSOR
 		fixtureDef.friction = elem.physFriction || 0.4
 		fixtureDef.restitution = elem.physRestitution || 0.0
 		fixtureDef.density = elem.physDensity || 1
@@ -288,8 +293,8 @@ NewPlayer = extends Actor {
 	},
 	
 	updateContacts = function(){
-		// var prevLadderContact = @ladderContact
-		@groundContact = @sideContact = @ladderContact = @pitContact = null
+		// var prevContact = @platformContact
+		@groundContact = @sideContact = @ladderContact = @platformContact = @pitContact = null
 		var bestGroundAngle = 50
 		for(var _, contact in @contacts){
 			if(bestGroundAngle > contact.angle && @game.time - contact.time > 0.05){
@@ -301,14 +306,17 @@ NewPlayer = extends Actor {
 			if(contact.fixture.categoryBits & PHYS_CAT_BIT_LADDER != 0){
 				@ladderContact = contact
 			}
+			if(contact.fixture.categoryBits & PHYS_CAT_BIT_PLATFORM != 0){
+				@platformContact = contact
+			}
 			if(contact.fixture.categoryBits & PHYS_CAT_BIT_PIT != 0){
 				@pitContact = contact
 			}
 		}
-		/* if(prevLadderContact && !@ladderContact){
-			@game.addDebugMessage("release ladder contact")
-		}else if(!prevLadderContact && @ladderContact){
-			@game.addDebugMessage("found ladder contact")
+		/* if(prevContact && !@platformContact){
+			@game.addDebugMessage("release platform contact")
+		}else if(!prevContact && @platformContact){
+			@game.addDebugMessage("found platform contact")
 		} */
 	},
 	
@@ -409,7 +417,9 @@ NewPlayer = extends Actor {
 			return
 		}
 		@updateContacts()
-		if(@ladderContact){
+		if(@platformContact){
+			@body.gravityScale = 2
+		}else if(@ladderContact){
 			@body.gravityScale = 0
 		}else{
 			@body.gravityScale = 1
@@ -422,7 +432,7 @@ NewPlayer = extends Actor {
 			@dir.angle = @moveDir.angle
 			
 			var groundContact = @groundContact
-			var sensorSize = 0.3
+			var sensorSize, jumpSensorSize = 0.3, 0.5
 			if(math.abs(@moveDir.x) > sensorSize){
 				var side = @moveDir.x > 0 ? 1 : -1
 				@setSideFlip(-side)
@@ -432,14 +442,23 @@ NewPlayer = extends Actor {
 				}
 				@applyHorizForce(@moveDir.x)
 			}
-			if(@ladderContact){
+			// var platform = null
+			if(@platformContact){ // && (platform = @platformContact.fixture.body.item).moving == false){
+				if(math.abs(@moveDir.y) > sensorSize){
+					// platform.movePlatform(@moveDir.y)
+					@platformContact.fixture.body.item.movePlatform(@moveDir.y)
+					// @game.addDebugMessage("try to move platform")
+				}else{
+					// @game.addDebugMessage("platform is waiting to move")
+				}
+			}else if(@ladderContact){
 				if(math.abs(@moveDir.y) > sensorSize){
 					@applyVertForce(@moveDir.y)
 				}
 				if(!side){
 					@snapXToLadder()
 				}
-			}else if(@moveDir.y < -0.5 && groundContact && @game.time - @jumpTime > 0.1){
+			}else if(@moveDir.y < -jumpSensorSize && groundContact && @game.time - @jumpTime > 0.1){
 				@jumpTime = @game.time
 				var jumpForce = 40000
 				
@@ -476,7 +495,9 @@ NewPlayer = extends Actor {
 		}else{
 			@dir.visible = false
 			
-			if(@ladderContact){
+			if(@platformContact){
+				@body.linearVelocity = @body.linearVelocity * 0.5
+			}else if(@ladderContact){
 				@body.linearVelocity = @body.linearVelocity * 0.5
 				@snapXToLadder()
 				@snapYToLadder()
