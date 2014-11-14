@@ -154,8 +154,11 @@
 		<image file="items/item-128x64-208-t.png" />
 		<image file="items/item-128x64-209-t.png" />
 		<image file="items/item-128x64-210-t.png" />
-		<image file="items/item-128x64-211-t-n.png" />
+		<image file="items/item-128x64-211-t.png" />
+		<image file="items/item-128x64-212.png" />
+		<image file="items/item-128x64-213.png" />
 		<image file="items/item-192x128-192-t.png" />
+		<image file="items/item-192x128-193-t-n.png" />
 		<image file="items/item-192x192-200-t.png" />
 		<image file="items/item-64x128-096.png" />
 		<image file="items/item-64x128-097.png" />
@@ -214,8 +217,8 @@
 		<image file="items/item-64x64-170-t.png" />
 		<image file="items/item-64x64-171-t.png" />
 		<image file="items/item-64x64-172-t-n.png" />
-		<image file="items/item-64x64-173-t-n.png" />
-		<image file="items/item-64x64-174-t-n.png" />
+		<image file="items/item-64x64-173-t.png" />
+		<image file="items/item-64x64-174-t.png" />
 		<image file="entities/ent-128x128-064.png" />
 		<image file="entities/ent-128x128-065.png" />
 		<!-- end auto generated assets -->

@@ -275,11 +275,10 @@ public:
 	OS_DECLARE_CLASSINFO(BaseLight);
 
 	std::string name;
-	Color shadowColor;
-	// float tileRadiusScale;
-
 	vec2 pos;
 	Color color;
+	Color frontColor;
+	Color shadowColor;
 	float radius;
 	float angle;
 	float angularVelocity;
@@ -293,7 +292,7 @@ public:
 		shadowColor = Color(127, 127, 127, 255);
 		// tileRadiusScale = 1.0f;
 		pos = /*validPos =*/ vec2(0.0f, 0.0f);
-		color = Color(255, 255, 255, 255);
+		color = frontColor = Color(255, 255, 255, 255);
 		radius = 0.0f; // disabled by default
 		angle = 0.0f;
 		angularVelocity = 0.0f;
@@ -304,17 +303,17 @@ public:
 	std::string getName() const { return name; }
 	void setName(const char * value){ name = value;}
 
-	// float getTileRadiusScale() const { return tileRadiusScale; }
-	// void setTileRadiusScale(float value){ tileRadiusScale = value;}
-
-	Color getShadowColor() const { return shadowColor; }
-	void setShadowColor(const Color& value){ shadowColor = value;}
-
 	vec2 getPos() const { return pos; }
 	void setPos(const vec2& value){ pos = value;}
 
 	Color getColor() const { return color; }
 	void setColor(const Color& value){ color = value;}
+
+	Color getFrontColor() const { return frontColor; }
+	void setFrontColor(const Color& value){ frontColor = value;}
+
+	Color getShadowColor() const { return shadowColor; }
+	void setShadowColor(const Color& value){ shadowColor = value;}
 
 	float getRadius() const { return radius; }
 	void setRadius(float value){ radius = value;}

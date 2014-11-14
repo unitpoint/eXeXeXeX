@@ -1,4 +1,6 @@
 require "std"
+require "../data/os2d/vec2"
+require "../data/os2d/Color"
 require "../data/ELEMENTS_LIST"
 
 print "= BEGIN ============================"

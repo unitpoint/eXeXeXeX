@@ -105,6 +105,7 @@ NewPlayer = extends Actor {
 			// shadowColor = Color(0.4, 0.4, 0.4),
 			// radius = 0, // @lightTileRadius * @lightTileRadiusScale * TILE_SIZE,
 			color = Color(0.8, 0.9, 0.9),
+			frontColor = Color.WHITE,
 			// tileRadius = @lightTileRadius,
 			// parent = this,
 		}
@@ -359,7 +360,7 @@ NewPlayer = extends Actor {
 		// var ladder = body.item as TileLadderItem || throw "ladder required"
 		var dx = clamp((body.pos.x - @x) / TILE_SIZE, -1, 1)
 		var linearVelocity = @body.linearVelocity
-		if((dx < 0) != (linearVelocity.x < 0)){
+		if((dx < 0) != (linearVelocity.x < 0) && math.abs(linearVelocity.x) > TILE_SIZE * 0.5){
 			// return
 			// dx = -dx
 			dx = dx < 0 ? 1 : -1
@@ -384,7 +385,7 @@ NewPlayer = extends Actor {
 		var destY = (math.round(@y / TILE_SIZE) + 0) * TILE_SIZE
 		var dy = clamp((destY - @y) / TILE_SIZE, -1, 1)
 		var linearVelocity = @body.linearVelocity
-		if((dy < 0) != (linearVelocity.y < 0)){
+		if((dy < 0) != (linearVelocity.y < 0) && math.abs(linearVelocity.y) > TILE_SIZE * 0.5){
 			// return
 			// dy = -dy
 			dy = dy < 0 ? 1 : -1

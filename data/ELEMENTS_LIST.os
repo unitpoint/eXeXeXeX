@@ -70,47 +70,107 @@ ELEMENTS_LIST[ELEM_TYPE_ITEM_LADDER].merge {
 	class = "TileLadderItem",
 }
 
+ELEMENTS_LIST[193].merge {
+	class = "TileLadderItem",
+}
+
 ELEMENTS_LIST[82].merge {
-	class = "TileUpHandleDoorItem",
-	handle = "door-handle",
-	handleShadow = "door-handle-shadow",
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 0.5,
+	doorHandleOpenAngle = -360*2.3,
+	doorHandle = "door-handle",
+	doorHandlePivot = vec2(0.51, 0.51),
+	// doorHandleScale = 0.6,
+	doorHandleShadow = "door-handle-shadow",
+	// doorOpenSound = "open",
+	// doorCloseSound = "open",
 }
 
 ELEMENTS_LIST[97].merge {
-	class = "TileUpHandleDoorItem",
-	handle = "door-handle",
-	handleScale = 0.6,
-	handleShadow = "door-handle-shadow",
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 0.5,
+	doorHandleOpenAngle = -360*2.3,
+	doorHandle = "door-handle",
+	doorHandlePivot = vec2(0.51, 0.51),
+	doorHandleScale = 0.6,
+	doorHandleShadow = "door-handle-shadow",
+	// doorOpenSound = "open",
+	// doorCloseSound = "open",
+}
+
+ELEMENTS_LIST[212].merge {
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 0.5,
+	doorMoveDir = vec2(-1, 0),
+	// doorOpenTime = 1.0,
+	// doorCloseTime = 1.0,
+	// doorHandleOpenTime = 1.0
+	// doorHandleCloseTime = 1.0
+	doorHandleOpenAngle = -360*2.3,
+	doorHandle = "door-handle",
+	doorHandlePivot = vec2(0.51, 0.51),
+	doorHandleScale = 0.6,
+	doorHandleShadow = "door-handle-shadow",
+	// doorOpenSound = "open",
+	// doorCloseSound = "open",
+}
+
+ELEMENTS_LIST[213].merge {
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 0.5,
+	doorMoveDir = vec2(1, 0),
+	// doorOpenTime = 1.0,
+	// doorCloseTimeout = 1.0,
+	// doorCloseTime = 1.0,
+	// doorHandleOpenTime = 1.0,
+	// doorHandleCloseTime = 1.0,
+	doorHandleOpenAngle = -360*2.3,
+	doorHandle = "door-handle",
+	doorHandlePivot = vec2(0.51, 0.51),
+	doorHandleScale = 0.6,
+	doorHandleShadow = "door-handle-shadow",
+	// doorOpenSound = "open",
+	// doorCloseSound = "open",
 }
 
 ELEMENTS_LIST[84].merge {
-	class = "TileUpDoorItem",
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 2.0,
+	doorOpenTime = 0.3,
+	doorCloseTime = 1.0,
 }
 
 ELEMENTS_LIST[98].merge {
-	class = "TileUpDoorItem",
+	class = "TileDoorItem",
+	doorSideSensorSize = TILE_SIZE * 2.0,
+	doorOpenTime = 0.15,
+	doorCloseTimeout = 0.3,
+	doorCloseTime = 0.8,
 }
 
 ELEMENTS_LIST[172].merge {
 	class = "TileLightItem",
 	lightResName = "light-table-lamp",
 	lightRadius = TILE_SIZE * 3,
-	lightColor = [1.0, 1.0, 0.7],
+	lightColor = Color(1.0, 1.0, 0.7),
+	// lightFrontColor = [0, 0, 0],
 }
 
 ELEMENTS_LIST[173].merge {
 	class = "TileLightItem",
 	lightResName = "light-tunel-lamp",
 	// lightRadius = TILE_SIZE * 8,
-	lightColor = [1.0, 1.0, 0.8],
+	lightColor = Color(1.0, 1.0, 0.8),
+	// lightFrontColor = [0, 0, 0],
 }
 
 ELEMENTS_LIST[174].merge {
 	class = "TileLightItem",
 	lightResName = "light-alarm-lamp",
 	// lightRadius = TILE_SIZE * 8,
-	lightColor = [1.0, 0.5, 0.4],
+	lightColor = Color(1.0, 0.5, 0.4),
 	lightAngularVelocity = 360 * 0.5,
+	// lightFrontColor = [0, 0, 0],
 }
 
 ELEMENTS_LIST[211].merge {

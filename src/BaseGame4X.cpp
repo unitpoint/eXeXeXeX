@@ -90,10 +90,10 @@ static void registerBaseLight(OS * os)
 	OS::FuncDef funcs[] = {
 		def("__newinstance", &Lib::__newinstance),
 		DEF_PROP("name", BaseLight, Name),
-		DEF_PROP("shadowColor", BaseLight, ShadowColor),
-		// DEF_PROP("tileRadiusScale", BaseLight, TileRadiusScale),
 		DEF_PROP("pos", BaseLight, Pos),
 		DEF_PROP("color", BaseLight, Color),
+		DEF_PROP("frontColor", BaseLight, FrontColor),
+		DEF_PROP("shadowColor", BaseLight, ShadowColor),
 		DEF_PROP("radius", BaseLight, Radius),
 		DEF_PROP("angle", BaseLight, Angle),
 		DEF_PROP("angularVelocity", BaseLight, AngularVelocity),
@@ -930,19 +930,22 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		}
 		r.drawBatch();
 
-		setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
+		// setUniformColor("color", vec3(1.0f, 1.0f, 1.0f));
+		vec3 frontColor = light->frontColor;
+		setUniformColor("color", frontColor);
+		float edge = frontColor == vec3(0.0f, 0.0f, 0.0f) ? 2.0f : 0.0f;
 		for(int y = lightStartY; y <= lightEndY; y++){
 			for(int x = lightStartX; x <= lightEndX; x++){
 				ElementType type = getFrontType(x, y);
 				if(type == ELEM_TYPE_EMPTY){ // || type == TILE_TYPE_DOOR_01){
 					continue;
 				}
-				vec2 pos = (tileToPos(x, y) - offs) * mapScale;
+				vec2 pos = (tileToPos(x, y) - offs) * mapScale - edge/2;
 				vec2 points[] = {
 					pos,
-					pos + vec2(TILE_SIZE, 0) * mapScale,
-					pos + vec2(TILE_SIZE, TILE_SIZE) * mapScale,
-					pos + vec2(0, TILE_SIZE) * mapScale
+					pos + vec2(TILE_SIZE, 0) * mapScale + vec2(edge, 0),
+					pos + vec2(TILE_SIZE, TILE_SIZE) * mapScale + vec2(edge, edge),
+					pos + vec2(0, TILE_SIZE) * mapScale + vec2(0, edge)
 				};
 				r.drawPoly(points[0] * lightScale, 
 					points[1] * lightScale, 
