@@ -67,7 +67,12 @@ TilePlatformItem = extends TileItem {
 			size = b - a
 			var cellCount = elem.platformPhysCellCount
 			var cellSize = size * elem.platformPhysCellSize
-			var emptySizeX = (size.x - cellSize.x * cellCount) / (cellCount - 1)
+			if(elem.platformPhysCellTiled){
+				var emptySizeX = (size.x - cellSize.x * cellCount) / cellCount
+				a.x = a.x + emptySizeX/2
+			}else{
+				var emptySizeX = (size.x - cellSize.x * cellCount) / (cellCount - 1)
+			}
 			for(var i = 0; i < cellCount; i++){
 				var ca = a + vec2(i * (cellSize.x + emptySizeX), 0)
 				var cb = ca + cellSize
@@ -143,6 +148,7 @@ TilePlatformItem = extends TileItem {
 					@tileY = ty
 				}
 			})
+			return true
 		}else{
 			// @game.addDebugMessage("it's not lift shaft: ${@tileX}, ${@tileY + dir}, ${elem.cols}, ${elem.rows}")
 		}

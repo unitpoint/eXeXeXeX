@@ -13,6 +13,7 @@ NewPlayer = extends Actor {
 		pitContact = null,
 		
 		maxSpeed = TILE_SIZE * 10,
+		sideTorqueScale = 1,
 		
 		breathingAction = null,
 		breathingSpeed = 1.0,
@@ -137,8 +138,8 @@ NewPlayer = extends Actor {
 			| PHYS_CAT_BIT_PIT 
 			| PHYS_CAT_BIT_HELPER 
 			// | PHYS_CAT_BIT_SENSOR
-		fixtureDef.friction = elem.physFriction || 0.4
-		fixtureDef.restitution = elem.physRestitution || 0.0
+		fixtureDef.friction = elem.physFriction || 0.9
+		fixtureDef.restitution = elem.physRestitution || 0.1
 		fixtureDef.density = elem.physDensity || 1
 		@body.createFixture(fixtureDef)
 		
@@ -251,7 +252,7 @@ NewPlayer = extends Actor {
 			var dot = contact.normal.dot(VEC2_UP)
 			var angle = math.deg(math.acos(dot))
 			storedContact.merge {
-				// fixture = contact.getFixture(i),
+				// fixtureB = contact.getFixture(i),
 				normal = contact.normal,
 				point = contact.point,
 				angle = angle,
@@ -267,19 +268,22 @@ NewPlayer = extends Actor {
 		var angle = math.deg(math.acos(dot))
 		@contacts[contact.id] = {
 			id = contact.id,
-			fixture = contact.getFixture(i),
+			// fixtureA = contact.getFixture(1-i),
+			fixtureB = contact.getFixture(i),
 			normal = contact.normal,
 			point = contact.point,
 			angle = angle,
 			dot = dot,
 			time = @game.time,
+			deleted = false,
 		}
 		// @game.addDebugMessage("[+ ${contact.id}] fix_id: ${contact.getFixture(i).id}, cat: ${contact.getFixture(i).categoryBits}, angle: ${angle|0}, p: ${contact.point.x|0}, ${contact.point.y|0}")
 		// @game.addDebugMessage("[+ ${contact.id}] angle: ${angle}, contacts: ${#@contacts}")
 	},
 	
 	unregisterContact = function(contact, i){
-		delete @contacts[contact.id]
+		// delete @contacts[contact.id]
+		@contacts[contact.id].deleted = true
 		// @game.addDebugMessage("[- ${contact.id}] fix_id: ${contact.getFixture(i).id}, cat: ${contact.getFixture(i).categoryBits}")
 		// @game.addDebugMessage("[- ${contact.id}] contacts: ${#@contacts}")
 	},
@@ -293,38 +297,49 @@ NewPlayer = extends Actor {
 	},
 	
 	updateContacts = function(){
-		// var prevContact = @platformContact
+		// var prevContact = @sideContact
 		@groundContact = @sideContact = @ladderContact = @platformContact = @pitContact = null
 		var bestGroundAngle = 50
-		for(var _, contact in @contacts){
-			if(bestGroundAngle > contact.angle && @game.time - contact.time > 0.05){
+		var bestSideTime = @game.time
+		for(var id, contact in @contacts){
+			if(bestGroundAngle > contact.angle){ // && @game.time - contact.time > 0.05){
 				bestGroundAngle = contact.angle
 				@groundContact = contact
-			}else if(contact.angle > 50){
+			}
+			if(contact.angle > 50 && contact.angle < 90+40 && bestSideTime >= contact.time){
+				bestSideTime = contact.time
 				@sideContact = contact
 			}
-			if(contact.fixture.categoryBits & PHYS_CAT_BIT_LADDER != 0){
+			if(contact.fixtureB.categoryBits & PHYS_CAT_BIT_LADDER != 0){
 				@ladderContact = contact
 			}
-			if(contact.fixture.categoryBits & PHYS_CAT_BIT_PLATFORM != 0){
+			if(contact.fixtureB.categoryBits & PHYS_CAT_BIT_PLATFORM != 0){
 				@platformContact = contact
 			}
-			if(contact.fixture.categoryBits & PHYS_CAT_BIT_PIT != 0){
+			if(contact.fixtureB.categoryBits & PHYS_CAT_BIT_PIT != 0){
 				@pitContact = contact
 			}
+			// purge contact
+			if(contact.deleted){
+				delete @contacts[id]
+			}
 		}
-		/* if(prevContact && !@platformContact){
-			@game.addDebugMessage("release platform contact")
-		}else if(!prevContact && @platformContact){
-			@game.addDebugMessage("found platform contact")
+		/* if(prevContact && !@sideContact){
+			@game.addDebugMessage("release side contact")
+		}else if(!prevContact && @sideContact){
+			@game.addDebugMessage("found side contact")
 		} */
 	},
 	
 	applyHorizForce = function(dx){
-		var linearVelocity = @body.linearVelocity
-		var forceScale = clamp(1 - math.abs(linearVelocity.x) / @maxSpeed, 0, 1)
+		dx != 0 || return;
 		var groundContact = @groundContact
-		forceScale = forceScale * math.max(0.25, groundContact.dot || 0)
+		var linearVelocity = @body.linearVelocity
+		var maxSpeed = @maxSpeed * math.abs(dx)
+		var forceScale = clamp(1 - math.abs(linearVelocity.x) / maxSpeed, 0, 1)
+		if(!@ladderContact){
+			// forceScale = forceScale * math.max(0.25, groundContact.dot || 0)
+		}
 		@body.applyForceToCenter(vec2(dx * (groundContact ? 10000 : 5000) * forceScale, 0))
 
 		if(linearVelocity.x < -@maxSpeed){
@@ -334,10 +349,25 @@ NewPlayer = extends Actor {
 		}
 		@body.linearVelocity = linearVelocity
 		
-		if((groundContact || @body.gravityScale > 0)){ // && !@sideContact){
-			@body.applyTorque(dx * 100000)
+		// if((groundContact || @body.gravityScale > 0)){ // && !@sideContact){
+		// if(groundContact || (@ladderContact && @sideContact)){
+		if(true){
+			var maxAngularVelocity = 360 * maxSpeed / (2*math.PI*@wheelRadius) * 1.0
+			var torqueScale = clamp(1 - math.abs(@body.angularVelocity) / maxAngularVelocity, 0, 1)
+			if(@sideContact && !@ladderContact){
+				torqueScale = torqueScale * @sideTorqueScale
+				@sideTorqueScale *= 0.5
+				/* var sideScale = clamp(1 - (@game.time - @sideContact.time) / 0.5, 0, 1)
+				torqueScale = torqueScale * sideScale
+				@game.addDebugMessage {
+					id = "sideScale",
+					message = "side scale: ${sideScale}, side time: ${@sideContact.time}"
+				} */
+			}else{
+				@sideTorqueScale = 1
+			}
+			@body.applyTorque(dx * 1000000 * torqueScale)
 			
-			var maxAngularVelocity = 360 * @maxSpeed / (2*math.PI*@wheelRadius) * 1.0
 			var angularVelocity = @body.angularVelocity
 			if(angularVelocity < -maxAngularVelocity){
 				angularVelocity = -maxAngularVelocity
@@ -346,13 +376,14 @@ NewPlayer = extends Actor {
 			}
 			@body.angularVelocity = angularVelocity
 		}else{
-			@body.angularVelocity = 0
+			// @body.angularVelocity = 0
 		}
 	},
 	
 	applyVertForce = function(dy){
+		dy != 0 || return;
 		var linearVelocity = @body.linearVelocity
-		var forceScale = clamp(1 - math.abs(linearVelocity.y) / @maxSpeed, 0, 1)
+		var forceScale = clamp(1 - math.abs(linearVelocity.y) / (@maxSpeed * math.abs(dy)), 0, 1)
 		@body.applyForceToCenter(vec2(0, dy * 5000 * forceScale))
 
 		if(linearVelocity.y < -@maxSpeed){
@@ -364,7 +395,7 @@ NewPlayer = extends Actor {
 	},
 	
 	snapXToLadder = function(){
-		var body = @ladderContact.fixture.body
+		var body = @ladderContact.fixtureB.body
 		// var ladder = body.item as TileLadderItem || throw "ladder required"
 		var dx = clamp((body.pos.x - @x) / TILE_SIZE, -1, 1)
 		var linearVelocity = @body.linearVelocity
@@ -388,7 +419,7 @@ NewPlayer = extends Actor {
 	},
 	
 	snapYToLadder = function(){
-		// var body = @ladderContact.fixture.body
+		// var body = @ladderContact.fixtureB.body
 		// var ladder = body.item as TileLadderItem || throw "ladder required"
 		var destY = (math.round(@y / TILE_SIZE) + 0) * TILE_SIZE
 		var dy = clamp((destY - @y) / TILE_SIZE, -1, 1)
@@ -417,10 +448,11 @@ NewPlayer = extends Actor {
 			return
 		}
 		@updateContacts()
-		if(@platformContact){
+		if(@platformContact && @platformContact.fixtureB.body.item.moving){
 			@body.gravityScale = 2
 		}else if(@ladderContact){
 			@body.gravityScale = 0
+			// @sideContact || @body.angularVelocity = 0
 		}else{
 			@body.gravityScale = 1
 		}
@@ -443,14 +475,10 @@ NewPlayer = extends Actor {
 				@applyHorizForce(@moveDir.x)
 			}
 			// var platform = null
-			if(@platformContact){ // && (platform = @platformContact.fixture.body.item).moving == false){
-				if(math.abs(@moveDir.y) > sensorSize){
-					// platform.movePlatform(@moveDir.y)
-					@platformContact.fixture.body.item.movePlatform(@moveDir.y)
-					// @game.addDebugMessage("try to move platform")
-				}else{
-					// @game.addDebugMessage("platform is waiting to move")
-				}
+			if(@platformContact && math.abs(@moveDir.y) > sensorSize 
+				&& @platformContact.fixtureB.body.item.movePlatform(@moveDir.y)) // || platform.moving))
+			{
+				@jumpTime = @game.time
 			}else if(@ladderContact){
 				if(math.abs(@moveDir.y) > sensorSize){
 					@applyVertForce(@moveDir.y)
@@ -490,19 +518,19 @@ NewPlayer = extends Actor {
 				}
 				
 				@body.applyForceToCenter(vec2(0, -jumpForce))
-				groundContact.fixture.body.applyForce(vec2(0, jumpForce), groundContact.point)
+				groundContact.fixtureB.body.applyForce(vec2(0, jumpForce), groundContact.point)
 			}
 		}else{
 			@dir.visible = false
 			
 			if(@platformContact){
-				@body.linearVelocity = @body.linearVelocity * 0.5
+				@body.linearVelocity = @body.linearVelocity * 0.75
 			}else if(@ladderContact){
-				@body.linearVelocity = @body.linearVelocity * 0.5
+				@body.linearVelocity = @body.linearVelocity * 0.75
 				@snapXToLadder()
 				@snapYToLadder()
 			}else if(@groundContact){
-				@body.linearVelocity = @body.linearVelocity * 0.5
+				@body.linearVelocity = @body.linearVelocity * 0.75
 			}
 		}
 	},

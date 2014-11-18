@@ -77,7 +77,6 @@
 		<image file="flame-12.png" />
 		<image file="flame-13.png" />
 		<image file="flame-14.png" />
-		<image file="tiles/tile-128x128-001.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-002-01.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-002-02.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-002-03.jpg" cols="2" rows="2" />
@@ -85,6 +84,7 @@
 		<image file="tiles/tile-128x128-036.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-042.jpg" cols="2" rows="2" />
 		<image file="tiles/tile-128x128-057.jpg" cols="2" rows="2" />
+		<image file="tiles/tile-128x64-001.jpg" cols="2" rows="1" />
 		<image file="tiles/tile-256x256-006.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-007.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-008.jpg" cols="4" rows="4" />
@@ -138,6 +138,8 @@
 		<image file="tiles/tile-256x256-054.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-055.jpg" cols="4" rows="4" />
 		<image file="tiles/tile-256x256-056.jpg" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-058-glowing.png" cols="4" rows="4" />
+		<image file="tiles/tile-256x256-058.jpg" cols="4" rows="4" />
 		<image file="items/item-128x128-080.png" />
 		<image file="items/item-128x128-081-t.png" />
 		<image file="items/item-128x128-082.png" />
@@ -164,6 +166,8 @@
 		<image file="items/item-192x64-248-t-n.png" />
 		<image file="items/item-256x64-264-t-n.png" />
 		<image file="items/item-256x64-265-t-n.png" />
+		<image file="items/item-256x64-266-t-n.png" />
+		<image file="items/item-256x64-267-t-n.png" />
 		<image file="items/item-64x128-096.png" />
 		<image file="items/item-64x128-097.png" />
 		<image file="items/item-64x128-098-t-n.png" />

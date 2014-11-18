@@ -71,8 +71,7 @@ FrontTile = extends BaseLayerTile {
 				// @glowing.scale = @size / @glowing.size
 				@addLinkTile(glowing)
 			}
-		}
-		
+		}		
 		@createItemTile()
 		@createBackTile()
 		

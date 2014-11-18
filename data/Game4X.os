@@ -372,6 +372,7 @@ Game4X = extends BaseGame4X {
 			priority = GAME_LAYER_HUD,
 			parent = this,
 			touchEnabled = false,
+			visible = false, // debug
 		}
 		
 		@debugMessages = Actor().attrs {
@@ -971,11 +972,11 @@ Game4X = extends BaseGame4X {
 			// fixtureDef.type = PHYS_SHAPE_POLYGON
 			// fixtureDef.setPolygonAsBox(halfSize, center, 0)
 			fixtureDef.setPolygonAsBounds(a, b)
-			fixtureDef.categoryBits = PHYS_CAT_BIT_SOLID
+			fixtureDef.categoryBits = PHYS_CAT_BIT_SOLID | PHYS_CAT_BIT_CAST_SHADOW
 			fixtureDef.friction = 0.99
 			@borderBody.createFixture(fixtureDef)
 		}
-		var borderTileSize = 2
+		var borderTileSize = 10
 		createBoundsFixture(@tileToPos(-borderTileSize, -borderTileSize), @tileToPos(0, @tiledmapHeight+borderTileSize))
 		createBoundsFixture(@tileToPos(@tiledmapWidth, -borderTileSize), @tileToPos(@tiledmapWidth+borderTileSize, @tiledmapHeight+borderTileSize))
 		createBoundsFixture(@tileToPos(0, -borderTileSize), @tileToPos(@tiledmapWidth, 0))
@@ -1842,6 +1843,7 @@ Game4X = extends BaseGame4X {
 			@shakeOffs = null
 		}
 		// @mapScale = ((math.sin(math.PI * 2 * @time / 10) + 1) / 2 * 0.95 + 0.05) * @initialMapScale
+		// @physWorld.persistentDeltaTime = 0
 		@physWorld.persistentDeltaTime = 1 / 60
 		// @physWorld.persistentDeltaTime = clamp(@dt, 1 / 60, 1 / 10)
 		@physWorld.update(@dt, 1, 1)

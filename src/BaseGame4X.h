@@ -426,7 +426,7 @@ protected:
 	struct ShadowPolygon
 	{
 		vec2 points[b2_maxPolygonVertices];
-		int count;
+		int numPoints;
 	};
 	std::vector<ShadowPolygon> shadowPolygons;
 	

@@ -206,11 +206,24 @@ void run()
 
 	bool done = false;
 	//here is main game loop
+#ifdef WIN32
+	double fps = 60;
+	double dt = 1.0 / fps;
+#endif
 	while (1)
 	{
+#ifdef WIN32
+		double startTime = ObjectScript::getTimeSec();
+#endif
 		int done = mainloop();
 		if (done)
 			break;
+#ifdef WIN32
+		double frameTime = ObjectScript::getTimeSec() - startTime + 0.001;
+		if(1 && dt > frameTime){
+			sleep((oxygine::timeMS)((dt - frameTime) * 1000));
+		}
+#endif
 	}
 	//so user want to leave application...
 	if(useThreadForUpdate){

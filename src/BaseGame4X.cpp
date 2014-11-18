@@ -15,6 +15,7 @@ namespace ObjectScript
 float TILE_SIZE;
 ElementType ELEM_TYPE_EMPTY;
 ElementType ELEM_TYPE_TILE_OUTSIDE;
+ElementType ELEM_TYPE_TILE_OUTSIDE_UP;
 int PHYS_CAT_BIT_SOLID;
 int PHYS_CAT_BIT_LADDER;
 int PHYS_CAT_BIT_PLATFORM;
@@ -901,7 +902,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 				}
 
 				ShadowPolygon shadowPolygon;
-				shadowPolygon.count = shape->m_count;
+				shadowPolygon.numPoints = shape->m_count;
 				
 				// float lightScale = game->lightScale;
 				vec2 scale = mapScale * game->lightScale;
@@ -1050,25 +1051,25 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		float halfEdge = edge/2.0f;
 
 		vec2 polygonCenter, points[b2_maxPolygonVertices];
-		for(int j, i = 0; i < shadowPolygons.size(); i++){
+		for(int j, i = 0; i < (int)shadowPolygons.size(); i++){
 			ShadowPolygon& polygon = shadowPolygons[i];
-			OX_ASSERT(polygon.count > 2);
+			OX_ASSERT(polygon.numPoints > 2);
 			if(edge){
 				polygonCenter = polygon.points[0];
-				for(j = 1; j < polygon.count; j++){
+				for(j = 1; j < polygon.numPoints; j++){
 					polygonCenter = polygonCenter + polygon.points[j];
 				}
-				polygonCenter = polygonCenter / (float)polygon.count;
-				for(j = 0; j < polygon.count; j++){
+				polygonCenter = polygonCenter / (float)polygon.numPoints;
+				for(j = 0; j < polygon.numPoints; j++){
 					points[j] = polygon.points[j];
 					// points[j].x = polygonCenter.x < points[j].x ? ceilf(points[j].x + halfEdge) : floorf(points[j].x - halfEdge);
 					// points[j].y = polygonCenter.y < points[j].y ? ceilf(points[j].y + halfEdge) : floorf(points[j].y - halfEdge);
 					points[j].x += polygonCenter.x < points[j].x ? halfEdge : -halfEdge;
 					points[j].y += polygonCenter.y < points[j].y ? halfEdge : -halfEdge;
 				}
-				r.drawTriangleFan(points, polygon.count);
+				r.drawTriangleFan(points, polygon.numPoints);
 			}else{
-				r.drawTriangleFan(polygon.points, polygon.count);
+				r.drawTriangleFan(polygon.points, polygon.numPoints);
 			}
 		}
 
@@ -1561,6 +1562,7 @@ BaseGame4X::BaseGame4X()
 
 	ELEM_TYPE_EMPTY			= (os->getProperty(-1, "ELEM_TYPE_EMPTY"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	ELEM_TYPE_TILE_OUTSIDE	= (os->getProperty(-1, "ELEM_TYPE_TILE_OUTSIDE"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
+	ELEM_TYPE_TILE_OUTSIDE_UP = (os->getProperty(-1, "ELEM_TYPE_TILE_OUTSIDE_UP"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	
 	PHYS_CAT_BIT_SOLID		= (os->getProperty(-1, "PHYS_CAT_BIT_SOLID"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
 	PHYS_CAT_BIT_LADDER		= (os->getProperty(-1, "PHYS_CAT_BIT_LADDER"), os->popInt()); OX_ASSERT(!os->isExceptionSet());
@@ -1702,6 +1704,9 @@ void BaseGame4X::worldPosToPos(int& x, int& y, const vec2& pos)
 
 ElementType BaseGame4X::getFrontType(int x, int y)
 {
+	if(y < 0){
+		return ELEM_TYPE_EMPTY; // TILE_OUTSIDE_UP;
+	}
 	Tile * tile = getTile(x, y);
 	return tile ? tile->front : ELEM_TYPE_TILE_OUTSIDE;
 }
@@ -1720,6 +1725,9 @@ void BaseGame4X::setFrontType(int x, int y, ElementType type)
 
 ElementType BaseGame4X::getBackType(int x, int y)
 {
+	if(y < 0){
+		return ELEM_TYPE_EMPTY; // TILE_OUTSIDE_UP;
+	}
 	Tile * tile = getTile(x, y);
 	return tile ? tile->back : ELEM_TYPE_TILE_OUTSIDE;
 }

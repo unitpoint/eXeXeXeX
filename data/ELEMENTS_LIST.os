@@ -61,6 +61,7 @@ ELEMENTS_LIST[26].color = Color.fromInt(0xcc863d) * color
 } */
 
 ELEMENTS_LIST[ELEM_TYPE_TILE_OUTSIDE] = ELEMENTS_LIST[7]
+ELEMENTS_LIST[ELEM_TYPE_TILE_OUTSIDE_UP] = ELEMENTS_LIST[ELEM_TYPE_EMPTY]
 
 ELEMENTS_LIST[ELEM_TYPE_ENT_PLAYER].merge {
 	class = "NewPlayer",
@@ -202,6 +203,27 @@ ELEMENTS_LIST[265].merge {
 	platformPhysB = vec2(1, 0.7),
 	platformPhysCellSize = vec2(26 / 256, 26 / (64 * 0.7)),
 	platformPhysCellCount = 6,
+	platformCastShadow = true,
+}
+
+ELEMENTS_LIST[266].merge {
+	class = "TilePlatformItem",
+	// platformPhysSizeScale = vec2(0.98, 1),
+	platformPhysA = vec2(0, 0),
+	platformPhysB = vec2(1, 0.7),
+	platformPhysCellSize = vec2(13 / 256, 13 / (64 * 0.7)),
+	platformPhysCellCount = 10,
+	platformCastShadow = true,
+}
+
+ELEMENTS_LIST[267].merge {
+	class = "TilePlatformItem",
+	// platformPhysSizeScale = vec2(0.98, 1),
+	platformPhysA = vec2(0, 0),
+	platformPhysB = vec2(1, 0.58),
+	platformPhysCellSize = vec2(6 / 256, 6 / (64 * 0.58)),
+	platformPhysCellCount = 16,
+	platformPhysCellTiled = true,
 	platformCastShadow = true,
 }
 

@@ -144,6 +144,7 @@ function playMoneySound(){
 
 var music, musicTimeout = null
 function playMusic(name, volume){
+	return;
 	var delay = 0.01
 	if(music){
 		music.fadeOut(2)
