@@ -5,6 +5,7 @@
 #include <core/VideoDriver.h>
 #include <core/gl/VideoDriverGLES20.h>
 #include <core/UberShaderProgram.h>
+#include <MaskedRenderer.h>
 
 // #include <SDL_opengl.h>
 // #include <SDL_opengles2_gl2.h>
@@ -402,7 +403,7 @@ void BasePhysEntity::applyForce(const vec2& viewForce, int paramsValueId)
 
 Actor * getOSChild(Actor * actor, const char * name)
 {
-	SaveStackSize saveStackSize;
+	OS::SaveStackSize saveStackSize(os);
 	// OS2D * os = getOS();
 	pushCtypeValue(os, actor);
 	os->getProperty(name);
@@ -411,18 +412,16 @@ Actor * getOSChild(Actor * actor, const char * name)
 
 float getOSChildFloat(Actor * actor, const char * name, float def)
 {
-	ObjectScript::SaveStackSize saveStackSize;
-	ObjectScript::OS * os = ObjectScript::os;
-	ObjectScript::pushCtypeValue(os, actor);
+	OS::SaveStackSize saveStackSize(os);
+	pushCtypeValue(os, actor);
 	os->getProperty(-1, name);
 	return os->toFloat(-1, def);
 }
 
 float getOSChildPhysicsFloat(Actor * actor, const char * name, float def)
 {
-	ObjectScript::SaveStackSize saveStackSize;
-	ObjectScript::OS * os = ObjectScript::os;
-	ObjectScript::pushCtypeValue(os, actor);
+	OS::SaveStackSize saveStackSize(os);
+	pushCtypeValue(os, actor);
 	os->getProperty(-1, "physics");
 	os->getProperty(-1, name);
 	return os->toFloat(-1, def);
@@ -435,9 +434,8 @@ int getOSChildPhysicsInt(Actor * actor, const char * name, int def)
 
 bool getOSChildPhysicsBool(Actor * actor, const char * name, bool def)
 {
-	ObjectScript::SaveStackSize saveStackSize;
-	ObjectScript::OS * os = ObjectScript::os;
-	ObjectScript::pushCtypeValue(os, actor);
+	OS::SaveStackSize saveStackSize(os);
+	pushCtypeValue(os, actor);
 	os->getProperty(-1, "physics");
 	os->getProperty(-1, name);
 	return os->toBool(-1, def);
@@ -534,7 +532,7 @@ void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 		lightScale = MathLib::max(displayWidthScale, displayHeightScale);
 #if defined _WIN32 && 1
 		// keep max quality lightScale?
-		lightScale *= 1.0f / 2.0f;
+		if(lightScale > 1.0f) lightScale *= 1.0f / 2.0f;
 		// lightScale *= 1.0f / 3.0f;
 #else
 		lightScale *= 1.0f / 3.0f;
@@ -553,10 +551,10 @@ void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 		shadowMaskTexture->init(lightTextureWidth, lightTextureHeight, shadowMaskTextureFormat, true);
 
 		const char* shadowMaskVS = "\
-			uniform mediump mat4 projection;\
+			uniform mediump mat4 mat;\
 			attribute vec2 position;\
 			void main() {\
-				gl_Position = projection * vec4(position, 0.0, 1.0);\
+				gl_Position = mat * vec4(position, 0.0, 1.0);\
 			}\
 			";
 
@@ -574,17 +572,21 @@ void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 			varying mediump vec2 result_uv; \
 			varying mediump vec2 result_uv2; \
 			\
-			uniform mat4 projection; \
+			uniform mat4 mat; \
+			uniform mediump vec3 msk[4]; \
+			\
 			attribute vec2 position; \
 			attribute vec4 color; \
 			attribute vec2 uv; \
-			attribute vec2 uv2; \
 			\
 			void main() {\
-				gl_Position = projection * vec4(position, 0.0, 1.0); \
+				gl_Position = mat * vec4(position, 0.0, 1.0); \
 				result_color = color; \
 				result_uv = uv; \
-				result_uv2 = uv2; \
+				mediump float a = dot(msk[0], vec3(1.0, position.x, position.y)); \
+				mediump float b = dot(msk[1], vec3(1.0, position.x, position.y)); \
+				result_uv2.x = dot(msk[2], vec3(1.0, a, b)); \
+				result_uv2.y = dot(msk[3], vec3(1.0, a, b)); \
 			}\
 			";
 
@@ -593,29 +595,31 @@ void BaseGame4X::initLightmap(BaseLightmap * lightmap)
 			varying mediump vec2 result_uv; \
 			varying mediump vec2 result_uv2; \
 			\
+			uniform lowp vec4 clip_mask; \
 			uniform lowp sampler2D base_texture; \
 			uniform lowp sampler2D shadow_texture; \
 			\
 			void main() { \
 				lowp vec4 base = texture2D(base_texture, result_uv); \
-				lowp vec4 shadow = texture2D(shadow_texture, result_uv2); \
+				mediump vec2 uv2 = clamp(result_uv2, clip_mask.xy, clip_mask.zw); \
+				lowp vec4 shadow = texture2D(shadow_texture, uv2); \
 				gl_FragColor = base * shadow * result_color; \
 			} \
 			";
 
-		lightProg = createShaderProgram(lightVS, lightFS, VERTEX_PCT2T2);
+		lightProg = createShaderProgram(lightVS, lightFS, VERTEX_PCT2);
 
 		const char* lightTileVS = "\
 			varying lowp vec4 result_color; \
 			varying mediump vec2 result_uv; \
 			\
-			uniform mediump mat4 projection; \
+			uniform mediump mat4 mat; \
 			attribute vec2 position; \
 			attribute vec4 color; \
 			attribute vec2 uv; \
 			\
 			void main() {\
-				gl_Position = projection * vec4(position, 0.0, 1.0); \
+				gl_Position = mat * vec4(position, 0.0, 1.0); \
 				result_color = color; \
 				result_uv = uv; \
 			}\
@@ -773,19 +777,19 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 	if(!lightmap->getVisible()){
 		return;
 	}
-
+	
 	vec2 lightTextureSize((float)lightTextureWidth, (float)lightTextureHeight);
 
 	MyRenderer r;	
 	r.initCoordinateSystem(lightTextureWidth, lightTextureHeight, true);
 	
-	Matrix viewProj = r.getViewProjection();
+	// Matrix viewProj = r.getViewProjection();
 	Rect viewport(Point(0, 0), Point(lightTextureWidth, lightTextureHeight));
 
 	// std::vector<Point>::iterator it;
 	bool lightmapInitialized = false;
 	
-	AffineTransform transform; 
+	// AffineTransform transform; 
 	// identityTransform.identity();
 
 	for(int i = 0; i < (int)lights.size(); i++){
@@ -823,15 +827,14 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		// float lightScreenRadiusMax = MathLib::max(lightScreenRadius.x, lightScreenRadius.y);
 		vec2 lightScreenPos = (light->pos - offs) * mapScale;
 
-		transform.identity();
-		r.setTransform(transform);
+		// transform.identity();
+		// r.setTransform(transform);
 
 		r.begin(shadowMaskTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		// r.begin(lightTexture, viewport, Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
-		r.setVertexDeclaration(VERTEX_POSITION);
-		IVideoDriver::instance->setShaderProgram(shadowMaskProg);
-		IVideoDriver::instance->setUniform("projection", &viewProj);
+		r.setShaderProgram(shadowMaskProg);
+		// IVideoDriver::instance->setUniform("mat", &r.getViewProjection());
 		setUniformColor("color", light->shadowColor);
 
 		// vec2 lightStart = tileToPos(lightStartX, lightStartY);
@@ -930,7 +933,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 						vec2 p1_target = p1 + lightToCurrent * (lightScreenRadius * 100);
 						vec2 p2_target = p2 + (p2 - lightScreenPos) * (lightScreenRadius * 100);
 						
-						r->drawPoly(p1, // * lightScale, 
+						r->drawPolygon(p1, // * lightScale, 
 								p1_target, // * lightScale, 
 								p2_target, // * lightScale, 
 								p2); // * lightScale);
@@ -1067,9 +1070,9 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 					points[j].x += polygonCenter.x < points[j].x ? halfEdge : -halfEdge;
 					points[j].y += polygonCenter.y < points[j].y ? halfEdge : -halfEdge;
 				}
-				r.drawTriangleFan(points, polygon.numPoints);
+				r.drawPolygon(points, polygon.numPoints);
 			}else{
-				r.drawTriangleFan(polygon.points, polygon.numPoints);
+				r.drawPolygon(polygon.points, polygon.numPoints);
 			}
 		}
 
@@ -1096,34 +1099,39 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 #endif // USE_PHYS_CAST_SHADOW_INSTEAD_OF_TILES
 		r.end();
 
+#if 0
+		RectF shadowSrc = RectF(0, 0, lightTextureSize.x / lightTexture->getWidth(), lightTextureSize.y / lightTexture->getHeight());
+		RectF shadowDest = RectF(vec2(0, 0), lightTextureSize);
+		
+		transform.identity();
+		oxygine::MaskedRenderer mr(shadowMaskTexture, shadowSrc, shadowDest, transform, true);
+
+		IVideoDriver::instance->setRenderTarget(lightTexture);
+		IVideoDriver::instance->setViewport(viewport);
+
 		if(!lightmapInitialized){
-			r.begin(lightTexture, viewport, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+			IVideoDriver::instance->clear(Color(0, 0, 0, 255));
 			lightmapInitialized = true;
-		}else{
-			r.begin(lightTexture, viewport);
 		}
+
+		mr.initCoordinateSystem(viewport.getWidth(), viewport.getHeight());
+
+		mr.begin(0);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 
-		r.setVertexDeclaration(VERTEX_PCT2T2);
-		IVideoDriver::instance->setShaderProgram(lightProg);
+		mr.setShaderProgram(lightProg);
 		IVideoDriver::instance->setUniformInt("base_texture", 0);
 		IVideoDriver::instance->setUniformInt("shadow_texture", 1);
 
 		// Matrix viewProj = r.getViewProjection();
-		IVideoDriver::instance->setUniform("projection", &viewProj);
-
-		RectF shadowSrc = RectF(0, 0, lightTextureSize.x / lightTexture->getWidth(), lightTextureSize.y / lightTexture->getHeight());
-		RectF shadowDest = RectF(vec2(0, 0), lightTextureSize);
-		
-		// transform.identity();
-		r.setMask(shadowMaskTexture, shadowSrc, shadowDest, transform, true);
+		// IVideoDriver::instance->setUniform("mat", &mr.getViewProjection());
 
 		ResAnim * resAnim = resources->getResAnim(light->name);
 		AnimationFrame frame = resAnim->getFrame(0, 0);
-		r.setDiffuse(frame.getDiffuse());
-		r.setPrimaryColor(light->color);
+		// r.setDiffuse(frame.getDiffuse());
+		// r.setPrimaryColor(light->color);
 
 		IVideoDriver::instance->setTexture(0, frame.getDiffuse().base);
 		IVideoDriver::instance->setTexture(1, shadowMaskTexture);
@@ -1131,6 +1139,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		vec2 radius = lightScreenRadius * lightScale;
 		vec2 pos = lightScreenPos * lightScale;
 
+		RState rs;
 		if(light->angularVelocity){
 			light->angle += light->angularVelocity * (time - light->prevTimeSec);
 			light->prevTimeSec = time;
@@ -1141,32 +1150,95 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 			float s = sinf(rotation);
 			vec2 scale(1.0f, 1.0f);
 			
-			transform = AffineTransform(
+			rs.transform = AffineTransform(
 				c * scale.x, s * scale.x,
 				-s * scale.y, c * scale.y,
 				pos.x, pos.y);
 		}else{
-			transform = AffineTransform(1, 0, 0, 1, pos.x, pos.y);
+			rs.transform = AffineTransform(1, 0, 0, 1, pos.x, pos.y);
 		}
-		r.setTransform(transform);
+		// r.setTransform(transform);
 
 		// pos.y = lightTextureSize.y - pos.y;
-		r.draw(frame.getSrcRect(), RectF(-radius, radius * 2.0f));
-		r.drawBatch();
+		mr.draw(&rs, light->color, frame.getSrcRect(), RectF(-radius, radius * 2.0f));
+		mr.drawBatch();
+
+		mr.end();
+#else
+		if(!lightmapInitialized){
+			r.begin(lightTexture, viewport, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+			// r.begin(lightTexture, viewport, Vector4(0.0f, 0.0f, 0.0f, 0.5f));
+			lightmapInitialized = true;
+		}else{
+			r.begin(lightTexture, viewport);
+		}
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+
+		r.setShaderProgram(lightProg);
+		IVideoDriver::instance->setUniformInt("base_texture", 0);
+		IVideoDriver::instance->setUniformInt("shadow_texture", 1);
+
+		// Matrix viewProj = r.getViewProjection();
+		// IVideoDriver::instance->setUniform("mat", &r.getViewProjection());
+
+		RectF shadowSrc = RectF(0, 0, lightTextureSize.x / lightTexture->getWidth(), lightTextureSize.y / lightTexture->getHeight());
+		RectF shadowDest = RectF(vec2(0, 0), lightTextureSize);
+		
+		// transform.identity();
+		r.setMaskProgramParams(shadowMaskTexture, shadowSrc, shadowDest);
+
+		ResAnim * resAnim = resources->getResAnim(light->name);
+		AnimationFrame frame = resAnim->getFrame(0, 0);
+		// r.setDiffuse(frame.getDiffuse());
+		// r.setPrimaryColor(light->color);
+
+		IVideoDriver::instance->setTexture(0, frame.getDiffuse().base);
+		IVideoDriver::instance->setTexture(1, shadowMaskTexture);
+
+		vec2 radius = lightScreenRadius * lightScale;
+		vec2 pos = lightScreenPos * lightScale;
+
+		RState rs;
+		if(light->angularVelocity){
+			light->angle += light->angularVelocity * (time - light->prevTimeSec);
+			light->prevTimeSec = time;
+			// transform.rotate(light->angle * MathLib::DEG2RAD);
+
+			float rotation = light->angle * MathLib::DEG2RAD;
+			float c = cosf(rotation);
+			float s = sinf(rotation);
+			vec2 scale(1.0f, 1.0f);
+			
+			rs.transform = AffineTransform(
+				c * scale.x, s * scale.x,
+				-s * scale.y, c * scale.y,
+				pos.x, pos.y);
+		}else{
+			rs.transform = AffineTransform(1, 0, 0, 1, pos.x, pos.y);
+		}
+		// r.setTransform(transform);
+
+		// pos.y = lightTextureSize.y - pos.y;
+		r.draw(&rs, light->color, frame.getSrcRect(), RectF(-radius, radius * 2.0f));
+		// r.drawBatch();
 
 		r.end();
+#endif
 	}
+
+	return;
 	
 	r.begin(lightTexture, viewport);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	r.setVertexDeclaration(VERTEX_POSITION);
-	IVideoDriver::instance->setShaderProgram(shadowMaskProg);
+	r.setShaderProgram(shadowMaskProg);
 
 	// Matrix viewProj = r.getViewProjection();
-	IVideoDriver::instance->setUniform("projection", &viewProj);
+	// IVideoDriver::instance->setUniform("mat", &r.getViewProjection());
 		
 #if 0
 	vec3 color, prevColor(0, 0, 0);
@@ -1216,15 +1288,15 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 #endif
 	r.drawBatch();
 
+#if 0
 	// glEnable(GL_BLEND);
 	// glBlendFunc(GL_ONE, GL_ONE);
 
-	r.setVertexDeclaration(VERTEX_PCT2);
-	IVideoDriver::instance->setShaderProgram(lightTileProg);
+	r.setShaderProgram(lightTileProg);
 	IVideoDriver::instance->setUniformInt("base_texture", 0);
 
 	// Matrix viewProj = r.getViewProjection();
-	IVideoDriver::instance->setUniform("projection", &viewProj);
+	// IVideoDriver::instance->setUniform("mat", &r.getViewProjection());
 
 	if(!tempLightSprite){
 		tempLightSprite = new Sprite();
@@ -1506,6 +1578,7 @@ void BaseGame4X::updateLightmap(BaseLightmap * lightmap)
 		}
 	}
 #endif
+#endif // 0
 	r.end();
 
 	// updatePhysics(dt);
@@ -1532,7 +1605,7 @@ ShaderProgramGL * BaseGame4X::createShaderProgram(const char * _vs, const char *
 	VertexDeclarationGL * vdecl = (VertexDeclarationGL*)IVideoDriver::instance->getVertexDeclaration(format); // VERTEX_POSITION)
 	OX_ASSERT(vdecl);
 	int pr = ShaderProgramGL::createProgram(vs, fs, vdecl);
-	program->init(pr);
+	program->init(pr, vdecl);
 	return program;
 }
 
@@ -1896,7 +1969,7 @@ void BaseGame4X::registerLevelData(int p_tiledmapWidth, int p_tiledmapHeight, co
 
 Actor * BaseGame4X::getMapLayer(int num)
 {
-	SaveStackSize saveStackSize;
+	OS::SaveStackSize saveStackSize(os);
 	pushCtypeValue(os, this);
 	os->getProperty("mapLayers");
 	pushCtypeValue(os, num);

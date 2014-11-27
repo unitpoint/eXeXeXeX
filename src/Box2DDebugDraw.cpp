@@ -32,8 +32,9 @@ Box2DDraw::Box2DDraw(BaseGame4X * p_game) // : _worldScale(1.0f), _world(0)
 	int vs = ShaderProgramGL::createShader(GL_VERTEX_SHADER, vertexShaderData, 0, 0);
 	int fs = ShaderProgramGL::createShader(GL_FRAGMENT_SHADER, fragmentShaderData, 0, 0);
 
-	int pr = ShaderProgramGL::createProgram(vs, fs, (VertexDeclarationGL*)IVideoDriver::instance->getVertexDeclaration(VERTEX_POSITION));
-	program->init(pr);
+	VertexDeclarationGL * vdecl = (VertexDeclarationGL*)IVideoDriver::instance->getVertexDeclaration(VERTEX_POSITION);
+	int pr = ShaderProgramGL::createProgram(vs, fs, vdecl);
+	program->init(pr, vdecl);
 }
 
 Box2DDraw::~Box2DDraw()

@@ -2,6 +2,7 @@
 #define __BASE_GAME_4X_H__
 
 #include <oxygine-framework.h>
+#include <STDRenderer.h>
 #include <core/gl/ShaderProgramGL.h>
 #include <ox-binder.h>
 #include <ox-physics.h>
@@ -500,39 +501,81 @@ protected:
 	*/
 };
 
-class MyRenderer: public Renderer
+class MyRenderer: public Renderer // STDRenderer
 {
+	typedef Renderer super;
+
 public:
 
-	size_t _maxVertices;
+	// size_t _maxVertices;
 
-	MyRenderer()
+	MyRenderer(): super(IVideoDriver::instance)
 	{
-		_maxVertices = indices16.size()/3 * 2;
-		_vdecl = _driver->getVertexDeclaration(VERTEX_PCT2T2);
+		// _maxVertices = indices16.size()/3 * 2;
+		// _vdecl = _driver->getVertexDeclaration(VERTEX_PCT2T2);
+		_blend = blend_disabled;
 	}
 
-	void setVertexDeclaration(bvertex_format vf)
+	~MyRenderer()
+	{
+		//restore to default render target
+		IVideoDriver::instance->setRenderTarget(0);
+	}
+
+	/* void setVertexDeclaration(bvertex_format vf)
 	{
 		_vdecl = _driver->getVertexDeclaration(vf);
-	}
+	} */
 
-	bool begin(spNativeTexture rt, const Rect &viewport, const Vector4& clearColor)
+	void setShaderProgram(ShaderProgramGL * p)
 	{
-		unsigned char r = (unsigned char)(clearColor.x * 255.0F);
-		unsigned char g = (unsigned char)(clearColor.y * 255.0F);
-		unsigned char b = (unsigned char)(clearColor.z * 255.0F);
-		unsigned char a = (unsigned char)(clearColor.w * 255.0F);
-		Color color(r, g, b, a);
-		return Renderer::begin(rt, viewport, &color);
+		// _driver->setShaderProgram(p);
+		setShader(p);
+		setVertexDeclaration((const oxygine::VertexDeclaration*)p->getVdecl());
 	}
 
-	bool begin(spNativeTexture rt, const Rect &viewport)
+	void begin(spNativeTexture rt, const Rect &viewport, const Vector4& _clearColor)
 	{
-		return Renderer::begin(rt, viewport, NULL);
+		unsigned char r = (unsigned char)(_clearColor.x * 255.0F);
+		unsigned char g = (unsigned char)(_clearColor.y * 255.0F);
+		unsigned char b = (unsigned char)(_clearColor.z * 255.0F);
+		unsigned char a = (unsigned char)(_clearColor.w * 255.0F);
+		Color clearColor(r, g, b, a);
+
+		// IVideoDriver * driver = IVideoDriver::instance;
+		
+		_driver->setRenderTarget(NULL);
+		_driver->setRenderTarget(rt);
+
+		_driver->setViewport(viewport);
+		_driver->clear(clearColor);
+
+		// initCoordinateSystem(viewport.getWidth(), viewport.getHeight());
+
+		super::begin(0);
 	}
 
-	void drawBatch()
+	void begin(spNativeTexture rt, const Rect &viewport)
+	{
+		// IVideoDriver * driver = IVideoDriver::instance;
+		
+		_driver->setRenderTarget(NULL);
+		_driver->setRenderTarget(rt);
+
+		_driver->setViewport(viewport);
+
+		// initCoordinateSystem(viewport.getWidth(), viewport.getHeight());
+
+		super::begin(0);
+	}
+
+	void end()
+	{
+		super::end();
+		_driver->setRenderTarget(NULL);
+	}
+
+	/* void drawBatch()
 	{
 		if(!_vertices.empty()){
 			size_t count = _vertices.size() / _vdecl->size;
@@ -545,11 +588,12 @@ public:
 		
 			_vertices.resize(0);			
 		}
-	}
+	} */
 
 	void drawTriangleStrip(const vec3 * points, int numPoints)
 	{
-		Renderer::draw(points, sizeof(points[0])*numPoints, VERTEX_POSITION);
+		OX_ASSERT(_vdecl && _vdecl->size == sizeof(points[0]));
+		addVertices(points, sizeof(points[0])*numPoints);
 	}
 
 	void drawTriangleStrip(const vec2 * points, int numPoints)
@@ -561,7 +605,7 @@ public:
 		drawTriangleStrip(p, numPoints);
 	}
 
-	void drawTriangleFan(const vec3 * points, int numPoints)
+	void drawPolygon(const vec3 * points, int numPoints)
 	{
 		if(numPoints > 2){
 			vec3 * strip = (vec3*)alloca(sizeof(vec3)*numPoints);
@@ -584,7 +628,7 @@ public:
 		}
 	}
 
-	void drawTriangleFan(const vec2 * points, int numPoints)
+	void drawPolygon(const vec2 * points, int numPoints)
 	{
 		if(numPoints > 2){
 			vec3 * strip = (vec3*)alloca(sizeof(vec3)*numPoints);
@@ -607,29 +651,121 @@ public:
 		}
 	}
 
-	void drawPoly(const vec2& p1, const vec2& p2, const vec2& p3, const vec2& p4)
+	void drawPolygon(const vec2& p1, const vec2& p2, const vec2& p3, const vec2& p4)
 	{
 		vec3 points[] = {p1, p4, p2, p3};
 		drawTriangleStrip(points, 4);
 	}
+
+	void setMaskProgramParams(spNativeTexture mask, const RectF &srcRect, const RectF &destRect)
+	{
+		AffineTransform t;
+		t.identity();
+		setMaskProgramParams(mask, srcRect, destRect, t);
+	}
+
+	void setMaskProgramParams(spNativeTexture mask, const RectF &srcRect, const RectF &destRect, const AffineTransform &t)
+	{
+		// _mask = mask;
+		_clipUV = ClipUV(
+			t.transform(destRect.getLeftTop()),
+			t.transform(destRect.getRightTop()),
+			t.transform(destRect.getLeftBottom()),
+			srcRect.getLeftTop(),
+			srcRect.getRightTop(),
+			srcRect.getLeftBottom());
+
+		_clipMask = srcRect;
+		Vector2 iv(1.0f / mask->getWidth(), 1.0f / mask->getHeight());
+		_clipMask.expand(iv, iv);
+	
+		Vector4 v(_clipMask.getLeft(), _clipMask.getTop(), _clipMask.getRight(), _clipMask.getBottom());
+		_driver->setUniform("clip_mask", &v, 1);
+
+		Vector3 msk[4];
+		_clipUV.get(msk);
+
+		_driver->setUniform("msk", msk, 4);
+	}
+
+	void draw(const RState *rs, const Color &clr, const RectF &srcRect, const RectF &destRect) OVERRIDE
+	{
+		Color color = clr;
+		color.a = (int(color.a) * rs->alpha) / 255;
+		// if (_blend == blend_premultiplied_alpha)
+		//	color = color.premultiplied();
+
+		vertexPCT2 v[4];
+		fillQuadT(v, srcRect, destRect, rs->transform, color.rgba());
+
+		OX_ASSERT(_vdecl && _vdecl->size == sizeof(v[0]));
+		addVertices(v, sizeof(v));
+	}
+
+	void setTexture(spNativeTexture base, spNativeTexture alpha, bool basePremultiplied) OVERRIDE
+	{
+		OX_ASSERT(false);
+	}
+
+	void setBlendMode(blend_mode blend) OVERRIDE
+	{
+		if (_blend != blend)
+		{
+			drawBatch();
+
+			switch (blend)
+			{
+			case blend_disabled:
+				_driver->setState(IVideoDriver::STATE_BLEND, 0);
+				break;
+			case blend_premultiplied_alpha:
+				_driver->setBlendFunc(IVideoDriver::BT_ONE, IVideoDriver::BT_ONE_MINUS_SRC_ALPHA);
+				break;
+			case blend_alpha:
+				_driver->setBlendFunc(IVideoDriver::BT_SRC_ALPHA, IVideoDriver::BT_ONE_MINUS_SRC_ALPHA);
+				break;
+			case blend_add:
+				_driver->setBlendFunc(IVideoDriver::BT_ONE, IVideoDriver::BT_ONE);
+				break;
+			case blend_add_src_alpha:
+				_driver->setBlendFunc(IVideoDriver::BT_SRC_ALPHA, IVideoDriver::BT_ONE);
+				break;
+			case blend_add_src_color:
+				_driver->setBlendFunc(IVideoDriver::BT_SRC_COLOR, IVideoDriver::BT_ONE);
+				break;
+			case blend_add_dst_color:
+				_driver->setBlendFunc(IVideoDriver::BT_ONE, IVideoDriver::BT_DST_COLOR);
+				break;
+			case blend_multiply:
+				_driver->setBlendFunc(IVideoDriver::BT_DST_COLOR, IVideoDriver::BT_ZERO);
+				break;
+				//case blend_sub:
+				//_driver->setBlendFunc(IVideoDriver::BT_ONE, IVideoDriver::BT_ONE);
+				//glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+				//	break;
+			default:
+				OX_ASSERT(!"unknown blend");
+			}
+
+			if (_blend == blend_disabled)
+			{
+				_driver->setState(IVideoDriver::STATE_BLEND, 1);
+			}
+			_blend = blend;
+		}
+	}
+
+protected:
+
+	blend_mode _blend;
+
+	// spNativeTexture _mask;
+	RectF _clipMask;
+	ClipUV _clipUV;
 };
 
 
 namespace ObjectScript {
-
-// OS_DECL_CTYPE_ENUM(ElementType);
-// OS_DECL_CTYPE_ENUM(ElementType);
-
-/*
-OS_DECL_CTYPE_NAME(vec2, "vec2");
-template <> struct CtypeValue<vec2>: public CtypeValuePoint<vec2> {};
-
-OS_DECL_CTYPE_NAME(b2Vec2, "vec2");
-template <> struct CtypeValue<b2Vec2>: public CtypeValuePointOf<b2Vec2, float32> {};
-
-OS_DECL_OX_CLASS(PhysContact);
-OS_DECL_OX_CLASS(BasePhysEntity);
-*/
 
 OS_DECL_OX_CLASS(BaseLight);
 OS_DECL_OX_CLASS(BaseLightmap);

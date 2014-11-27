@@ -4,191 +4,69 @@ This file has Oxygine initialization stuff.
 If you just started you don't need to understand it exactly you could check it later.
 You could start from example.cpp and example.h it has main functions being called from there
 */
-#include <stdio.h>
-#include "oxygine-framework.h"
-#include "core/Renderer.h"
 #include "Stage.h"
 #include "DebugActor.h"
-
 #include "example.h"
+
 #include <ext-datetime/os-datetime.h>
 
 using namespace oxygine;
 
-Renderer renderer;
-Rect viewport;
-
-bool useThreadForUpdate = false;
-Mutex updateThreadMutex;
-pthread_t updateThread;
-bool updateThreadStarted = false;
-bool updateThreadWaitExit = false;
-float updateThreadDeltaTime = 1.0f / 60.0f;
-
-static void * updateThreadFunc(void * p)
-{
-	double prevTime = ObjectScript::getTimeSec();
-	timeMS sleepTimeMS = 0;
-	for(;;){
-		{
-			MutexAutoLock autoLock(updateThreadMutex);
-			if(updateThreadWaitExit){
-				updateThreadStarted = false;
-				return NULL;
-			}
-			getStage()->update();
-			double curTime = ObjectScript::getTimeSec();
-			double dt = curTime - prevTime;
-			double nextTime = prevTime + updateThreadDeltaTime;
-			prevTime = curTime;
-			double sleepTime = nextTime - curTime;
-			sleepTimeMS = (timeMS)(sleepTime * 1000);
-			if(sleepTimeMS < 10) sleepTimeMS = 10;
-		}
-		sleep(sleepTimeMS);
-	}
-	return NULL;
-}
-
-static void startUpdateThread()
-{
-	OX_ASSERT(!updateThreadStarted);
-	updateThreadStarted = true;
-	pthread_create(&updateThread, 0, updateThreadFunc, NULL);
-}
-
-static void stopUpdateThread()
-{
-	{
-		MutexAutoLock autoLock(updateThreadMutex);
-		updateThreadWaitExit = true;
-	}
-	for(;;){
-		{
-			MutexAutoLock autoLock(updateThreadMutex);
-			if(!updateThreadStarted){
-				return;
-			}
-		}
-		sleep(10);
-	}
-}
-
-class ExampleRootActor : public Stage
-{
-public:
-	ExampleRootActor()
-	{
-		//each mobile application should handle focus lost
-		//and free/restore GPU resources
-		addEventListener(Stage::DEACTIVATE, CLOSURE(this, &ExampleRootActor::onDeactivate));
-		addEventListener(Stage::ACTIVATE, CLOSURE(this, &ExampleRootActor::onActivate));
-	}
-
-	void onDeactivate(Event *)
-	{
-		core::reset();
-	}
-
-	void onActivate(Event *)
-	{
-		core::restore();
-	}
-};
 
 //called each frame
 int mainloop()
 {
-	MutexAutoLock autoLock(updateThreadMutex);
-
 	example_update();
-	//update our rootActor
-	//Actor::update would be called also for children
-	if(!useThreadForUpdate){
-		getStage()->update();
-	}else{
-	}
-
-	Color clear(33, 33, 33, 255);
-	//start rendering and clear viewport
-	if (renderer.begin(0, viewport, &clear))
-	{
-		//begin rendering from RootActor.
-		getStage()->render(renderer);
-		//rendering done
-		renderer.end();
+	//update our stage
+	//update all actors. Actor::update would be called also for all children
+	getStage()->update();
+	
+	if (core::beginRendering())
+	{		
+		Color clearColor(32, 32, 32, 255);
+		Rect viewport(Point(0, 0), core::getDisplaySize());
+		//render all actors. Actor::render would be called also for all children
+		getStage()->render(clearColor, viewport);
 
 		core::swapDisplayBuffers();
 	}
 
 	//update internal components
-	//all input events would be passed to RootActor::instance.handleEvent
+	//all input events would be passed to Stage::instance.handleEvent
 	//if done is true then User requests quit from app.
 	bool done = core::update();
 
 	return done ? 1 : 0;
 }
 
-extern "C"
-{
-	#include "SDL.h"
-	#include "SDL_video.h"
-};
-
 //it is application entry point
 void run()
 {
 	ObjectBase::__startTracingLeaks();
 
-	//initialize oxygine's internal stuff
+	//initialize Oxygine's internal stuff
 	core::init_desc desc;
 
 #if OXYGINE_SDL || OXYGINE_EMSCRIPTEN
 	//we could setup initial window size on SDL builds
 	desc.w = 960;
 	desc.h = 640;
-	// desc.fullscreen = true;
-	// desc.fulldesktop = true;
-#ifdef OS_DEBUG
-	desc.maximized = true;
-#else
-	desc.maximized = true;
-#endif
 	//marmalade settings could be changed from emulator's menu
 #endif
-	desc.title = "eXeXeXeX OS2D";
+
 
 	example_preinit();
 	core::init(&desc);
 	example_postinit();
 
-	//create RootActor. RootActor is a root node
-	Stage::instance = new ExampleRootActor();
+	//create Stage. Stage is a root node
+	Stage::instance = new Stage(true);
 	Point size = core::getDisplaySize();
-	getStage()->init(size, size);
+	getStage()->setSize(size);
 
-	//DebugActor is a helper node it shows FPS and memory usage and other useful stuff
-	DebugActor::initialize();
-
-	//create and add new DebugActor to root actor as child
-#if defined OS_DEBUG || 0
-	getStage()->addChild(new DebugActor());
-#endif
-
-	viewport = Rect(0, 0, size.x, size.y);
-
-	Matrix proj;
-	//initialize projection matrix
-	Matrix::orthoLH(proj, (float)size.x, (float)size.y, 0, 1);
-
-	//Renderer is class helper for rendering primitives and batching them
-	//Renderer is lightweight class you could create it many of times
-	renderer.setDriver(IVideoDriver::instance);
-
-	//initialization view and projection matrix
-	//where Left Top corner is (0, 0), and right bottom is (width, height)
-	renderer.initCoordinateSystem(size.x, size.y);
-
+	//DebugActor is a helper actor node. It shows FPS, memory usage and other useful stuff
+	DebugActor::show();
+		
 	//initialize this example stuff. see example.cpp
 	example_init();
 
@@ -199,10 +77,6 @@ void run()
 	*/	
 	return;
 #endif
-
-	if(useThreadForUpdate){
-		startUpdateThread();
-	}
 
 	bool done = false;
 	//here is main game loop
@@ -225,10 +99,8 @@ void run()
 		}
 #endif
 	}
-	//so user want to leave application...
-	if(useThreadForUpdate){
-		stopUpdateThread();
-	}
+
+	//user wants to leave application...
 
 	//lets dump all created objects into log
 	//all created and not freed resources would be displayed
@@ -243,9 +115,9 @@ void run()
 	example_destroy();
 
 
-	renderer.cleanup();
+	//renderer.cleanup();
 
-	/**releases all internal components and RootActor*/
+	/**releases all internal components and Stage*/
 	core::release();
 
 	//dump list should be empty now
